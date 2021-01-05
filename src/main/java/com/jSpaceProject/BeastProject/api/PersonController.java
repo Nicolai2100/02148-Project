@@ -50,6 +50,7 @@ public class PersonController {
         personService.deletePerson(id);
     }
 
+
     @PutMapping(path = {"id"})
     public void updatePersonById(@PathVariable("id") UUID id, @RequestBody Person person){
         System.out.println("er her");
