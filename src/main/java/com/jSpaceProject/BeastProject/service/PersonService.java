@@ -28,8 +28,16 @@ public class PersonService {
         return personDao.selectAllPeople();
     }
 
-    public Optional<Person> getPersonById(UUID id){
+    public Optional<Person> getPersonById(UUID id) {
         return personDao.selectPersonById(id);
+    }
+
+    public int deletePerson(UUID id) {
+        return personDao.delete(id);
+    }
+
+    public int updatePerson(UUID id, Person person) {
+        return personDao.update(id, person);
     }
 
 }
