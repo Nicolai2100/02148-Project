@@ -1,22 +1,16 @@
 package com.jSpaceProject.BeastProject.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.validation.constraints.NotBlank;
 
 import java.util.UUID;
 
 public class Person {
 
     private UUID id;
+
+    @NotBlank(message = "Name cannot be blank")
     private String name;
-
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
     public Person(@JsonProperty("id") UUID id,
                   @JsonProperty("name") String name) {
