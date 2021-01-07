@@ -21,12 +21,14 @@ public class APIcalls {
         // And then we ofc need to add it with the same handle. The handle and region needs to come from a user.
         // The name is made op of the handle/region.
         APIcalls apicalls = new APIcalls();
-        getStockRepository().add("ARMN/US", apicalls.gethistoricaldata("AMRN","US"));
-        getStockRepository().add("TSLA/US",apicalls.findStock("TSLA","US"));
+        apicalls.findStock("AMRN","US");
+        apicalls.findStock("TSLA","US");
         System.out.println("hej");
     }
 
     /**
+     * This endpoint returns historical data for a stock, and that is the opening value of 255 dates, and closing,
+     * that days high, low and things such as that.
      * The api will return a datatype of either double or integer depending on the amount of zeros.
      * We therefore need to check if the type is integer, and if so cast it to a double...
      * @param region the region in which the company is, f.eks TSLA is in the US
@@ -91,6 +93,7 @@ public class APIcalls {
                 }
             }
             }
+            getStockRepository().add(handle + "/" + region, sequentialSpace);
             return sequentialSpace;
         } catch (UnirestException e) {
             e.printStackTrace();
@@ -109,7 +112,6 @@ public class APIcalls {
         if (sequentialSpace == null) {
             return gethistoricaldata(handle, region);
         } else {
-            getStockRepository().add(handle + "/" + region,sequentialSpace);
             return sequentialSpace;
         }
     }
