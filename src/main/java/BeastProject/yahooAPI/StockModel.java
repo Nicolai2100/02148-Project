@@ -20,4 +20,16 @@ public class StockModel {
         this.close = close;
         this.open = open;
     }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public double getClose() {
+        return close;
+    }
+
+    public double getHigh() {
+        return high;
+    }
 }

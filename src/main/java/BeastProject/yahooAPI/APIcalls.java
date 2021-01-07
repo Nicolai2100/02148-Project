@@ -5,25 +5,28 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.jspace.FormalField;
 import org.jspace.SequentialSpace;
 import org.jspace.SpaceRepository;
 
+import java.util.Calendar;
 import java.util.Date;
 
 public class APIcalls {
     private static final String apikey = "9ef62d9bdcmshfef91e2b707c69cp1724fejsncd7e1e4f3845";
     private static final String apihost = "apidojo-yahoo-finance-v1.p.rapidapi.com";
+    // The stockRepository has tuples containing of handle + / + region in the identifier and then the sequentialspace in the 2nd field.
     private static SpaceRepository stockRepository;
 
     public APIcalls () { stockRepository = new SpaceRepository(); }
 
     public static void main(String[] args) {
-        // And then we ofc need to add it with the same handle. The handle and region needs to come from a user.
-        // The name is made op of the handle/region.
         APIcalls apicalls = new APIcalls();
         apicalls.findStock("AMRN","US");
-        apicalls.findStock("TSLA","US");
-        System.out.println("hej");
+        //apicalls.findStock("TSLA","US");
+        SequentialSpace sequentialSpace = (SequentialSpace) getStockRepository().get("AMRN/US");
+        StockModel stock = apicalls.findLatestStockInfo(sequentialSpace);
+        System.out.println(stock.getDate());
     }
 
     /**
@@ -41,17 +44,19 @@ public class APIcalls {
             HttpResponse<String> response = Unirest.get(requestaddress)
                     .header("x-rapidapi-key", apikey).header("x-rapidapi-host", apihost).asString();
 
-
             JSONObject jsonObject = new JSONObject(response.getBody());
             JSONArray myResponse = jsonObject.getJSONArray("prices");
 
             for (int i = 0; i < myResponse.length(); i++) {
                 JSONObject jsonObject1 = myResponse.getJSONObject(i);
-                Date date1 = new Date();
                 // There is a need to find out if the line contains the correct fields. In case of a split happening for a stock
                 // A new entry will be added to the HttpResponse with different fields.
                 if (jsonObject1.has("volume")) {
-                date1.setTime((int) jsonObject1.get("date"));
+                // It has to be converted to milli seconds.
+                // If you multiply it with a 1000 earlier it overflows, it has to be done in the setTime function.
+                long time = ((int) jsonObject1.get("date"));
+                Date date1 = new Date();
+                date1.setTime(1000 * time);
                 int volume = (int) jsonObject1.get("volume");
                 double high, low, adjclose, close, open;
                 // There is a need to check which type it is. If the stock prize doesnt have any decimals the api returns
@@ -100,13 +105,13 @@ public class APIcalls {
         }
         return sequentialSpace;
     }
-
     /**
      * This returns a stock. It either finds the stock in the already gathered stocks or queries the API.
      * @param handle
      * @param region
      * @return
      */
+
     public SequentialSpace findStock(String handle, String region) {
         SequentialSpace sequentialSpace = (SequentialSpace) stockRepository.get(handle + "/" + region);
         if (sequentialSpace == null) {
@@ -118,5 +123,22 @@ public class APIcalls {
 
     public static SpaceRepository getStockRepository() {
         return stockRepository;
+    }
+
+    /**
+     * Finds the latest info in a stock. It takes the sequential space as the input.'
+     * Returns rubbish if it cant be found.
+     * @param sequentialSpace
+     * @return
+     */
+    public StockModel findLatestStockInfo(SequentialSpace sequentialSpace) {
+        try {
+            Object[] stockModel = sequentialSpace.query(new FormalField(StockModel.class));
+            return (StockModel) stockModel[0];
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        Date date = new Date();
+        return new StockModel(date, 0, 0, 0, 0, 0, 0);
     }
 }
