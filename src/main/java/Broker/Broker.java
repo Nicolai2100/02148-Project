@@ -19,8 +19,8 @@ public class Broker {
 
     SpaceRepository tradeRepo = new SpaceRepository();
 
-    static String sellOrderString = "SELL";
-    static String buyOrderString = "BUY";
+    static final String sellOrderString = "SELL";
+    static final String buyOrderString = "BUY";
 
     public Broker() {
         tradeRepo.add("tradeRequests", marketOrders);
@@ -51,7 +51,7 @@ public class Broker {
                             new ActualField(sellOrderString),
                             new FormalField(String.class),
                             new ActualField(1))); //Dette gør, at vi pt. kun ser på salg/køb af én aktie..
-                    new FindMatchingOrderHandler(sellOrder).start(); //TODO: Tråden bør enten gemmes et sted og holdes øje med, eller vi bør måske bruge en slags Thread Pool.
+                    new Broker.Broker.FindMatchingBuyOrderHandler(sellOrder).start(); //TODO: Tråden bør enten gemmes et sted og holdes øje med, eller vi bør måske bruge en slags Thread Pool.
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -59,11 +59,11 @@ public class Broker {
         }
     }
 
-    class FindMatchingOrderHandler extends Thread {
+    class FindMatchingBuyOrderHandler extends Thread {
 
         private SellMarketOrder sellOrder;
 
-        public FindMatchingOrderHandler(SellMarketOrder sellOrder) {
+        public FindMatchingBuyOrderHandler(SellMarketOrder sellOrder) {
             this.sellOrder = sellOrder;
         }
 
@@ -74,7 +74,7 @@ public class Broker {
                         new FormalField(String.class),
                         new ActualField(buyOrderString),
                         new ActualField(sellOrder.getStock()),
-                        new ActualField(1)));
+                        new ActualField(1))); //TODO: Igen tager vi kun én aktie ad gangen, indtil videre..
 
                 //Her finder vi den nuværende pris på aktien
                 StockInfo stockInfo = new StockInfo(stocks.get(new ActualField(sellOrder.getStock()), new FormalField(Integer.class)));
@@ -83,6 +83,27 @@ public class Broker {
                 transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), sellOrder.getQuantity());
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+    class TransactionsHandler extends Thread {
+        @Override
+        public void run() {
+            while(serviceRunning) {
+                try {
+                    Transaction t = new Transaction(transactions.get(
+                            new FormalField(String.class),
+                            new FormalField(String.class),
+                            new FormalField(String.class),
+                            new FormalField(Integer.class),
+                            new FormalField(Integer.class)
+                    ));
+                    //TODO: Skab forbindelse til bank og lav transaktionen.
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
