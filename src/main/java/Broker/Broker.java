@@ -35,30 +35,33 @@ public class Broker {
     //Denne tråds ansvar er at konstant tage imod ordre om at sælge bestemte aktier,
     // for derefter at finde en køber til disse.
     //TODO: For nemheds skyld tillader den indtil videre kun salg/køb af ÈN aktie ad gangen. Hvad skal vi gøre for at sælge/købe flere ad gangen?
-    Thread marketOrderHandler = new Thread(new Runnable() {
-        public void run() {
-            while(true) {
-                try {
-                    //Eksempel på tuple: ("Alice", "SELL", "AAPL", 2). ID/Navn, Order type, stock name, quantity
-                    SellMarketOrder sellOrder = new SellMarketOrder(marketOrders.get(
-                            new FormalField(String.class),
-                            new ActualField(sellOrderString),
-                            new FormalField(String.class),
-                            new ActualField(1))); //Dette gør, at vi pt. kun ser på salg/køb af én aktie..
-                    BuyMarketOrder buyOrder = new BuyMarketOrder(marketOrders.get(
-                            new FormalField(String.class),
-                            new ActualField(buyOrderString),
-                            new ActualField(sellOrder.getStock()),
-                            new ActualField(1)));
+    Thread marketOrderHandler = new Thread(() -> {
+        while(true) {
+            try {
+                //Eksempel på tuple: ("Alice", "SELL", "AAPL", 2). ID/Navn, Order type, stock name, quantity
+                SellMarketOrder sellOrder = new SellMarketOrder(marketOrders.get(
+                        new FormalField(String.class),
+                        new ActualField(sellOrderString),
+                        new FormalField(String.class),
+                        new ActualField(1))); //Dette gør, at vi pt. kun ser på salg/køb af én aktie..
+                new Thread(() -> {
+                    try {
+                        BuyMarketOrder buyOrder = new BuyMarketOrder(marketOrders.get(
+                                new FormalField(String.class),
+                                new ActualField(buyOrderString),
+                                new ActualField(sellOrder.getStock()),
+                                new ActualField(1)));
+                        //Her finder vi den nuværende pris på aktien
+                        StockInfo stockInfo = new StockInfo(stocks.get(new ActualField(sellOrder.getStock()), new FormalField(Integer.class)));
 
-                    //Her finder vi den nuværende pris på aktien
-                    StockInfo stockInfo = new StockInfo(stocks.get(new ActualField(sellOrder.getStock()), new FormalField(Integer.class)));
-
-                    //Her opretter vi en transaktion, der skal udføres – eventuel af en anden tråd?
-                    transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), sellOrder.getQuantity());
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                        //Her opretter vi en transaktion, der skal udføres – eventuel af en anden tråd?
+                        transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), sellOrder.getQuantity());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     });
