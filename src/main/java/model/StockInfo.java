@@ -1,4 +1,4 @@
-package Broker;
+package model;
 
 public class StockInfo {
 
