@@ -22,23 +22,11 @@ public abstract class MarketOrder {
         return orderedBy;
     }
 
-    public void setOrderedBy(String orderedBy) {
-        this.orderedBy = orderedBy;
-    }
-
     public String getStock() {
         return stock;
     }
 
-    public void setStock(String stock) {
-        this.stock = stock;
-    }
-
     public int getQuantity() {
         return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
     }
 }
