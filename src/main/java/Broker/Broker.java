@@ -6,9 +6,6 @@ import org.jspace.FormalField;
 import org.jspace.SequentialSpace;
 import org.jspace.SpaceRepository;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Broker {
 
     String hostName = "localhost";
