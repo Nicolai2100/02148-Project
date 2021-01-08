@@ -1,8 +1,7 @@
-package com.jSpaceProject.BeastProject.dao;
+package BeastProject.dao;
 
-import com.jSpaceProject.BeastProject.model.Person;
+import BeastProject.model.Person;
 
-import javax.swing.text.html.Option;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

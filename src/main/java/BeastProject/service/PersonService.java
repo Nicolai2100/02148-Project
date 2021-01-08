@@ -1,7 +1,7 @@
-package com.jSpaceProject.BeastProject.service;
+package BeastProject.service;
 
-import com.jSpaceProject.BeastProject.dao.PersonDao;
-import com.jSpaceProject.BeastProject.model.Person;
+import BeastProject.dao.PersonDao;
+import BeastProject.model.Person;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;

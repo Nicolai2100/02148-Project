@@ -1,4 +1,4 @@
-package com.jSpaceProject.BeastProject.model;
+package BeastProject.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotBlank;

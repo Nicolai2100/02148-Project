@@ -1,6 +1,6 @@
-package com.jSpaceProject.BeastProject.dao;
+package BeastProject.dao;
 
-import com.jSpaceProject.BeastProject.model.Person;
+import BeastProject.model.Person;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;

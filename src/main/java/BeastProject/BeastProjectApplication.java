@@ -1,4 +1,4 @@
-package com.jSpaceProject.BeastProject;
+package BeastProject;
 
 import org.jspace.FormalField;
 import org.jspace.SequentialSpace;

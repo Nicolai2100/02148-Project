@@ -1,7 +1,7 @@
-package com.jSpaceProject.BeastProject.api;
+package BeastProject.api;
 
-import com.jSpaceProject.BeastProject.model.Person;
-import com.jSpaceProject.BeastProject.service.PersonService;
+import BeastProject.model.Person;
+import BeastProject.service.PersonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;

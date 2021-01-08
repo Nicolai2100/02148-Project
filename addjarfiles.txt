@@ -1,0 +1,3 @@
+download .jar fil fra microsoft teams. Herefter gå til:
+(File > Project Structure > Project Settings > Modules > Dependencies > + > JARs or directories)
+Og så er den vidst klar :)
