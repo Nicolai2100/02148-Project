@@ -1,6 +1,6 @@
 package Broker;
 
-public class MarketOrder {
+public abstract class MarketOrder {
 
     private String orderedBy;
     private String stock; //Stock kan måske være en class for sig selv?
