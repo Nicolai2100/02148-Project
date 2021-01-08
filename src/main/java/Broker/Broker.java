@@ -18,14 +18,12 @@ public class Broker {
 
     SpaceRepository tradeRepo = new SpaceRepository();
 
-    RemoteSpace transactionsInBank = new RemoteSpace("blabla");
-
     static final String sellOrderString = "SELL";
     static final String buyOrderString = "BUY";
 
     boolean serviceRunning;
 
-    public Broker() throws IOException {
+    public Broker() {
         tradeRepo.add("tradeRequests", marketOrders);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
     }
