@@ -1,16 +1,15 @@
 package Broker;
 
 import model.StockInfo;
-import org.jspace.ActualField;
-import org.jspace.FormalField;
-import org.jspace.SequentialSpace;
-import org.jspace.SpaceRepository;
+import org.jspace.*;
+
+import java.io.IOException;
 
 public class Broker {
 
+    //Brokerens hostname og port
     String hostName = "localhost";
     int port = 9001;
-    boolean serviceRunning;
 
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
     SequentialSpace marketOrders = new SequentialSpace();
@@ -19,10 +18,14 @@ public class Broker {
 
     SpaceRepository tradeRepo = new SpaceRepository();
 
+    RemoteSpace transactionsInBank = new RemoteSpace("blabla");
+
     static final String sellOrderString = "SELL";
     static final String buyOrderString = "BUY";
 
-    public Broker() {
+    boolean serviceRunning;
+
+    public Broker() throws IOException {
         tradeRepo.add("tradeRequests", marketOrders);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
     }
@@ -35,6 +38,7 @@ public class Broker {
     private void startService() {
         serviceRunning = true;
         new MarketOrderHandler().start();
+        new TransactionsHandler().start();
     }
 
     //Denne tråds ansvar er at konstant tage imod ordre om at sælge bestemte aktier,
@@ -80,6 +84,7 @@ public class Broker {
                 StockInfo stockInfo = new StockInfo(stocks.get(new ActualField(sellOrder.getStock()), new FormalField(Integer.class)));
 
                 //Her opretter vi en transaktion, der skal udføres – eventuel af en anden tråd?
+                //TODO: "transaction spacet" bør nok ligge i en anden klasse – "banken". Så her skal det nok være et remote space, som der puttes i.
                 transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), sellOrder.getQuantity());
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -87,6 +92,7 @@ public class Broker {
         }
     }
 
+    //TODO: Denne handler skal nok hellere være i "banken" eller hvor det nu ellers er, at transaktioner skal udføres.. I hvert fald der hvor "transaction spacet" er.
     class TransactionsHandler extends Thread {
         @Override
         public void run() {
@@ -99,7 +105,9 @@ public class Broker {
                             new FormalField(Integer.class),
                             new FormalField(Integer.class)
                     ));
-                    //TODO: Skab forbindelse til bank og lav transaktionen.
+                    //TODO: Udfør transaktionen..
+
+                    transactions.put("Alice", "Bob", "AAPL", 110, 5); //Så skal et space kun til transactions.
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
