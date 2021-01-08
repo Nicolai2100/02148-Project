@@ -1,6 +1,6 @@
 package Broker;
 
-public class MarketOrder {
+public abstract class MarketOrder {
 
     private String orderedBy;
     private String stock; //Stock kan måske være en class for sig selv?
@@ -22,23 +22,11 @@ public class MarketOrder {
         return orderedBy;
     }
 
-    public void setOrderedBy(String orderedBy) {
-        this.orderedBy = orderedBy;
-    }
-
     public String getStock() {
         return stock;
     }
 
-    public void setStock(String stock) {
-        this.stock = stock;
-    }
-
     public int getQuantity() {
         return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
     }
 }
