@@ -2,16 +2,12 @@ package Broker;
 
 import org.jspace.*;
 
-/*user.(username,password) -> server.credentials(string,string) ;
-        server.(username(credentials),password(credentials)) -> identityProvider.credentials(string,string) ;
-        identityProvider.check(credentials) -> server.response(string) ;
-        if (response==ok)@server then
-        while notEnoughData()@user do {
-        user.("getData") -> server.t("getData")
-        server.(generateData()) -> user.data(string))
-        }
-        else
-        server.("bye") -> user.response("bye")*/
+import java.time.LocalDateTime;
+
+import static model.Requests.*;
+
+//The main responsibility of the Server-class is to provide a SpaceRepository and channels
+//which connect the client and the services
 public class Server {
     static SequentialSpace clientServer;
     static SequentialSpace serverClient;
@@ -40,19 +36,32 @@ public class Server {
         System.out.println("Running host on port 123");
 
         while (2 + 2 < 5) {
-            Object[] t = clientServer.get(new FormalField(String.class), new FormalField(String.class));
-            String username = t[0].toString();
-            String password = t[1].toString();
+            Object[] requestT = clientServer.get(new FormalField(String.class));
+            String request = requestT[0].toString();
 
-            System.out.println("Message received: " + t[0] + " " + t[1]);
+            requestResolver(request);
 
-            if (login(username, password)) {
-                System.out.println("Credentials \"ok\"");
-                serverClient.put("ok");
-            } else {
-                System.out.println("Error in credentials");
-                serverClient.put("ko");
+        }
+    }
+
+    static void requestResolver(String request) {
+        System.out.println("Client requested: " + request);
+        try {
+
+            switch (request) {
+                case LOGIN -> {
+                    Object[] t = clientServer.get(new FormalField(String.class), new FormalField(String.class));
+                    String username = t[0].toString();
+                    String password = t[1].toString();
+                    login(username, password);
+
+                }
+                case QUERY_STOCKS -> System.out.println("to be implemented");
+                default -> System.out.println("ERROR IN SWITCH STMT");
             }
+
+        } catch (InterruptedException e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -62,13 +71,13 @@ public class Server {
             System.out.println("Logging " + user + " in...");
             serverIdProvider.put(user, password);
             response = idProviderServer.get(new FormalField(String.class));
-            if (response[0].equals("ok")) {
-                System.out.println(user + " logged in");
-                serverClient.put("credentials", "ok");
-                return true;
 
+            if (response[0].equals(OK)) {
+                System.out.println(user + " logged in at " + LocalDateTime.now());
+                serverClient.put(OK);
             } else {
-                System.out.println("error");
+                System.out.println("Error in credentials");
+                serverClient.put(KO);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

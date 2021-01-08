@@ -4,15 +4,19 @@ import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 
-/*server.(username(credentials),password(credentials)) -> identityProvider.credentials(string,string) ;
-identityProvider.check(credentials) -> server.response(string) ;*/
+import static model.Requests.*;
+
 public class IdentityProvider {
 
     public static void main(String[] args) {
         HashMap<String, String> namePasswordMap = new HashMap<>();
         namePasswordMap.put("user", "password");
+        namePasswordMap.put("Alice", "password");
+        namePasswordMap.put("Bob", "password");
+        namePasswordMap.put("Charlie", "password");
 
         // connect to tuple space
         RemoteSpace serverIdProvider = null;
@@ -37,15 +41,15 @@ public class IdentityProvider {
 
                 if (namePasswordMap.containsKey(username)) {
                     if (namePasswordMap.get(username).equals(password)) {
-                        System.out.println("Credentials verified");
-                        idProviderServer.put("ok");
+                        System.out.println("Credentials verified at: " + LocalDateTime.now());
+                        idProviderServer.put(OK);
                     } else {
                         System.out.println("User submitted wrong password!");
-                        idProviderServer.put("ko");
+                        idProviderServer.put(KO);
                     }
                 } else {
                     System.out.println("No such user exists");
-                    idProviderServer.put("ko");
+                    idProviderServer.put(KO);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
