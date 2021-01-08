@@ -1,5 +1,6 @@
 package Broker;
 
+import model.StockInfo;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.SequentialSpace;
