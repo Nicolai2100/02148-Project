@@ -3,6 +3,8 @@ package Broker;
 import model.StockInfo;
 import org.jspace.*;
 
+import java.util.concurrent.*;
+
 public class Broker {
 
     //Brokerens hostname og port
@@ -18,9 +20,11 @@ public class Broker {
 
     static final String sellOrderFlag = "SELL";
     static final String buyOrderFlag = "BUY";
-    static final String allFlag = "ALL";
-    static final String mostFlag = "MOST";
+    static final String msgFlag = "MSG";
 
+    ExecutorService executor = Executors.newCachedThreadPool();
+    static final int standardTimeout = 5; //TODO: Consider what this should be, or make it possible to set it per order.
+    static final TimeUnit timeoutUnit = TimeUnit.SECONDS;
     boolean serviceRunning;
 
     public Broker() {
@@ -36,17 +40,16 @@ public class Broker {
     private void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 110);
-        new MarketSaleOrderHandler().start();
-        //new TransactionsHandler().start();
+        executor.submit(new MarketSaleOrderHandler());
     }
 
     /**
      * The responsibility of this class is to constantly handle new orders to sell shares of a stock.
      * This is done by starting a new thread that tries to find a matching buyer of the shares.
      */
-    class MarketSaleOrderHandler extends Thread {
+    class MarketSaleOrderHandler implements Callable<String> {
         @Override
-        public void run() {
+        public String call() throws Exception {
             while(serviceRunning) {
                 try {
                     SellMarketOrder sellOrder = new SellMarketOrder(marketOrders.get(
@@ -54,11 +57,12 @@ public class Broker {
                             new ActualField(sellOrderFlag), //Type of order, eg. SELL or BUY
                             new FormalField(String.class), //Name of the stock
                             new FormalField(Integer.class))); //Quantity
-                    new FindMatchingBuyOrderHandler(sellOrder).start(); //TODO: Tråden bør enten gemmes et sted og holdes øje med, eller vi bør måske bruge en slags Thread Pool.
+                    Future<String> future = executor.submit(new FindMatchingBuyOrderHandler(sellOrder));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
+            return "Handler for handling market sale orders stopped!";
         }
     }
 
@@ -66,7 +70,7 @@ public class Broker {
      * The responsibility of this class is to take a sale order as an argument, and then try
      * to find a matching buyer of the shares.
      */
-    class FindMatchingBuyOrderHandler extends Thread {
+    class FindMatchingBuyOrderHandler implements Callable<String> {
 
         private SellMarketOrder sellOrder;
 
@@ -74,14 +78,16 @@ public class Broker {
             this.sellOrder = sellOrder;
         }
 
+        Callable<BuyMarketOrder> findBuyerTask = () -> new BuyMarketOrder(marketOrders.get(
+                new FormalField(String.class),
+                new ActualField(buyOrderFlag),
+                new ActualField(sellOrder.getStock()),
+                new FormalField(Integer.class)));
+
         @Override
-        public void run() {
+        public String call() throws InterruptedException {
             try {
-                BuyMarketOrder buyOrder = new BuyMarketOrder(marketOrders.get(
-                        new FormalField(String.class),
-                        new ActualField(buyOrderFlag),
-                        new ActualField(sellOrder.getStock()),
-                        new FormalField(Integer.class)));
+                BuyMarketOrder buyOrder = executor.submit(findBuyerTask).get(standardTimeout, timeoutUnit);
 
                 //Scenarios:
                 //1. The seller wants to sell more than the buyer. The buyer get to buy all the shares he/she wants. The seller makes a new order.
@@ -94,7 +100,7 @@ public class Broker {
 
                 //We find the current stock price
                 Object[] res = stocks.queryp(new ActualField(sellOrder.getStock()), new FormalField(Integer.class));
-                if (res == null) return; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
+                if (res == null) return null; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
                 StockInfo stockInfo = new StockInfo(res);
 
                 //Here we send a message (to the bank?) to complete the transaction.
@@ -118,7 +124,12 @@ public class Broker {
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                marketOrders.put(sellOrder.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
             }
+            return null;
         }
     }
 
