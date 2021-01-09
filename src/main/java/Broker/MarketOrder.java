@@ -25,6 +25,7 @@ public class MarketOrder {
 
     public MarketOrder(Object[] arr) {
         orderedBy = (String) arr[0];
+        orderType = (String) arr[1];
         stock = (String) arr[2];
         quantity = (Integer) arr[3];
     }

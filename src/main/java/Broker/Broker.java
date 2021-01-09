@@ -13,6 +13,7 @@ public class Broker {
 
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
     SequentialSpace marketOrders = new SequentialSpace();
+    SequentialSpace marketOrdersInProcess = new SequentialSpace();
     SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
     SequentialSpace transactions = new SequentialSpace();
 
@@ -40,24 +41,30 @@ public class Broker {
     private void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 110);
-        executor.submit(new MarketSaleOrderHandler());
+        executor.submit(new Broker.Broker.MarketOrderHandler());
     }
 
     /**
      * The responsibility of this class is to constantly handle new orders to sell shares of a stock.
      * This is done by starting a new thread that tries to find a matching buyer of the shares.
      */
-    class MarketSaleOrderHandler implements Callable<String> {
+    class MarketOrderHandler implements Callable<String> {
         @Override
         public String call() throws Exception {
             while(serviceRunning) {
                 try {
-                    SellMarketOrder sellOrder = new SellMarketOrder(marketOrders.get(
+                    MarketOrder order = new MarketOrder(marketOrders.get(
                             new FormalField(String.class), //Name of the client who made the order
-                            new ActualField(sellOrderFlag), //Type of order, eg. SELL or BUY
+                            new FormalField(String.class), //Type of order, eg. SELL or BUY
                             new FormalField(String.class), //Name of the stock
                             new FormalField(Integer.class))); //Quantity
-                    Future<String> future = executor.submit(new FindMatchingBuyOrderHandler(sellOrder));
+                    marketOrdersInProcess.put(
+                            order.getOrderedBy(),
+                            order.getOrderType(),
+                            order.getStock(),
+                            order.getQuantity()
+                    );
+                    Future<String> future = executor.submit(new FindMatchingBuyOrderHandler(order));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -72,22 +79,24 @@ public class Broker {
      */
     class FindMatchingBuyOrderHandler implements Callable<String> {
 
-        private SellMarketOrder sellOrder;
+        private MarketOrder order;
+        String matchingOrderType;
 
-        public FindMatchingBuyOrderHandler(SellMarketOrder sellOrder) {
-            this.sellOrder = sellOrder;
+        public FindMatchingBuyOrderHandler(MarketOrder order) {
+            this.order = order;
+            matchingOrderType = order.getOrderType().equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
         }
 
-        Callable<BuyMarketOrder> findBuyerTask = () -> new BuyMarketOrder(marketOrders.get(
+        Callable<BuyMarketOrder> findMatchTask = () -> new BuyMarketOrder(marketOrdersInProcess.get(
                 new FormalField(String.class),
-                new ActualField(buyOrderFlag),
-                new ActualField(sellOrder.getStock()),
+                new ActualField(matchingOrderType),
+                new ActualField(order.getStock()),
                 new FormalField(Integer.class)));
 
         @Override
         public String call() throws InterruptedException {
             try {
-                BuyMarketOrder buyOrder = executor.submit(findBuyerTask).get(standardTimeout, timeoutUnit);
+                MarketOrder matchOrder = executor.submit(findMatchTask).get(standardTimeout, timeoutUnit);
 
                 //Scenarios:
                 //1. The seller wants to sell more than the buyer. The buyer get to buy all the shares he/she wants. The seller makes a new order.
@@ -96,38 +105,38 @@ public class Broker {
 
                 //We choose the smallest of the two quantities to find the max number of shares
                 //that the two clients may trade.
-                int min = Math.min(sellOrder.getQuantity(), buyOrder.getQuantity());
+                int min = Math.min(order.getQuantity(), matchOrder.getQuantity());
 
                 //We find the current stock price
-                Object[] res = stocks.queryp(new ActualField(sellOrder.getStock()), new FormalField(Integer.class));
+                Object[] res = stocks.queryp(new ActualField(order.getStock()), new FormalField(Integer.class));
                 if (res == null) return null; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
                 StockInfo stockInfo = new StockInfo(res);
 
                 //Here we send a message (to the bank?) to complete the transaction.
-                transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
-                System.out.printf("%s sold %d shares of %s to %s.%n", sellOrder.getOrderedBy(), min, sellOrder.getStock(), buyOrder.getOrderedBy());
+                transactions.put(order.getOrderedBy(), matchOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
+                System.out.printf("%s sold %d shares of %s to %s.%n", order.getOrderedBy(), min, order.getStock(), matchOrder.getOrderedBy());
 
-                if (min < sellOrder.getQuantity()) {
-                    System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", sellOrder.getOrderedBy(), sellOrder.getQuantity() - min, sellOrder.getStock());
+                if (min < order.getQuantity()) {
+                    System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
                     marketOrders.put(
-                            sellOrder.getOrderedBy(),
+                            order.getOrderedBy(),
                             sellOrderFlag,
-                            sellOrder.getStock(),
-                            sellOrder.getQuantity() - min);
-                } else if (min < buyOrder.getQuantity()) {
-                    System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", buyOrder.getOrderedBy(), buyOrder.getQuantity() - min, buyOrder.getStock());
+                            order.getStock(),
+                            order.getQuantity() - min);
+                } else if (min < matchOrder.getQuantity()) {
+                    System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
                     marketOrders.put(
-                            buyOrder.getOrderedBy(),
+                            matchOrder.getOrderedBy(),
                             buyOrderFlag,
-                            buyOrder.getStock(),
-                            buyOrder.getQuantity() - min);
+                            matchOrder.getStock(),
+                            matchOrder.getQuantity() - min);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
                 e.printStackTrace();
             } catch (TimeoutException e) {
-                marketOrders.put(sellOrder.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
+                marketOrders.put(order.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
             }
             return null;
         }
