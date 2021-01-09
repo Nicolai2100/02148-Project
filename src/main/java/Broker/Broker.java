@@ -94,7 +94,7 @@ public class Broker {
 
                 //We find the current stock price
                 Object[] res = stocks.queryp(new ActualField(sellOrder.getStock()), new FormalField(Integer.class));
-                if (res == null) return;
+                if (res == null) return; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
                 StockInfo stockInfo = new StockInfo(res);
 
                 //Here we send a message (to the bank?) to complete the transaction.
