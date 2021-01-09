@@ -10,9 +10,7 @@ public class Broker {
     int port = 9001;
 
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
-    SequentialSpace newMarketOrders = new SequentialSpace();
-    SequentialSpace marketBuyOrders = new SequentialSpace();
-    SequentialSpace marketSellOrders = new SequentialSpace();
+    SequentialSpace marketOrders = new SequentialSpace();
     SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
     SequentialSpace transactions = new SequentialSpace();
 
@@ -26,7 +24,7 @@ public class Broker {
     boolean serviceRunning;
 
     public Broker() {
-        tradeRepo.add("tradeRequests", newMarketOrders);
+        tradeRepo.add("tradeRequests", marketOrders);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
     }
 
@@ -37,18 +35,20 @@ public class Broker {
 
     private void startService() {
         serviceRunning = true;
-        new Broker.Broker.MarketOrderHandler().start();
+        new Broker.Broker.MarketSaleOrderHandler().start();
         new TransactionsHandler().start();
     }
 
-    //Denne tråds ansvar er at konstant tage imod ordre om at sælge bestemte aktier,
-    // for derefter at finde en køber til disse.
-    class MarketOrderHandler extends Thread {
+    /**
+     * The responsibility of this class is to constantly handle new orders to sell shares of a stock.
+     * This is done by starting a new thread that tries to find a matching buyer of the shares.
+     */
+    class MarketSaleOrderHandler extends Thread {
         @Override
         public void run() {
             while(serviceRunning) {
                 try {
-                    SellMarketOrder sellOrder = new SellMarketOrder(marketSellOrders.get(
+                    SellMarketOrder sellOrder = new SellMarketOrder(marketOrders.get(
                             new FormalField(String.class), //Name of the client who made the order
                             new ActualField(sellOrderFlag), //Type of order, eg. SELL or BUY
                             new FormalField(String.class), //Name of the stock
@@ -61,6 +61,10 @@ public class Broker {
         }
     }
 
+    /**
+     * The responsibility of this class is to take a sale order as an argument, and then try
+     * to find a matching buyer of the shares.
+     */
     class FindMatchingBuyOrderHandler extends Thread {
 
         private SellMarketOrder sellOrder;
@@ -72,7 +76,7 @@ public class Broker {
         @Override
         public void run() {
             try {
-                BuyMarketOrder buyOrder = new BuyMarketOrder(newMarketOrders.get(
+                BuyMarketOrder buyOrder = new BuyMarketOrder(marketOrders.get(
                         new FormalField(String.class),
                         new ActualField(buyOrderFlag),
                         new ActualField(sellOrder.getStock()),
@@ -94,14 +98,14 @@ public class Broker {
                 transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
 
                 if (min < sellOrder.getQuantity()) {
-                    newMarketOrders.put(new MarketOrder(
+                    marketOrders.put(new MarketOrder(
                             sellOrder.getOrderedBy(),
                             sellOrderFlag,
                             sellOrder.getStock(),
                             sellOrder.getQuantity() - min)
                             .toArray());
                 } else if (min < buyOrder.getQuantity()) {
-                    newMarketOrders.put(new MarketOrder(
+                    marketOrders.put(new MarketOrder(
                             buyOrder.getOrderedBy(),
                             buyOrderFlag,
                             buyOrder.getStock(),
