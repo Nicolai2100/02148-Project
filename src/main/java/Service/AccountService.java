@@ -59,6 +59,7 @@ public class AccountService {
     }
 
     public static void requestDecider(String request, String username, HashMap<String, HashMap> accounts) {
+        /*
         switch (request) {
             case QUERY_STOCKS -> {
                 System.out.println("Retrieving account stocks...");
@@ -78,6 +79,7 @@ public class AccountService {
             case INSERT_STOCKS -> System.out.println("to be implemented!");
             default -> System.out.println("ERROR IN SWITCH STMT");
         }
+         */
     }
 
     public static ArrayList<StockInfo> queryUserStocks(HashMap<String, HashMap> accounts, String username) {

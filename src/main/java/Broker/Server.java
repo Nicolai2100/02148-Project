@@ -46,8 +46,8 @@ public class Server {
 
     static void requestResolver(String request) {
         System.out.println("Client requested: " + request);
+        /*
         try {
-
             switch (request) {
                 case LOGIN -> {
                     Object[] t = clientServer.get(new FormalField(String.class), new FormalField(String.class));
@@ -62,7 +62,7 @@ public class Server {
 
         } catch (InterruptedException e) {
             System.out.println(e.getMessage());
-        }
+        }*/
     }
 
     static boolean login(String user, String password) {

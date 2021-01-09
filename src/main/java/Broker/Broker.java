@@ -35,7 +35,7 @@ public class Broker {
 
     private void startService() throws InterruptedException {
         serviceRunning = true;
-        stocks.put("AAPL", 110);
+        stocks.put("AAPL", 110); //TODO: bare til test indtil videre
         new MarketSaleOrderHandler().start();
         //new TransactionsHandler().start();
     }
