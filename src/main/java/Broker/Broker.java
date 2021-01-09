@@ -3,8 +3,6 @@ package Broker;
 import model.StockInfo;
 import org.jspace.*;
 
-import java.io.IOException;
-
 public class Broker {
 
     //Brokerens hostname og port
@@ -12,19 +10,23 @@ public class Broker {
     int port = 9001;
 
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
-    SequentialSpace marketOrders = new SequentialSpace();
+    SequentialSpace newMarketOrders = new SequentialSpace();
+    SequentialSpace marketBuyOrders = new SequentialSpace();
+    SequentialSpace marketSellOrders = new SequentialSpace();
     SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
     SequentialSpace transactions = new SequentialSpace();
 
     SpaceRepository tradeRepo = new SpaceRepository();
 
-    static final String sellOrderString = "SELL";
-    static final String buyOrderString = "BUY";
+    static final String sellOrderFlag = "SELL";
+    static final String buyOrderFlag = "BUY";
+    static final String allFlag = "ALL";
+    static final String mostFlag = "MOST";
 
     boolean serviceRunning;
 
     public Broker() {
-        tradeRepo.add("tradeRequests", marketOrders);
+        tradeRepo.add("tradeRequests", newMarketOrders);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
     }
 
@@ -35,25 +37,23 @@ public class Broker {
 
     private void startService() {
         serviceRunning = true;
-        new MarketOrderHandler().start();
+        new Broker.Broker.MarketOrderHandler().start();
         new TransactionsHandler().start();
     }
 
     //Denne tråds ansvar er at konstant tage imod ordre om at sælge bestemte aktier,
     // for derefter at finde en køber til disse.
-    //TODO: For nemheds skyld tillader den indtil videre kun salg/køb af ÈN aktie ad gangen. Hvad skal vi gøre for at sælge/købe flere ad gangen?
     class MarketOrderHandler extends Thread {
         @Override
         public void run() {
             while(serviceRunning) {
                 try {
-                    //Eksempel på tuple: ("Alice", "SELL", "AAPL", 2). ID/Navn, Order type, stock name, quantity
-                    SellMarketOrder sellOrder = new SellMarketOrder(marketOrders.get(
-                            new FormalField(String.class),
-                            new ActualField(sellOrderString),
-                            new FormalField(String.class),
-                            new ActualField(1))); //Dette gør, at vi pt. kun ser på salg/køb af én aktie..
-                    new Broker.Broker.FindMatchingBuyOrderHandler(sellOrder).start(); //TODO: Tråden bør enten gemmes et sted og holdes øje med, eller vi bør måske bruge en slags Thread Pool.
+                    SellMarketOrder sellOrder = new SellMarketOrder(marketSellOrders.get(
+                            new FormalField(String.class), //Name of the client who made the order
+                            new ActualField(sellOrderFlag), //Type of order, eg. SELL or BUY
+                            new FormalField(String.class), //Name of the stock
+                            new FormalField(Integer.class))); //Quantity
+                    new FindMatchingBuyOrderHandler(sellOrder).start(); //TODO: Tråden bør enten gemmes et sted og holdes øje med, eller vi bør måske bruge en slags Thread Pool.
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -72,18 +72,42 @@ public class Broker {
         @Override
         public void run() {
             try {
-                BuyMarketOrder buyOrder = new BuyMarketOrder(marketOrders.get(
+                BuyMarketOrder buyOrder = new BuyMarketOrder(newMarketOrders.get(
                         new FormalField(String.class),
-                        new ActualField(buyOrderString),
+                        new ActualField(buyOrderFlag),
                         new ActualField(sellOrder.getStock()),
-                        new ActualField(1))); //TODO: Igen tager vi kun én aktie ad gangen, indtil videre..
+                        new FormalField(Integer.class)));
 
-                //Her finder vi den nuværende pris på aktien
+                //Scenarios:
+                //1. The seller wants to sell more than the buyer. The buyer get to buy all the shares he/she wants. The seller makes a new order.
+                //2. The buyer wants to buy more than the seller. The seller sells everything. The buyer makes a new order.
+                //3. Seller and buyer wants to buy/sell the same amount.
+
+                //We choose the smallest of the two quantities to find the max number of shares
+                //that the two clients may trade.
+                int min = Math.min(sellOrder.getQuantity(), buyOrder.getQuantity());
+
+                //We find the current stock price
                 StockInfo stockInfo = new StockInfo(stocks.get(new ActualField(sellOrder.getStock()), new FormalField(Integer.class)));
 
-                //Her opretter vi en transaktion, der skal udføres – eventuel af en anden tråd?
-                //TODO: "transaction spacet" bør nok ligge i en anden klasse – "banken". Så her skal det nok være et remote space, som der puttes i.
-                transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), sellOrder.getQuantity());
+                //Here we send a message (to the bank?) to complete the transaction.
+                transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
+
+                if (min < sellOrder.getQuantity()) {
+                    newMarketOrders.put(new MarketOrder(
+                            sellOrder.getOrderedBy(),
+                            sellOrderFlag,
+                            sellOrder.getStock(),
+                            sellOrder.getQuantity() - min)
+                            .toArray());
+                } else if (min < buyOrder.getQuantity()) {
+                    newMarketOrders.put(new MarketOrder(
+                            buyOrder.getOrderedBy(),
+                            buyOrderFlag,
+                            buyOrder.getStock(),
+                            buyOrder.getQuantity() - min)
+                            .toArray());
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -104,8 +128,6 @@ public class Broker {
                             new FormalField(Integer.class)
                     ));
                     //TODO: Udfør transaktionen..
-
-                    transactions.put("Alice", "Bob", "AAPL", 110, 5); //Så skal et space kun til transactions.
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
