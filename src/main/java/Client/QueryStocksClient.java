@@ -6,7 +6,10 @@ import org.jspace.RemoteSpace;
 import java.io.IOException;
 import java.util.Scanner;
 
-public class Client {
+import static model.Requests.*;
+
+
+public class QueryStocksClient {
 
     public static void main(String[] args) {
         // parse arguments
@@ -33,33 +36,39 @@ public class Client {
 
         String message = "";
         do {
-            System.out.println("Press 1 to login");
-            System.out.println("Press 2 to get more data");
+            System.out.println("Press 1 to get stocks data");
 
             message = s.nextLine();
             try {
                 if (message.equalsIgnoreCase("1")) {
-                    System.out.println("...sending credentials");
-                    clientServer.put(username, password);
+                    System.out.println("...sending request");
+                    clientServer.put(QUERY_STOCKS, username);
 
-                    //Object[] data = serverClient.get(new ActualField("data"), new FormalField(String.class));
-                    Object[] data = serverClient.get(new FormalField(String.class), new FormalField(String.class));
-                    System.out.println(data[0]);
+                    System.out.println("fetching data");
+                    Object[] responseT = serverClient.get(new FormalField(String.class));
+                    String responseStr = responseT[0].toString();
 
-                } else if (message.equalsIgnoreCase("2")) {
-                    System.out.println("fetcing data");
-                    //Object[] data = serverClient.get(new ActualField("data"), new FormalField(String.class));
-                    Object[] data = serverClient.get(new FormalField(String.class), new FormalField(String.class));
-                    System.out.println(data[0]);
+                    if (responseStr.equals(OK)) {
+
+                        responseT = serverClient.get(new FormalField(String.class), new FormalField(String.class), new FormalField(Integer.class));
+                        responseStr = responseT[0].toString();
+                        String stockName = responseT[1].toString();
+                        int stockPrice = Integer.parseInt(responseT[2].toString());
+
+                        while (responseStr.equals(MORE_DATA)) {
+                            System.out.println(stockName);
+                        }
+                    } else
+                        System.out.println("kaos reign!");
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         } while (!message.equalsIgnoreCase("exit"));
 
-        try{
+        try {
             clientServer.put("Bye");
-        }catch (Exception e){
+        } catch (Exception e) {
             System.out.println(e.getMessage());
         }
         System.exit(7);
