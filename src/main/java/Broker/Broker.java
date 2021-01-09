@@ -35,7 +35,7 @@ public class Broker {
 
     private void startService() {
         serviceRunning = true;
-        new Broker.Broker.MarketSaleOrderHandler().start();
+        new MarketSaleOrderHandler().start();
         new TransactionsHandler().start();
     }
 
@@ -96,8 +96,10 @@ public class Broker {
 
                 //Here we send a message (to the bank?) to complete the transaction.
                 transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
+                System.out.printf("%s sold %d shares of %s to %s.", sellOrder.getOrderedBy(), min, sellOrder.getStock(), buyOrder.getOrderedBy());
 
                 if (min < sellOrder.getQuantity()) {
+                    System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.", sellOrder.getOrderedBy(), sellOrder.getQuantity() - min, sellOrder.getStock());
                     marketOrders.put(new MarketOrder(
                             sellOrder.getOrderedBy(),
                             sellOrderFlag,
@@ -105,6 +107,7 @@ public class Broker {
                             sellOrder.getQuantity() - min)
                             .toArray());
                 } else if (min < buyOrder.getQuantity()) {
+                    System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.", buyOrder.getOrderedBy(), buyOrder.getQuantity() - min, buyOrder.getStock());
                     marketOrders.put(new MarketOrder(
                             buyOrder.getOrderedBy(),
                             buyOrderFlag,
