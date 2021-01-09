@@ -7,5 +7,6 @@ public class BuyMarketOrder extends MarketOrder {
 
     public BuyMarketOrder(Object[] arr) {
         super(arr);
+        this.orderType = "BUY";
     }
 }

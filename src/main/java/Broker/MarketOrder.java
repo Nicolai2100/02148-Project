@@ -2,7 +2,7 @@ package Broker;
 
 public class MarketOrder {
 
-    private String orderType; //BUT or SELL TODO: Skal måske være et enum, eller gøres på anden vis?
+    protected String orderType; //BUT or SELL TODO: Skal måske være et enum, eller gøres på anden vis?
     private String orderedBy;
     private String stock; //Stock kan måske være en class for sig selv?
     private int quantity; //TODO: Vi kan eventuelt starte med, at man kun kan købe én aktie ad gangen, for et gøre det enklere..

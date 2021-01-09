@@ -24,19 +24,20 @@ public class Broker {
     boolean serviceRunning;
 
     public Broker() {
-        tradeRepo.add("tradeRequests", marketOrders);
+        tradeRepo.add("marketOrders", marketOrders);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         Broker broker = new Broker();
         broker.startService();
     }
 
-    private void startService() {
+    private void startService() throws InterruptedException {
         serviceRunning = true;
+        stocks.put("AAPL", 110);
         new MarketSaleOrderHandler().start();
-        new TransactionsHandler().start();
+        //new TransactionsHandler().start();
     }
 
     /**
@@ -92,28 +93,28 @@ public class Broker {
                 int min = Math.min(sellOrder.getQuantity(), buyOrder.getQuantity());
 
                 //We find the current stock price
-                StockInfo stockInfo = new StockInfo(stocks.get(new ActualField(sellOrder.getStock()), new FormalField(Integer.class)));
+                Object[] res = stocks.queryp(new ActualField(sellOrder.getStock()), new FormalField(Integer.class));
+                if (res == null) return;
+                StockInfo stockInfo = new StockInfo(res);
 
                 //Here we send a message (to the bank?) to complete the transaction.
                 transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
-                System.out.printf("%s sold %d shares of %s to %s.", sellOrder.getOrderedBy(), min, sellOrder.getStock(), buyOrder.getOrderedBy());
+                System.out.printf("%s sold %d shares of %s to %s.%n", sellOrder.getOrderedBy(), min, sellOrder.getStock(), buyOrder.getOrderedBy());
 
                 if (min < sellOrder.getQuantity()) {
-                    System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.", sellOrder.getOrderedBy(), sellOrder.getQuantity() - min, sellOrder.getStock());
-                    marketOrders.put(new MarketOrder(
+                    System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", sellOrder.getOrderedBy(), sellOrder.getQuantity() - min, sellOrder.getStock());
+                    marketOrders.put(
                             sellOrder.getOrderedBy(),
                             sellOrderFlag,
                             sellOrder.getStock(),
-                            sellOrder.getQuantity() - min)
-                            .toArray());
+                            sellOrder.getQuantity() - min);
                 } else if (min < buyOrder.getQuantity()) {
-                    System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.", buyOrder.getOrderedBy(), buyOrder.getQuantity() - min, buyOrder.getStock());
-                    marketOrders.put(new MarketOrder(
+                    System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", buyOrder.getOrderedBy(), buyOrder.getQuantity() - min, buyOrder.getStock());
+                    marketOrders.put(
                             buyOrder.getOrderedBy(),
                             buyOrderFlag,
                             buyOrder.getStock(),
-                            buyOrder.getQuantity() - min)
-                            .toArray());
+                            buyOrder.getQuantity() - min);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();

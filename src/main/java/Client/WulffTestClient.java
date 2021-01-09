@@ -18,11 +18,11 @@ public class WulffTestClient {
     RemoteSpace marketOrders;
 
     public WulffTestClient() throws IOException {
-        marketOrders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/trades?keep");
+        marketOrders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/marketOrders?keep");
     }
 
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws Exception {
+        new WulffTestClient().start();
     }
 
     void start() throws InterruptedException {
@@ -30,7 +30,7 @@ public class WulffTestClient {
         clientID = scanner.nextLine();
         while(true) {
             String[] args = scanner.nextLine().toUpperCase().split(" ");
-            System.out.printf("%s: Placed order to %s %s shares of %s.", clientID, args[0], args[2], args[1]);
+            System.out.printf("%s: Placed order to %s %s shares of %s. %n", clientID, args[0], args[2], args[1]);
             marketOrders.put(clientID, args[0], args[1], Integer.parseInt(args[2]));
         }
     }
