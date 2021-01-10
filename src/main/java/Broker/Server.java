@@ -9,6 +9,8 @@ import static model.Requests.*;
 //The main responsibility of the Server-class is to provide a SpaceRepository and channels
 //which connect the client and the services
 public class Server {
+    static SpaceRepository repository = new SpaceRepository();
+
     static SequentialSpace clientServer;
     static SequentialSpace serverClient;
     static SequentialSpace serverIdProvider;
@@ -17,7 +19,7 @@ public class Server {
     static SequentialSpace serverAccountService;
 
     public static void main(String[] args) throws InterruptedException {
-        SpaceRepository repository = new SpaceRepository();
+        repository = new SpaceRepository();
 
         // Create a local space for each channel
         clientServer = new QueueSpace();
@@ -44,23 +46,21 @@ public class Server {
 
         //Main loop where requests are resolved
         while (2 + 2 < 5) {
-            Object[] requestT = clientServer.get(new FormalField(String.class));
-            String request = requestT[0].toString();
+            Object[] requestT = clientServer.get(new FormalField(String.class), new FormalField(String.class));
+            String username = requestT[0].toString();
+            String request = requestT[1].toString();
 
-            requestResolver(request);
+            requestResolver(request, username);
         }
     }
 
-    static void requestResolver(String request) {
+    static void requestResolver(String request, String username) {
         System.out.println("Client requested: " + request);
-        /*
+
         try {
             switch (request) {
                 case LOGIN -> {
-                    Object[] t = clientServer.get(new FormalField(String.class), new FormalField(String.class));
-                    String username = t[0].toString();
-                    String password = t[1].toString();
-                    login(username, password);
+                    login(username);
 
                 }
                 case QUERY_STOCKS -> queryStocks();
@@ -69,7 +69,7 @@ public class Server {
 
         } catch (InterruptedException e) {
             System.out.println(e.getMessage());
-        }*/
+        }
     }
 
 
@@ -79,7 +79,7 @@ public class Server {
         String query = request[0].toString();
         String username = request[1].toString();
 
-        System.out.println(query+ username);
+        System.out.println(query + username);
 
         //Forward request to account service
         System.out.println("Sending request...");
@@ -90,9 +90,7 @@ public class Server {
 
         System.out.println("Request: " + responseStr);
 
-        if (responseStr.equals("ok")) {
-        }
-            if (responseStr.equals(OK)) {
+        if (responseStr.equals(OK)) {
             do {
                 System.out.println("Fetching data...");
 
@@ -122,19 +120,46 @@ public class Server {
         }
     }
 
-    static boolean login(String user, String password) {
+    static boolean login(String username) throws InterruptedException {
+        Object[] t = clientServer.get(new FormalField(String.class), new FormalField(String.class));
+        //String username = t[0].toString();
+        String password = t[1].toString();
+
         Object[] response = null;
         try {
-            System.out.println("Logging " + user + " in...");
-            serverIdProvider.put(user, password);
+            System.out.println("Logging " + username + " in...");
+            serverIdProvider.put(username, password);
             response = idProviderServer.get(new FormalField(String.class));
 
+            // todo navnet på kanal kan gøres tilfældig
+            //  eller være id i stedet for navn
+            String userToServerName = username + "server";
+            String serverToUserName = "server" + username;
+
+            Space userServer = new QueueSpace();
+            Space serverUser = new QueueSpace();
+
+            try{
+                repository.add(serverToUserName, serverUser);
+                repository.add(userToServerName, userServer);
+                System.out.println("Created private channels...");
+                System.out.println(userToServerName);
+                System.out.println(serverToUserName);
+            }catch (Exception e){
+                System.out.println(e.getMessage());
+            }
+
+            // todo navnet på kanal kan gøres tilfældig
+            //serverUser.put(username, serverToUserName);
+            //userServer.put(username, userToServerName);
+
             if (response[0].equals(OK)) {
-                System.out.println(user + " logged in at " + LocalDateTime.now());
-                serverClient.put(OK);
+                System.out.println(username + " logged in at " + LocalDateTime.now());
+                serverUser.put(OK);
+
             } else {
                 System.out.println("Error in credentials");
-                serverClient.put(KO);
+                serverUser.put(KO);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

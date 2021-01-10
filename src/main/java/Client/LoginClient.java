@@ -1,5 +1,6 @@
 package Client;
 
+import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 
@@ -11,11 +12,13 @@ import static model.Requests.*;
 public class LoginClient {
     static RemoteSpace serverClient = null;
     static RemoteSpace clientServer = null;
+    static RemoteSpace userServer = null;
+    static RemoteSpace serverUser = null;
     static String username = "Alice";
     static String password = "password";
 
     public static void main(String[] args) {
-        boolean loggedIn = true;
+        boolean loggedIn = false;
 
         // parse arguments
         Scanner s = new Scanner(System.in);
@@ -40,17 +43,32 @@ public class LoginClient {
                 System.out.println("Enter credentials to continue");
 
                 System.out.println("Enter username: ");
-                username = s.nextLine();
+                username = "Alice";
+                //username = s.nextLine();
                 System.out.println("Enter password: ");
-                password =  s.nextLine();
+                //password =  s.nextLine();
+                password = "password";
 
                 try {
                     System.out.println("...sending credentials");
-                    clientServer.put(LOGIN);
+                    clientServer.put(username, LOGIN);
                     clientServer.put(username, password);
 
-                    Object[] response = serverClient.get(new FormalField(String.class));
-                    String responseStr = response[0].toString();
+                    //Object[] response = serverClient.get(new ActualField(username), new FormalField(String.class));
+
+                    try{
+                        String serUser = String.format("tcp://localhost:123/server%s?keep", username);
+                        String userSer = String.format("tcp://localhost:123/%sserver?keep", username);
+                        userServer = new RemoteSpace(userSer);
+                        serverUser = new RemoteSpace(serUser);
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                    System.out.println(serverUser.getUri());
+                    System.out.println(userServer.getUri());
+                    Object[] serverResponse = serverUser.get(new FormalField(String.class));
+
+                    String responseStr = serverResponse[0].toString();
                     System.out.println("Login - " + responseStr);
 
                     if (responseStr.equals(OK)) {
