@@ -9,24 +9,22 @@ import org.jspace.FormalField;
 import org.jspace.SequentialSpace;
 import org.jspace.SpaceRepository;
 
-import java.util.Calendar;
 import java.util.Date;
 
 public class APIcalls {
     private static final String apikey = "9ef62d9bdcmshfef91e2b707c69cp1724fejsncd7e1e4f3845";
     private static final String apihost = "apidojo-yahoo-finance-v1.p.rapidapi.com";
-    // The stockRepository has tuples containing of handle + / + region in the identifier and then the sequentialspace in the 2nd field.
+    // The stockRepository has tuples containing of handle/region in the identifier and then the sequentialspace in the 2nd field.
     private static SpaceRepository stockRepository;
 
     public APIcalls () { stockRepository = new SpaceRepository(); }
 
     public static void main(String[] args) {
         APIcalls apicalls = new APIcalls();
-        apicalls.findStock("AMRN","US");
-        //apicalls.findStock("TSLA","US");
-        SequentialSpace sequentialSpace = (SequentialSpace) getStockRepository().get("AMRN/US");
-        StockModel stock = apicalls.findLatestStockInfo(sequentialSpace);
-        System.out.println(stock.getDate());
+         apicalls.findStock("AMRN","US");
+        // apicalls.findStock("TSLA","US");
+         SequentialSpace sequentialSpace = (SequentialSpace) getStockRepository().get("AMRN/US");
+         StockModel stock = apicalls.findLatestStockInfo(sequentialSpace);
     }
 
     /**
@@ -34,7 +32,7 @@ public class APIcalls {
      * that days high, low and things such as that.
      * The api will return a datatype of either double or integer depending on the amount of zeros.
      * We therefore need to check if the type is integer, and if so cast it to a double...
-     * @param region the region in which the company is, f.eks TSLA is in the US
+     * @param region the region in which the company is, for example TSLA is in the US
      * @param handle The handle for the company, it is the abbreviation which for tesla is TSLA for example.
      */
     public SequentialSpace gethistoricaldata(String handle, String region) {
@@ -53,7 +51,7 @@ public class APIcalls {
                 // A new entry will be added to the HttpResponse with different fields.
                 if (jsonObject1.has("volume")) {
                 // It has to be converted to milli seconds.
-                // If you multiply it with a 1000 earlier it overflows, it has to be done in the setTime function.
+                // If you multiply it with a 1000 earlier it overflowcalendars, it has to be done in the setTime function.
                 long time = ((int) jsonObject1.get("date"));
                 Date date1 = new Date();
                 date1.setTime(1000 * time);
