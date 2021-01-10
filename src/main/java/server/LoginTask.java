@@ -83,8 +83,8 @@ public class LoginTask implements Callable<String> {
                 System.out.println("Error in credentials");
 
                 //todo - hjælp hvorfor virker det ikke her?
-                //serverUser.put(KO);
-                serverClient.put(username, KO);
+                serverUser.put(KO);
+                //serverClient.put(username, KO);
                 Server.logout(username);
             }
         } catch (InterruptedException e) {
