@@ -1,7 +1,8 @@
-package model;
+package shared;
 
 public class Requests {
     public static final String LOGIN = "login";
+    public static final String LOG_OUT = "bye";
     public static final String SELL = "sell";
     public static final String BUY = "buy";
     public static final String QUERY_STOCKS = "query";

@@ -6,100 +6,145 @@ import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static model.Requests.*;
-import static model.StockNames.*;
+import static shared.Requests.*;
+import static shared.StockNames.*;
+import static shared.Channels.*;
+
 
 public class AccountService {
-    static boolean ServerRunning = true;
+    //static boolean serviceRunning = true;
+    static boolean connectedToServer = false;
     static RemoteSpace serverAccountService = null;
     static RemoteSpace accountServiceServer = null;
+    static HashMap<String, HashMap> accountsMap;
 
     public static void main(String[] args) {
-        HashMap<String, HashMap> accountsMap = instantiateTestData();
+        //todo få servicen til at blive robust overfor server nedbrud
+        while (true) {
 
-        // connect to tuple space
-        try {
-            serverAccountService = new RemoteSpace("tcp://localhost:123/serverAccountService?keep");
-            accountServiceServer = new RemoteSpace("tcp://localhost:123/accountServiceServer?keep");
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-        System.out.println("Established connection to " + serverAccountService.getUri() + "\n and " + accountServiceServer.getUri());
-        System.out.println("Waiting for requests...");
-
-        while (AccountService.ServerRunning) {
-            Object[] request;
             try {
-                //Which user account should be accessed? And what is requested?
-                request = serverAccountService.get(new FormalField(String.class), new FormalField(String.class));
-                System.out.println(request);
-                String requestStr = request[0].toString();
-                String username = request[1].toString();
-
-                System.out.println(requestStr + " for " + username + " received: ");
-
-                if (accountsMap.containsKey(username)) {
-                    System.out.println("Credentials verified");
-                    accountServiceServer.put(OK);
-                    requestDecider(requestStr, username, accountsMap);
-
-                } else {
-                    System.out.println("No such user exists");
-                    accountServiceServer.put("ko");
-                }
-            } catch (InterruptedException e) {
+                mainLoop();
+            } catch (Exception e) {
                 e.printStackTrace();
+                try {
+                    mainLoop();
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+
+                }
             }
         }
     }
 
-    public static void requestDecider(String request, String username, HashMap<String, HashMap> accounts) {
-        /*
+    private static void mainLoop() throws Exception {
+        accountsMap = instantiateTestData();
+
+        while (true) {
+
+            if (!connectedToServer) {
+                // connect to tuple space
+                try {
+                    System.out.println("Trying to establish connection to remote spaces...");
+                    String serverService = String.format("tcp://localhost:123/%s?keep", SERVER_ACCOUNT_SERVICE);
+                    String serviceServer = String.format("tcp://localhost:123/%s?keep", ACCOUNT_SERVICE_SERVER);
+                    serverAccountService = new RemoteSpace(serverService);
+                    accountServiceServer = new RemoteSpace(serviceServer);
+                    connectedToServer = true;
+
+                    System.out.printf("Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
+                            serverAccountService.getUri(),
+                            accountServiceServer.getUri());
+                    System.out.println("\n\nWaiting for requests...");
+
+                } catch (IOException e) {
+                    System.out.println(e.getMessage());
+                    connectedToServer = false;
+                }
+
+            } else if (connectedToServer) {
+
+                while (AccountService.connectedToServer) {
+                    Object[] request;
+                    try {
+                        //Which user account should be accessed? And what is requested?
+                        request = serverAccountService.get(new FormalField(String.class), new FormalField(String.class));
+                        System.out.println(request);
+                        String username = request[0].toString();
+                        String requestStr = request[1].toString();
+
+                        System.out.println(requestStr + " for " + username + " received...");
+
+                        //Does the system contain the user?
+                        if (accountsMap.containsKey(username)) {
+                            System.out.println("Credentials verified");
+                            accountServiceServer.put(username, OK);
+                            requestDecider(requestStr, username, accountsMap);
+
+                        } else {
+                            System.out.println("No such user exists");
+                            accountServiceServer.put(username, KO);
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        connectedToServer = false;
+                    }
+                }
+            }
+        }
+    }
+
+    public static void requestDecider(String request, String username, HashMap<String, HashMap> accounts) throws Exception {
         switch (request) {
             case QUERY_STOCKS -> {
-                System.out.println("Retrieving account stocks...");
-                ArrayList<StockInfo> stocks = queryUserStocks(accounts, username);
-                try {
-
-                    for (StockInfo stock : stocks) {
-                        accountServiceServer.put(MORE_DATA, stock.getName(), stock.getPrice());
-                    }
-                    accountServiceServer.put(NO_MORE_DATA);
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                queryUserStocks(accounts, username);
             }
             case DELETE_STOCKS -> System.out.println("to be implemented!");
             case INSERT_STOCKS -> System.out.println("to be implemented!");
-            default -> System.out.println("ERROR IN SWITCH STMT");
+            default -> {
+                System.out.println("ERROR IN SWITCH STMT");
+                throw new Exception("NOT IMPLEMENTED!");
+            }
         }
-         */
     }
 
-    public static ArrayList<StockInfo> queryUserStocks(HashMap<String, HashMap> accounts, String username) {
+    public static void queryUserStocks(HashMap<String, HashMap> accounts, String username) throws Exception {
+        System.out.println("Retrieving stocks for user: " + username + "...");
+        ArrayList<StockInfo> stocks = returnListOfUserStocks(accounts, username);
+        System.out.println("Sending stocks to server...");
+        for (StockInfo stock : stocks) {
+            accountServiceServer.put(username, MORE_DATA);
+            accountServiceServer.put(username, stock.getName(), stock.getPrice());
+        }
+        accountServiceServer.put(username, NO_MORE_DATA);
+
+    }
+
+    public static ArrayList<StockInfo> returnListOfUserStocks(HashMap<String, HashMap> accounts, String username) throws InterruptedException {
         ArrayList<StockInfo> stockInfos = new ArrayList<>();
         Map<String, StockInfo> map = accounts.get(username);
+
         for (Map.Entry<String, StockInfo> entry : map.entrySet()) {
-            System.out.println(entry.getKey() + "/" + entry.getValue());
             stockInfos.add(entry.getValue());
         }
         return stockInfos;
     }
 
     public void insertStocks() {
+        System.out.println("TO BE IMPLEMENTED");
     }
 
-
     public void removeStocks() {
+        System.out.println("TO BE IMPLEMENTED");
     }
 
     static HashMap instantiateTestData() {
+        //todo udskift map med space
         HashMap<String, HashMap> accountsMap = new HashMap<>();
 
         User alice = new User("Alice", UUID.randomUUID());
@@ -122,6 +167,4 @@ public class AccountService {
 
         return accountsMap;
     }
-
-
 }
