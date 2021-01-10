@@ -1,4 +1,4 @@
-package model;
+package shared;
 
 public class Requests {
     public static final String LOGIN = "login";

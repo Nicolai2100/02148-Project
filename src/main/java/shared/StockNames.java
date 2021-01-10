@@ -1,4 +1,4 @@
-package model;
+package shared;
 
 public class StockNames {
     public static final String TESLA = "Tesla";

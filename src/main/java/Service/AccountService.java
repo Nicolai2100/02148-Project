@@ -4,7 +4,6 @@ import model.StockInfo;
 import model.User;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
-import org.springframework.web.client.HttpServerErrorException;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -13,9 +12,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static model.Requests.*;
-import static model.StockNames.*;
-import static model.Channels.*;
+import static shared.Requests.*;
+import static shared.StockNames.*;
+import static shared.Channels.*;
 
 
 public class AccountService {
@@ -52,8 +51,10 @@ public class AccountService {
                 // connect to tuple space
                 try {
                     System.out.println("Trying to establish connection to remote spaces...");
-                    serverAccountService = new RemoteSpace("tcp://localhost:123/serverAccountService?keep");
-                    accountServiceServer = new RemoteSpace("tcp://localhost:123/accountServiceServer?keep");
+                    String serverService = String.format("tcp://localhost:123/%s?keep", SERVER_ACCOUNT_SERVICE);
+                    String serviceServer = String.format("tcp://localhost:123/%s?keep", ACCOUNT_SERVICE_SERVER);
+                    serverAccountService = new RemoteSpace(serverService);
+                    accountServiceServer = new RemoteSpace(serviceServer);
                     connectedToServer = true;
 
                     System.out.printf("Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
@@ -143,6 +144,7 @@ public class AccountService {
     }
 
     static HashMap instantiateTestData() {
+        //todo udskift map med space
         HashMap<String, HashMap> accountsMap = new HashMap<>();
 
         User alice = new User("Alice", UUID.randomUUID());

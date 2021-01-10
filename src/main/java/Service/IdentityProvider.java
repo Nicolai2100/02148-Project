@@ -7,8 +7,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 
-import static model.Requests.*;
-import static model.Channels.*;
+import static shared.Channels.*;
+import static shared.Requests.*;
 
 public class IdentityProvider {
     static boolean connectedToServer = false;
@@ -26,11 +26,13 @@ public class IdentityProvider {
 
             if (!connectedToServer) {
                 // connect to tuple space
-
                 try {
                     System.out.println("Trying to establish connection to remote spaces...");
-                    serverIdProvider = new RemoteSpace("tcp://localhost:123/serverIdProvider?keep");
-                    idProviderServer = new RemoteSpace("tcp://localhost:123/idProviderServer?keep");
+
+                    String serverService = String.format("tcp://localhost:123/%s?keep", SERVER_ID_PROVIDER);
+                    String serviceServer = String.format("tcp://localhost:123/%s?keep", ID_PROVIDER_SERVER);
+                    serverIdProvider = new RemoteSpace(serverService);
+                    idProviderServer = new RemoteSpace(serviceServer);
 
                     connectedToServer = true;
                     System.out.printf("Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
@@ -45,7 +47,7 @@ public class IdentityProvider {
 
             } else if (connectedToServer) {
 
-                while (1 + 1 == 2) {
+                while (true) {
                     Object[] credentials;
                     try {
                         credentials = serverIdProvider.get(new FormalField(String.class), new FormalField(String.class));

@@ -6,8 +6,7 @@ import org.jspace.SequentialSpace;
 
 import java.util.concurrent.Callable;
 
-import static model.Requests.*;
-import static model.Channels.*;
+import static shared.Requests.*;
 
 public class UserServerCommunication implements Callable<String> {
     private final SequentialSpace userServer;
@@ -58,7 +57,7 @@ public class UserServerCommunication implements Callable<String> {
     }
 
     private void logOut() {
-        System.out.printf("Logging %s out", username);
+        System.out.printf("Logging %s out...\n", username);
         Server.logout(username);
     }
 
@@ -102,5 +101,4 @@ public class UserServerCommunication implements Callable<String> {
             System.out.println("No such user in the system");
         }
     }
-
 }

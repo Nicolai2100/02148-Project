@@ -6,8 +6,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static model.Requests.*;
-import static model.Channels.*;
+import static shared.Requests.*;
 
 //The main responsibility of the Server-class is to provide a SpaceRepository and channels
 //which connect the client and the services

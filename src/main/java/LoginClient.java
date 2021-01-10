@@ -1,13 +1,11 @@
-package Client;
-
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 
 import java.io.IOException;
 import java.util.Scanner;
 
-import static model.Requests.*;
-import static model.Channels.*;
+import static shared.Channels.*;
+import static shared.Requests.*;
 
 public class LoginClient {
     static RemoteSpace serverClient = null;
@@ -24,29 +22,33 @@ public class LoginClient {
 
         // connect to tuple space
         try {
-            serverClient = new RemoteSpace("tcp://localhost:123/serverClient?keep");
-            clientServer = new RemoteSpace("tcp://localhost:123/clientServer?keep");
+            String serverService = String.format("tcp://localhost:123/%s?keep", SERVER_CLIENT);
+            String serviceServer = String.format("tcp://localhost:123/%s?keep", CLIENT_SERVER);
+            serverClient = new RemoteSpace(serverService);
+            clientServer = new RemoteSpace(serviceServer);
 
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
+        //System.out.println("Established connection to " + serverClient.getUri() + " and " + clientServer.getUri());
 
-        System.out.println("Established connection to " + serverClient.getUri() + " and " + clientServer.getUri());
-
-        String message = "";
         System.out.println("Welcome to the Beast Bank!");
+
+        String message;
 
         do {
             if (!loggedIn) {  // Slet - for test
                 loggedIn = logIn(s);
 
                 do {
-                    System.out.println("\n1: fetch account data \n2: buy stocks \n3: sell stocks \n0: log out");
+                    System.out.println("\n1: Fetch account data \n2: Buy stocks \n3: Sell stocks \n0: Log out");
                     message = s.nextLine();
                     try {
                         if (message.equalsIgnoreCase("1")) {
                             queryData();
-                        } else if (message.equalsIgnoreCase("2")) { //todo NJL
+                        } else if (message.equalsIgnoreCase("2")) {
+                            System.out.println("to be implemented");
+                        } else if (message.equalsIgnoreCase("2")) {
                             System.out.println("to be implemented");
                         } else if (message.equalsIgnoreCase("0")) {
                             logOut();
@@ -56,13 +58,8 @@ public class LoginClient {
                     } catch (InterruptedException e) {
                         System.out.println(e.getMessage());
                     }
-
                 } while (!message.equalsIgnoreCase("exit"));
 
-                try {
-                } catch (Exception e) {
-                    System.out.println(e.getMessage());
-                }
                 System.exit(7);
             }
         } while (!loggedIn);
@@ -76,7 +73,7 @@ public class LoginClient {
         //username = "Alice";
         username = s.nextLine();
         System.out.println("Enter password: ");
-        password =  s.nextLine();
+        password = s.nextLine();
         //password = "password";
 
         try {
@@ -85,16 +82,18 @@ public class LoginClient {
             clientServer.put(username, password);
 
             try {
-                String serverUserName = String.format("tcp://localhost:123/server%s?keep", username);
-                String userServerName = String.format("tcp://localhost:123/%sserver?keep", username);
-                userServer = new RemoteSpace(userServerName);
-                serverUser = new RemoteSpace(serverUserName);
+                String serverUserStr = String.format("tcp://localhost:123/server%s?keep", username);
+                String userServerStr = String.format("tcp://localhost:123/%sserver?keep", username);
+                userServer = new RemoteSpace(userServerStr);
+                serverUser = new RemoteSpace(serverUserStr);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             System.out.println(serverUser.getUri());
             System.out.println(userServer.getUri());
-            Thread.sleep(3000);
+
+            Thread.sleep(3000); //Skal bruges for ellers virker det ikke... ?
+
             Object[] serverResponse = serverUser.get(new FormalField(String.class));
 
             String responseStr = serverResponse[0].toString();
@@ -124,13 +123,12 @@ public class LoginClient {
 
         String responseStr = "";
         do {
-            //Object[] response = serverClient.get(new FormalField(String.class));
             Object[] response = serverUser.get(new FormalField(String.class));
             responseStr = response[0].toString();
 
             if (responseStr.equals(MORE_DATA)) {
                 response = serverUser.get(new FormalField(String.class), new FormalField(Integer.class));
-                //response = serverClient.get(new FormalField(String.class), new FormalField(Integer.class));
+
                 String stockName = response[0].toString();
                 int stockPrice = Integer.parseInt(response[1].toString());
                 System.out.println(stockName + " to price: " + stockPrice);
@@ -138,8 +136,6 @@ public class LoginClient {
             } else if (responseStr.equals(NO_MORE_DATA)) {
                 continue;
             }
-
         } while (responseStr.equals(MORE_DATA));
-
     }
 }

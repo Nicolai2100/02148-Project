@@ -1,4 +1,4 @@
-package model;
+package shared;
 
 public class Channels {
     public static final String SERVER_CLIENT = "serverClient";
