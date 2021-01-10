@@ -1,10 +1,8 @@
-import model.StockInfo;
 import org.jspace.FormalField;
 import org.jspace.QueueSpace;
 import org.jspace.SequentialSpace;
 import org.jspace.SpaceRepository;
 
-import java.util.ArrayList;
 
 import static model.Requests.*;
 
@@ -12,8 +10,6 @@ public class TestClass {
 
     static SequentialSpace clientServer;
     static SequentialSpace serverClient;
-    static SequentialSpace serverIdProvider;
-    static SequentialSpace idProviderServer;
     static SequentialSpace accountServiceServer;
     static SequentialSpace serverAccountService;
 
@@ -24,18 +20,12 @@ public class TestClass {
         clientServer = new QueueSpace();
         serverClient = new QueueSpace();
 
-        serverIdProvider = new QueueSpace();
-        idProviderServer = new QueueSpace();
-
         accountServiceServer = new QueueSpace();
         serverAccountService = new QueueSpace();
 
         // Add the spaces/channels to the repository
         repository.add("clientServer", clientServer);
         repository.add("serverClient", serverClient);
-
-        repository.add("serverIdProvider", serverIdProvider);
-        repository.add("idProviderServer", idProviderServer);
 
         repository.add("accountServiceServer", accountServiceServer);
         repository.add("serverAccountService", serverAccountService);
@@ -46,32 +36,39 @@ public class TestClass {
         // Keep reading chat messages and printing them
         System.out.println("Running host on port 123");
 
-        System.out.println("putting data");
+        System.out.println("Sending request");
         serverAccountService.put(QUERY_STOCKS, "Alice");
-        System.out.println("waiting for response");
 
         Object[] response = accountServiceServer.get(new FormalField((String.class)));
         String responseStr = response[0].toString();
 
         if (responseStr.equals(OK)) {
-            ArrayList<StockInfo> stocks = new ArrayList<>();
             do {
                 System.out.println("Fetching data...");
 
-                Object[] t = accountServiceServer.get(new FormalField(String.class), new FormalField(String.class));
-                responseStr = t[0].toString();
-               String stockName = t[1].toString();
-               int stockPrice = Integer.getInteger(t[2].toString());
+                response = accountServiceServer.get(new FormalField(String.class));
+                responseStr = response[0].toString();
 
-                if (responseStr.equals(NO_MORE_DATA)) {
+                if (responseStr.equals(MORE_DATA)) {
+                    //Fetching data from service
+                    Object[] dataResponse = accountServiceServer.get(new FormalField(String.class), new FormalField(Integer.class));
+                    String stockName = dataResponse[0].toString();
+                    int stockPrice = Integer.parseInt(dataResponse[1].toString());
+                    //Sending data to client
+                    System.out.println("Sending data");
+                    serverClient.put(MORE_DATA);
+                    serverClient.put(stockName, stockPrice);
+                } else if (responseStr.equals(NO_MORE_DATA)) {
                     System.out.println(NO_MORE_DATA);
+                    serverClient.put(NO_MORE_DATA);
                     break;
                 }
-                stocks.add(new StockInfo(t[1].toString(), Integer.parseInt(t[2].toString())));
                 System.out.println();
             } while (responseStr.equals(MORE_DATA));
 
-        } else
-            System.out.println("error");
+        } else if (responseStr.equals(KO)) {
+            serverClient.put(KO);
+            System.out.println("No such user in the system");
+        }
     }
 }

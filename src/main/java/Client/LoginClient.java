@@ -9,15 +9,17 @@ import java.util.Scanner;
 import static model.Requests.*;
 
 public class LoginClient {
+    static RemoteSpace serverClient = null;
+    static RemoteSpace clientServer = null;
+    static String username = "Alice";
+    static String password = "password";
 
     public static void main(String[] args) {
-        boolean loggedIn = false;
+        boolean loggedIn = true;
 
         // parse arguments
         Scanner s = new Scanner(System.in);
 
-        RemoteSpace serverClient = null;
-        RemoteSpace clientServer = null;
         // connect to tuple space
         try {
             serverClient = new RemoteSpace("tcp://localhost:123/serverClient?keep");
@@ -38,9 +40,9 @@ public class LoginClient {
                 System.out.println("Enter credentials to continue");
 
                 System.out.println("Enter username: ");
-                String username = s.nextLine();
+                username = s.nextLine();
                 System.out.println("Enter password: ");
-                String password =  s.nextLine();
+                password =  s.nextLine();
 
                 try {
                     System.out.println("...sending credentials");
@@ -65,32 +67,11 @@ public class LoginClient {
         } // Slet - for test
 
         do {
-            System.out.println("Type to \n 1: fetch account data \n2: buy stocks \n3: sell stocks \n0: log out");
+            System.out.println("\n 1: fetch account data \n2: buy stocks \n3: sell stocks \n0: log out");
             message = s.nextLine();
             try {
-
                 if (message.equalsIgnoreCase("1")) {
-                    System.out.println("fetcing data");
-                    //Object[] data = serverClient.get(new FormalField(String.class));
-                    clientServer.put(QUERY_STOCKS);
-
-                    String responseStr = "";
-                    do {
-                        Object[] response = serverClient.get(new FormalField(String.class));
-                        responseStr = response[0].toString();
-
-                        if (responseStr.equals(MORE_DATA)) {
-                            response = serverClient.get(new FormalField(String.class), new FormalField(Integer.class));
-                            String stockName = response[0].toString();
-                            int stockPrice = Integer.parseInt(response[1].toString());
-                            System.out.println(stockName + " to price: " + stockPrice);
-
-                        } else if (responseStr.equals(NO_MORE_DATA)) {
-                            continue;
-                        }
-
-                    } while (responseStr.equals(MORE_DATA));
-
+                   queryData();
                 } else if (message.equalsIgnoreCase("2")) { //todo NJL
                     System.out.println("to be implemented");
                 } else if (message.equalsIgnoreCase("0")) {
@@ -110,5 +91,31 @@ public class LoginClient {
             System.out.println(e.getMessage());
         }
         System.exit(7);
+    }
+
+    private static void queryData() throws InterruptedException {
+        System.out.println("requesting data...");
+        //Smartere måde at gøre det på?
+        clientServer.put(QUERY_STOCKS);
+        //todo use id
+        clientServer.put(QUERY_STOCKS, username);
+
+        String responseStr = "";
+        do {
+            Object[] response = serverClient.get(new FormalField(String.class));
+            responseStr = response[0].toString();
+
+            if (responseStr.equals(MORE_DATA)) {
+                response = serverClient.get(new FormalField(String.class), new FormalField(Integer.class));
+                String stockName = response[0].toString();
+                int stockPrice = Integer.parseInt(response[1].toString());
+                System.out.println(stockName + " to price: " + stockPrice);
+
+            } else if (responseStr.equals(NO_MORE_DATA)) {
+                continue;
+            }
+
+        } while (responseStr.equals(MORE_DATA));
+
     }
 }
