@@ -15,6 +15,8 @@ import java.util.UUID;
 
 import static model.Requests.*;
 import static model.StockNames.*;
+import static model.Channels.*;
+
 
 public class AccountService {
     //static boolean serviceRunning = true;

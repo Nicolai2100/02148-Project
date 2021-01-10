@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 
 import static model.Requests.*;
+import static model.Channels.*;
 
 public class IdentityProvider {
     static boolean connectedToServer = false;
