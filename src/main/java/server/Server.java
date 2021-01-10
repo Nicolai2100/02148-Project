@@ -2,14 +2,15 @@ package server;
 
 import org.jspace.*;
 
-import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static shared.Requests.*;
 
-//The main responsibility of the Server-class is to provide a SpaceRepository and channels
-//which connect the client and the services
+/**
+ * The main responsibility of the Server-class is to provide a SpaceRepository
+ * and channels which connect the client to the services
+ **/
 public class Server {
     static SpaceRepository repository = new SpaceRepository();
 
@@ -50,23 +51,24 @@ public class Server {
 
         executor = Executors.newCachedThreadPool();
 
-        //Main loop where requests are resolved
-        while (2 + 2 < 5) {
-            Object[] requestT = clientServer.get(new FormalField(String.class), new FormalField(String.class));
-            String username = requestT[0].toString();
-            String request = requestT[1].toString();
+        //Main loop where client requests are resolved
+        while (true) {
+            Object[] requestT = clientServer.get(new FormalField(String.class), new FormalField(String.class), new FormalField(String.class));
+            String request = requestT[0].toString();
+            String username = requestT[1].toString();
+            String password = requestT[2].toString();
             System.out.println(username + " " + request);
-            requestResolver(request, username);
+            requestResolver(request, username, password);
         }
     }
 
-    public void requestResolver(String request, String username) {
+    public void requestResolver(String request, String username, String password) {
         System.out.println("Client requested: " + request);
 
         try {
             switch (request) {
                 case LOGIN -> {
-                    login(username);
+                    login(username, password);
                 }
                 default -> System.out.println("ERROR IN SWITCH STMT");
             }
@@ -76,49 +78,9 @@ public class Server {
         }
     }
 
-    public boolean login(String username) throws InterruptedException {
-        Object[] t = clientServer.get(new FormalField(String.class), new FormalField(String.class));
-        String password = t[1].toString();
-
-        Object[] response = null;
-        try {
-            System.out.println("Logging " + username + " in...");
-            serverIdProvider.put(username, password);
-            response = idProviderServer.get(new FormalField(String.class));
-
-            // todo navnet på kanal kan gøres tilfældig
-            //  eller være id i stedet for navn
-            String userToServerName = username + "server";
-            String serverToUserName = "server" + username;
-
-            SequentialSpace userServer = new QueueSpace();
-            SequentialSpace serverUser = new QueueSpace();
-
-            try {
-                repository.add(serverToUserName, serverUser);
-                repository.add(userToServerName, userServer);
-
-                System.out.println("Created private channels...");
-                System.out.println(userToServerName);
-                System.out.println(serverToUserName);
-                numOfClientsConnected++;
-                System.out.println("Number of clients connected: " + numOfClientsConnected);
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-
-            if (response[0].equals(OK)) {
-                System.out.println(username + " logged in at " + LocalDateTime.now());
-
-                executor.submit(new UserServerCommunication(userServer, serverUser, username));
-            } else {
-                System.out.println("Error in credentials");
-                serverUser.put(KO);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return false;
+    public void login(String username, String password) throws InterruptedException {
+        executor.submit(new LoginTask(clientServer, serverClient,
+                idProviderServer, serverIdProvider, username, password, executor));
     }
 
     public static void logout(String username) {

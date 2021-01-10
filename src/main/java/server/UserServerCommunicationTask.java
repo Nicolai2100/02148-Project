@@ -8,30 +8,30 @@ import java.util.concurrent.Callable;
 
 import static shared.Requests.*;
 
-public class UserServerCommunication implements Callable<String> {
+public class UserServerCommunicationTask implements Callable<String> {
     private final SequentialSpace userServer;
     private final SequentialSpace serverUser;
-    private String username = "";
+    private final String username;
 
-    public UserServerCommunication(SequentialSpace userServer,
-                                   SequentialSpace serverUser,
-                                   String username) {
+    public UserServerCommunicationTask(SequentialSpace userServer,
+                                       SequentialSpace serverUser,
+                                       String username) {
         this.userServer = userServer;
         this.serverUser = serverUser;
         this.username = username;
         System.out.println("Starting private channel for: " + username);
     }
 
-    //Listen for requests
     @Override
     public String call() throws Exception {
         try {
-            //Start by telling user login successful
+            //Start by sending "login OK" to user via private channel
             serverUser.put(OK);
+            //serverUser.put(OK);
 
-            while(true){
+            //Listen for requests
+            while (true) {
                 Object[] requestT = userServer.get(new FormalField(String.class));
-                System.out.println(requestT[0]);
                 String request = requestT[0].toString();
                 requestResolver(request);
             }
@@ -69,8 +69,6 @@ public class UserServerCommunication implements Callable<String> {
         Object[] accountServiceResponse = Server.accountServiceServer.get(new ActualField(username), new FormalField(String.class));
         String responseStr = accountServiceResponse[1].toString();
 
-        System.out.println("Request: " + responseStr);
-
         if (responseStr.equals(OK)) {
             do {
                 System.out.println("Fetching data...");
@@ -97,7 +95,6 @@ public class UserServerCommunication implements Callable<String> {
             } while (responseStr.equals(MORE_DATA));
 
         } else if (responseStr.equals(KO)) {
-            //serverClient.put(KO);
             System.out.println("No such user in the system");
         }
     }

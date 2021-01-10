@@ -1,3 +1,4 @@
+import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 
@@ -40,29 +41,33 @@ public class LoginClient {
             if (!loggedIn) {  // Slet - for test
                 loggedIn = logIn(s);
 
-                do {
-                    System.out.println("\n1: Fetch account data \n2: Buy stocks \n3: Sell stocks \n0: Log out");
-                    message = s.nextLine();
-                    try {
-                        if (message.equalsIgnoreCase("1")) {
-                            queryData();
-                        } else if (message.equalsIgnoreCase("2")) {
-                            System.out.println("to be implemented");
-                        } else if (message.equalsIgnoreCase("2")) {
-                            System.out.println("to be implemented");
-                        } else if (message.equalsIgnoreCase("0")) {
-                            logOut();
-                            break;
+                if (loggedIn) {
+
+                    do {
+                        System.out.println("\n1: Fetch account data \n2: Buy stocks \n3: Sell stocks \n0: Log out");
+                        message = s.nextLine();
+                        try {
+                            if (message.equalsIgnoreCase("1")) {
+                                queryData();
+                            } else if (message.equalsIgnoreCase("2")) {
+                                System.out.println("to be implemented");
+                            } else if (message.equalsIgnoreCase("2")) {
+                                System.out.println("to be implemented");
+                            } else if (message.equalsIgnoreCase("0")) {
+                                logOut();
+                                main(null);
+                            }
+
+                        } catch (InterruptedException e) {
+                            System.out.println(e.getMessage());
                         }
+                    } while (!message.equalsIgnoreCase("exit"));
 
-                    } catch (InterruptedException e) {
-                        System.out.println(e.getMessage());
-                    }
-                } while (!message.equalsIgnoreCase("exit"));
-
-                System.exit(7);
+                    System.exit(7);
+                }
             }
-        } while (!loggedIn);
+        }
+        while (!loggedIn);
     }
 
 
@@ -71,15 +76,16 @@ public class LoginClient {
 
         System.out.println("Enter username: ");
         //username = "Alice";
-        username = s.nextLine();
+        username = s.nextLine().trim();
         System.out.println("Enter password: ");
-        password = s.nextLine();
+        password = s.nextLine().trim();
         //password = "password";
 
         try {
             System.out.println("...sending credentials");
-            clientServer.put(username, LOGIN);
-            clientServer.put(username, password);
+            //clientServer.put(username, LOGIN);
+            //clientServer.put(username, password);
+            clientServer.put(LOGIN, username, password);
 
             try {
                 String serverUserStr = String.format("tcp://localhost:123/server%s?keep", username);
@@ -89,15 +95,20 @@ public class LoginClient {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            System.out.println(serverUser.getUri());
-            System.out.println(userServer.getUri());
 
             Thread.sleep(3000); //Skal bruges for ellers virker det ikke... ?
 
+            //Object[] serverResponse = serverClient.get(new ActualField(username), new FormalField(String.class));
+            //todo wtf, virker ikke, når login er forkert - hvorfor?
             Object[] serverResponse = serverUser.get(new FormalField(String.class));
 
-            String responseStr = serverResponse[0].toString();
-            System.out.println("Login - " + responseStr);
+            String responseStr = KO;
+            try{
+                responseStr = serverResponse[0].toString();
+                System.out.println("Login - " + responseStr);
+            }catch (NullPointerException e){
+                e.printStackTrace();
+            }
 
             if (responseStr.equals(OK)) {
                 return true;
@@ -113,7 +124,7 @@ public class LoginClient {
 
     private static void logOut() throws InterruptedException {
         userServer.put(LOG_OUT);
-        System.out.println("Logging out");
+        System.out.println("Logging out...");
     }
 
     private static void queryData() throws InterruptedException {
