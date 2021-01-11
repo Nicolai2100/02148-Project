@@ -48,7 +48,7 @@ public class Broker {
         serviceRunning = true;
         stocks.put("AAPL", 110);
         marketOrders.put(lock);
-        executor.submit(new Broker.Broker.MarketOrderHandler());
+        executor.submit(new MarketOrderHandler());
     }
 
     /**
