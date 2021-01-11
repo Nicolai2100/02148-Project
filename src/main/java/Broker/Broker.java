@@ -123,9 +123,9 @@ public class Broker {
                             buyOrder.getQuantity() - min);
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                marketOrders.put(sellOrder.getOrderedBy(), msgFlag, "Error: The order was interrupted at some point.");
             } catch (ExecutionException e) {
-                e.printStackTrace();
+                marketOrders.put(sellOrder.getOrderedBy(), msgFlag, "En error happened.");
             } catch (TimeoutException e) {
                 marketOrders.put(sellOrder.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
             }
