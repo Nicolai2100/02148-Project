@@ -23,7 +23,7 @@ public class Broker {
     static final String msgFlag = "MSG";
 
     ExecutorService executor = Executors.newCachedThreadPool();
-    static final int standardTimeout = 5; //TODO: Consider what this should be, or make it possible to set it per order.
+    static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
     static final TimeUnit timeoutUnit = TimeUnit.SECONDS;
     boolean serviceRunning;
 
