@@ -5,6 +5,7 @@ import org.jspace.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static shared.Channels.*;
 import static shared.Requests.*;
 
 /**
@@ -44,16 +45,19 @@ public class Server {
         repository.add("serverAccountService", serverAccountService);
 
         // Open a gate
-        repository.addGate("tcp://localhost:123/?keep");
+        repository.addGate("tcp://localhost:123/?" + CONNECTION_TYPE);
 
         // Keep reading chat messages and printing them
-        System.out.println("Running host on port 123");
+        System.out.println("Server: Started server on port 123");
 
         executor = Executors.newCachedThreadPool();
 
         //Main loop where client requests are resolved
         while (true) {
-            Object[] requestT = clientServer.get(new FormalField(String.class), new FormalField(String.class), new FormalField(String.class));
+            Object[] requestT = clientServer.get(
+                    new FormalField(String.class),
+                    new FormalField(String.class),
+                    new FormalField(String.class));
             String request = requestT[0].toString();
             String username = requestT[1].toString();
             String password = requestT[2].toString();
@@ -79,8 +83,14 @@ public class Server {
     }
 
     public void login(String username, String password) throws InterruptedException {
-        executor.submit(new LoginTask(clientServer, serverClient,
-                idProviderServer, serverIdProvider, username, password, executor));
+        executor.submit(new LoginTask(
+                clientServer,
+                serverClient,
+                idProviderServer,
+                serverIdProvider,
+                username,
+                password,
+                executor));
     }
 
     public static void logout(String username) {

@@ -1,9 +1,11 @@
 package server;
 
+import model.Stock;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.SequentialSpace;
 
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
 import static shared.Requests.*;
@@ -27,7 +29,6 @@ public class UserServerCommunicationTask implements Callable<String> {
         try {
             //Start by sending "login OK" to user via private channel
             serverUser.put(OK);
-            //serverUser.put(OK);
 
             //Listen for requests
             while (true) {
@@ -48,12 +49,17 @@ public class UserServerCommunicationTask implements Callable<String> {
             switch (request) {
                 case QUERY_STOCKS -> queryStocks();
                 case LOG_OUT -> logOut();
+                case "Buy stocks" -> buyStock();
                 default -> System.out.println("ERROR IN SWITCH STMT");
             }
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    private void buyStock() {
+        //   channel
     }
 
     private void logOut() {
@@ -66,27 +72,35 @@ public class UserServerCommunicationTask implements Callable<String> {
         System.out.println("Sending request...");
         Server.serverAccountService.put(username, QUERY_STOCKS);
 
-        Object[] accountServiceResponse = Server.accountServiceServer.get(new ActualField(username), new FormalField(String.class));
+        Object[] accountServiceResponse = Server.accountServiceServer.get(
+                new ActualField(username),
+                new FormalField(String.class));
         String responseStr = accountServiceResponse[1].toString();
 
         if (responseStr.equals(OK)) {
             do {
                 System.out.println("Fetching data...");
 
-                accountServiceResponse = Server.accountServiceServer.get(new ActualField(username), new FormalField(String.class));
+                accountServiceResponse = Server.accountServiceServer.get(
+                        new ActualField(username),
+                        new FormalField(String.class));
                 responseStr = accountServiceResponse[1].toString();
                 System.out.println(responseStr);
 
                 if (responseStr.equals(MORE_DATA)) {
                     //Fetching data from service
-                    Object[] dataResponse = Server.accountServiceServer.get(new ActualField(username), new FormalField(String.class), new FormalField(Integer.class));
-                    String stockName = dataResponse[1].toString();
-                    int stockPrice = Integer.parseInt(dataResponse[2].toString());
+
+                    Object[] dataResponse = Server.accountServiceServer.get(
+                            new ActualField(username),
+                            new FormalField(Stock.class));
+
+                    ArrayList<Stock> stocks = new ArrayList<>();
+                    stocks.add((Stock) dataResponse[1]);
 
                     //Sending data to client
                     System.out.println("Sending data");
                     serverUser.put(MORE_DATA);
-                    serverUser.put(stockName, stockPrice);
+                    serverUser.put((Stock) dataResponse[1]);
                 } else if (responseStr.equals(NO_MORE_DATA)) {
                     serverUser.put(NO_MORE_DATA);
                     break;

@@ -9,4 +9,10 @@ public class Channels {
 
     public static final String SERVER_ACCOUNT_SERVICE = "serverAccountService";
     public static final String ACCOUNT_SERVICE_SERVER = "accountServiceServer";
+
+
+    //public static final String CONNECTION_TYPE = "conn";
+    public static final String CONNECTION_TYPE = "keep";
+
+
 }

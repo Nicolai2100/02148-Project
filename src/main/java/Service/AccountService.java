@@ -1,6 +1,7 @@
 package Service;
 
-import model.StockInfo;
+import model.Account;
+import model.Stock;
 import model.User;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
@@ -19,48 +20,38 @@ import static shared.Channels.*;
 
 public class AccountService {
     //static boolean serviceRunning = true;
-    static boolean connectedToServer = false;
-    static RemoteSpace serverAccountService = null;
-    static RemoteSpace accountServiceServer = null;
-    static HashMap<String, HashMap> accountsMap;
+    boolean connectedToServer = false;
+    RemoteSpace serverAccountService = null;
+    RemoteSpace accountServiceServer = null;
+    HashMap<String, HashMap> accountsMap;
 
-    public static void main(String[] args) {
-        //todo få servicen til at blive robust overfor server nedbrud
-        while (true) {
+    public void startService(String[] args) {
+        accountsMap = instantiateTestData();
 
-            try {
-                mainLoop();
-            } catch (Exception e) {
-                e.printStackTrace();
-                try {
-                    mainLoop();
-                } catch (Exception exception) {
-                    exception.printStackTrace();
-
-                }
-            }
+        try {
+            requestHandler();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    private static void mainLoop() throws Exception {
-        accountsMap = instantiateTestData();
-
+    private void requestHandler() throws Exception {
         while (true) {
 
             if (!connectedToServer) {
                 // connect to tuple space
                 try {
-                    System.out.println("Trying to establish connection to remote spaces...");
-                    String serverService = String.format("tcp://localhost:123/%s?keep", SERVER_ACCOUNT_SERVICE);
-                    String serviceServer = String.format("tcp://localhost:123/%s?keep", ACCOUNT_SERVICE_SERVER);
+                    System.out.println(AccountService.class.getName() + "Trying to establish connection to remote spaces...");
+                    String serverService = String.format("tcp://localhost:123/%s?%s", SERVER_ACCOUNT_SERVICE, CONNECTION_TYPE);
+                    String serviceServer = String.format("tcp://localhost:123/%s?%s", ACCOUNT_SERVICE_SERVER, CONNECTION_TYPE);
                     serverAccountService = new RemoteSpace(serverService);
                     accountServiceServer = new RemoteSpace(serviceServer);
                     connectedToServer = true;
 
-                    System.out.printf("Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
+                    System.out.printf(AccountService.class.getName() + "Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
                             serverAccountService.getUri(),
                             accountServiceServer.getUri());
-                    System.out.println("\n\nWaiting for requests...");
+                    System.out.println(AccountService.class.getName() + "\n\nWaiting for requests...");
 
                 } catch (IOException e) {
                     System.out.println(e.getMessage());
@@ -69,7 +60,7 @@ public class AccountService {
 
             } else if (connectedToServer) {
 
-                while (AccountService.connectedToServer) {
+                while (connectedToServer) {
                     Object[] request;
                     try {
                         //Which user account should be accessed? And what is requested?
@@ -99,7 +90,7 @@ public class AccountService {
         }
     }
 
-    public static void requestDecider(String request, String username, HashMap<String, HashMap> accounts) throws Exception {
+    public void requestDecider(String request, String username, HashMap<String, HashMap> accounts) throws Exception {
         switch (request) {
             case QUERY_STOCKS -> {
                 queryUserStocks(accounts, username);
@@ -113,26 +104,26 @@ public class AccountService {
         }
     }
 
-    public static void queryUserStocks(HashMap<String, HashMap> accounts, String username) throws Exception {
+    public void queryUserStocks(HashMap<String, HashMap> accounts, String username) throws Exception {
         System.out.println("Retrieving stocks for user: " + username + "...");
-        ArrayList<StockInfo> stocks = returnListOfUserStocks(accounts, username);
+        ArrayList<Stock> stocks = returnListOfUserStocks(accounts, username);
         System.out.println("Sending stocks to server...");
-        for (StockInfo stock : stocks) {
+        for (Stock stock : stocks) {
             accountServiceServer.put(username, MORE_DATA);
-            accountServiceServer.put(username, stock.getName(), stock.getPrice());
+            accountServiceServer.put(username, stock);
         }
         accountServiceServer.put(username, NO_MORE_DATA);
 
     }
 
-    public static ArrayList<StockInfo> returnListOfUserStocks(HashMap<String, HashMap> accounts, String username) throws InterruptedException {
-        ArrayList<StockInfo> stockInfos = new ArrayList<>();
-        Map<String, StockInfo> map = accounts.get(username);
+    public ArrayList<Stock> returnListOfUserStocks(HashMap<String, HashMap> accounts, String username) throws InterruptedException {
+        ArrayList<Stock> stocks = new ArrayList<>();
+        Map<String, Stock> map = accounts.get(username);
 
-        for (Map.Entry<String, StockInfo> entry : map.entrySet()) {
-            stockInfos.add(entry.getValue());
+        for (Map.Entry<String, Stock> entry : map.entrySet()) {
+            stocks.add(entry.getValue());
         }
-        return stockInfos;
+        return stocks;
     }
 
     public void insertStocks() {
@@ -151,18 +142,20 @@ public class AccountService {
         User bob = new User("Bob", UUID.randomUUID());
         User charlie = new User("Charlie", UUID.randomUUID());
 
-        HashMap<String, StockInfo> aliceStockMap1 = new HashMap<>();
-        HashMap<String, StockInfo> bobStockMap2 = new HashMap<>();
-        HashMap<String, StockInfo> charlieStockMap3 = new HashMap<>();
+        Account aliceAccount = new Account(100);
 
-        aliceStockMap1.put(TESLA, new StockInfo(TESLA, 20));
-        aliceStockMap1.put(APPLE, new StockInfo(APPLE, 31));
+        HashMap<String, Stock> aliceStockMap1 = new HashMap<>();
+        HashMap<String, Stock> bobStockMap2 = new HashMap<>();
+        HashMap<String, Stock> charlieStockMap3 = new HashMap<>();
+
+        aliceStockMap1.put(TESLA, new Stock(TESLA, 20));
+        aliceStockMap1.put(APPLE, new Stock(APPLE, 31));
         accountsMap.put(alice.getName(), aliceStockMap1);
 
-        bobStockMap2.put(MICROSOFT, new StockInfo(MICROSOFT, 20));
+        bobStockMap2.put(MICROSOFT, new Stock(MICROSOFT, 20));
         accountsMap.put(bob.getName(), bobStockMap2);
 
-        charlieStockMap3.put(GOOGLE, new StockInfo(GOOGLE, 31));
+        charlieStockMap3.put(GOOGLE, new Stock(GOOGLE, 31));
         accountsMap.put(charlie.getName(), charlieStockMap3);
 
         return accountsMap;
