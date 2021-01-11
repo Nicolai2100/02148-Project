@@ -6,6 +6,9 @@ import returntypes.StockInfo;
 import java.util.UUID;
 import java.util.concurrent.*;
 
+import static shared.Requests.*;
+
+
 public class Broker {
 
     //Brokerens hostname og port
@@ -20,23 +23,26 @@ public class Broker {
 
     SpaceRepository tradeRepo = new SpaceRepository();
 
+/*
     static final String sellOrderFlag = "SELL";
     static final String buyOrderFlag = "BUY";
     static final String msgFlag = "MSG";
     static final String lock = "lock";
+*/
 
     //status flags
     //static final String inProcessFlag = "IN_PROCESS";
     //static final String completedSuccesfully = "COMPLETE";
 
     ExecutorService executor = Executors.newCachedThreadPool();
-    static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
-    static final TimeUnit timeoutUnit = TimeUnit.HOURS;
+    static final int standardTimeout = 1; //TODO: Consider what this should be, or make it possible to set it per order.
+    static final TimeUnit timeoutUnit = TimeUnit.SECONDS;
     boolean serviceRunning;
 
     public Broker() {
         tradeRepo.add("marketOrders", marketOrders);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
+        System.out.println("hej");
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -47,7 +53,7 @@ public class Broker {
     private void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 110);
-        marketOrdersInProcess.put(lock);
+        marketOrdersInProcess.put(LOCK);
         executor.submit(new MarketOrderHandler());
     }
 
@@ -95,7 +101,7 @@ public class Broker {
 
         public FindMatchingBuyOrderHandler(MarketOrder order) {
             this.order = order;
-            matchingOrderType = order.getOrderType().equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
+            matchingOrderType = order.getOrderType().equals(SELL) ? BUY : SELL;
             thisOrderTemplateFields = new TemplateField[]{
                     new ActualField(order.getId()),
                     new FormalField(String.class),
@@ -119,7 +125,7 @@ public class Broker {
             try {
                 MarketOrder matchOrderQuery = executor.submit(queryMatchTask).get(standardTimeout, timeoutUnit);
 
-                marketOrdersInProcess.get(new ActualField(lock));
+                marketOrdersInProcess.get(new ActualField(LOCK));
 
                 //Object[] matchingGetRes = marketOrdersInProcess.queryp(matchingTemplateFields);
                 Object[] thisOrderRes = marketOrdersInProcess.queryp(thisOrderTemplateFields);
@@ -127,14 +133,14 @@ public class Broker {
                     //If null, it should mean that this particular order has aldready been processed.
                     //In that case, just put the lock back, and let the task finish.
                     //TODO: Eller hvad, skal der gøres noget andet?
-                    marketOrdersInProcess.put(lock);
+                    marketOrdersInProcess.put(LOCK);
                     return null; //TODO: Skal der gøres mere her?
                 }
 
                 MarketOrder matchOrder = new MarketOrder(marketOrdersInProcess.get(matchingTemplateFields));
                 marketOrdersInProcess.get(thisOrderTemplateFields);
 
-                marketOrdersInProcess.put(lock);
+                marketOrdersInProcess.put(LOCK);
 
                 //Scenarios:
                 //1. The seller wants to sell more than the buyer. The buyer get to buy all the shares he/she wants. The seller makes a new order.
@@ -157,24 +163,24 @@ public class Broker {
                 System.out.printf("%s sold %d shares of %s to %s.%n", order.getOrderedBy(), min, order.getStock(), matchOrder.getOrderedBy());
 
                 if (min < order.getQuantity()) {
-                    if (order.getOrderType().equals(sellOrderFlag))
+                    if (order.getOrderType().equals(SELL))
                         System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
-                    if (order.getOrderType().equals(buyOrderFlag))
+                    if (order.getOrderType().equals(BUY))
                         System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
 
                     marketOrders.put(
                             order.getOrderedBy(),
-                            sellOrderFlag,
+                            SELL,
                             order.getStock(),
                             order.getQuantity() - min);
                 } else if (min < matchOrder.getQuantity()) {
-                    if (matchOrder.getOrderType().equals(sellOrderFlag))
+                    if (matchOrder.getOrderType().equals(SELL))
                         System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
-                    if (matchOrder.getOrderType().equals(buyOrderFlag))
+                    if (matchOrder.getOrderType().equals(BUY))
                         System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
                     marketOrders.put(
                             matchOrder.getOrderedBy(),
-                            buyOrderFlag,
+                            BUY,
                             matchOrder.getStock(),
                             matchOrder.getQuantity() - min);
                 }
@@ -183,7 +189,7 @@ public class Broker {
             } catch (ExecutionException e) {
                 e.printStackTrace();
             } catch (TimeoutException e) {
-                marketOrders.put(order.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
+                marketOrders.put(order.getOrderedBy(), MSG, "Sale order failed due to timeout.");
             }
             return null;
         }

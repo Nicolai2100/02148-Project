@@ -31,15 +31,15 @@ public class UserServerCommunicationTask implements Callable<String> {
         try {
             String brokerSpaceStr = String.format("tcp://%s:%d/%s?%s", BROKER_HOSTNAME, BROKER_PORT, MARKET_ORDERS, CONNECTION_TYPE);
             marketOrders = new RemoteSpace(brokerSpaceStr);
-            marketOrders.put("Hello broker");
-            var thing = marketOrders.queryp(new FormalField(String.class));
-            System.out.println(thing[0].toString());
+            //marketOrders.put("Hello broker");
+            //var thing = marketOrders.get(new FormalField(String.class));
+            //System.out.println(thing[0].toString());
 
             marketOrders.put(username, SELL, APPLE, 10);
 
             Object[] res = this.marketOrders.get(
                     new ActualField(username),
-                    new FormalField(String.class),
+                    new ActualField(MSG),
                     new FormalField(String.class));
             System.out.println(res[0].toString() + res[1].toString() + res[2].toString());
 
@@ -101,11 +101,9 @@ public class UserServerCommunicationTask implements Callable<String> {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     private void buyStock() throws InterruptedException {
-        //System.out.printf("%s: Placed order to %s %s shares of %s. %n", clientID, args[0], args[2], args[1]);
 
         System.out.println("USCom: Place order...");
 
@@ -115,7 +113,7 @@ public class UserServerCommunicationTask implements Callable<String> {
 
         Object[] res = marketOrders.get(
                 new ActualField(username),
-                new ActualField("MSG"),
+                new ActualField(MSG),
                 new FormalField(String.class)
         );
         System.out.println(res);
