@@ -1,4 +1,4 @@
-package model;
+package returntypes;
 
 public class StockInfo {
 

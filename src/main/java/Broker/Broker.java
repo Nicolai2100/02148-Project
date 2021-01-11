@@ -1,6 +1,6 @@
 package Broker;
 
-import model.StockInfo;
+import returntypes.StockInfo;
 import org.jspace.*;
 
 import java.util.concurrent.*;
@@ -104,7 +104,9 @@ public class Broker {
                 StockInfo stockInfo = new StockInfo(res);
 
                 //Here we send a message (to the bank?) to complete the transaction.
+                //todo - NJL - her - kald til bank?
                 transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
+                //todo - accept af transaktion?
                 System.out.printf("%s sold %d shares of %s to %s.%n", sellOrder.getOrderedBy(), min, sellOrder.getStock(), buyOrder.getOrderedBy());
 
                 if (min < sellOrder.getQuantity()) {

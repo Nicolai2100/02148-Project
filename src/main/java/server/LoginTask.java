@@ -43,9 +43,7 @@ public class LoginTask implements Callable<String> {
     public String call() throws Exception {
 
         System.out.println("Started login thread...");
-
         login(username);
-
         return "Finished login procedure for " + username;
     }
 
@@ -66,9 +64,7 @@ public class LoginTask implements Callable<String> {
             Server.repository.add(userToServerName, userServer);
 
             try {
-                System.out.println("Created private channels...");
-                System.out.println(userToServerName);
-                System.out.println(serverToUserName);
+                System.out.printf("Created private channels for %s...", username);
                 Server.numOfClientsConnected++;
                 System.out.println("Number of clients connected: " + Server.numOfClientsConnected);
             } catch (Exception e) {
@@ -84,13 +80,10 @@ public class LoginTask implements Callable<String> {
 
                 //todo - hjælp hvorfor virker det ikke her?
                 serverUser.put(KO);
-                //serverClient.put(username, KO);
                 Server.logout(username);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
-
-
 }
