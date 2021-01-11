@@ -30,7 +30,7 @@ public class Broker {
     //static final String completedSuccesfully = "COMPLETE";
 
     ExecutorService executor = Executors.newCachedThreadPool();
-    static final int standardTimeout = 5; //TODO: Consider what this should be, or make it possible to set it per order.
+    static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
     static final TimeUnit timeoutUnit = TimeUnit.SECONDS;
     boolean serviceRunning;
 
@@ -119,6 +119,8 @@ public class Broker {
                         new FormalField(String.class)
                 );
                 if (thisOrder == null) {
+                    //If null, it should mean that this particulat order has aldready been processed.
+                    //In that case, just put the matching order back in the space, and let the task finish.
                     putMarketOrder(matchOrder, marketOrdersInProcess);
                     //marketOrders.put(lock);
                     return null; //TODO: Skal der gøres mere her?
