@@ -101,7 +101,7 @@ public class Broker {
                     new FormalField(String.class),
                     new FormalField(String.class),
                     new FormalField(String.class),
-                    new FormalField(Integer.class),
+                    new FormalField(Integer.class)
             };
             matchingTemplateFields = new TemplateField[]{
                     new FormalField(String.class),
@@ -121,16 +121,15 @@ public class Broker {
 
                 marketOrdersInProcess.get(new ActualField(lock));
 
-                /*
                 //Object[] matchingGetRes = marketOrdersInProcess.queryp(matchingTemplateFields);
                 Object[] thisOrderRes = marketOrdersInProcess.queryp(thisOrderTemplateFields);
                 if (thisOrderRes == null) {      //matchingGetRes == null ||
-                    //If null, it should mean that this particulat order has aldready been processed.
+                    //If null, it should mean that this particular order has aldready been processed.
                     //In that case, just put the lock back, and let the task finish.
                     //TODO: Eller hvad, skal der gøres noget andet?
                     marketOrdersInProcess.put(lock);
                     return null; //TODO: Skal der gøres mere her?
-                }*/
+                }
 
                 MarketOrder matchOrder = new MarketOrder(marketOrdersInProcess.get(matchingTemplateFields));
                 marketOrdersInProcess.get(thisOrderTemplateFields);
@@ -158,14 +157,21 @@ public class Broker {
                 System.out.printf("%s sold %d shares of %s to %s.%n", order.getOrderedBy(), min, order.getStock(), matchOrder.getOrderedBy());
 
                 if (min < order.getQuantity()) {
-                    System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
+                    if (order.getOrderType().equals(sellOrderFlag))
+                        System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
+                    if (order.getOrderType().equals(buyOrderFlag))
+                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
+
                     marketOrders.put(
                             order.getOrderedBy(),
                             sellOrderFlag,
                             order.getStock(),
                             order.getQuantity() - min);
                 } else if (min < matchOrder.getQuantity()) {
-                    System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
+                    if (matchOrder.getOrderType().equals(sellOrderFlag))
+                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
+                    if (matchOrder.getOrderType().equals(buyOrderFlag))
+                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
                     marketOrders.put(
                             matchOrder.getOrderedBy(),
                             buyOrderFlag,
