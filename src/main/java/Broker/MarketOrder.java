@@ -34,13 +34,12 @@ public class MarketOrder {
             stock = (String) arr[2];
             quantity = (Integer) arr[3];
         }
-        if (arr.length == 6) {
+        if (arr.length == 5) {
             id = (UUID) arr[0];
             orderedBy = (String) arr[1];
             orderType = (String) arr[2];
             stock = (String) arr[3];
             quantity = (Integer) arr[4];
-            status = (String) arr[5];
         }
 
     }

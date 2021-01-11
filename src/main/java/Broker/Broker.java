@@ -23,10 +23,11 @@ public class Broker {
     static final String sellOrderFlag = "SELL";
     static final String buyOrderFlag = "BUY";
     static final String msgFlag = "MSG";
+    static final String lock = "lock";
 
     //status flags
-    static final String inProcessFlag = "IN_PROCESS";
-    static final String completedSuccesfully = "COMPLETE";
+    //static final String inProcessFlag = "IN_PROCESS";
+    //static final String completedSuccesfully = "COMPLETE";
 
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 5; //TODO: Consider what this should be, or make it possible to set it per order.
@@ -46,6 +47,7 @@ public class Broker {
     private void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 110);
+        marketOrders.put(lock);
         executor.submit(new Broker.Broker.MarketOrderHandler());
     }
 
@@ -64,14 +66,12 @@ public class Broker {
                             new FormalField(String.class), //Name of the stock
                             new FormalField(Integer.class))); //Quantity
                     order.setId(UUID.randomUUID()); //TODO: Skal dette gøres anderledes?
-                    order.setStatus(inProcessFlag);
                     marketOrdersInProcess.put(
                             order.getId(),
                             order.getOrderedBy(),
                             order.getOrderType(),
                             order.getStock(),
-                            order.getQuantity(),
-                            order.getStatus()
+                            order.getQuantity()
                     );
                     Future<String> future = executor.submit(new FindMatchingBuyOrderHandler(order));
                 } catch (InterruptedException e) {
@@ -101,8 +101,7 @@ public class Broker {
                 new FormalField(String.class),
                 new ActualField(matchingOrderType),
                 new ActualField(order.getStock()),
-                new FormalField(Integer.class),
-                new ActualField(inProcessFlag)));
+                new FormalField(Integer.class)));
 
 
         @Override
@@ -110,15 +109,18 @@ public class Broker {
             try {
                 MarketOrder matchOrder = executor.submit(findMatchTask).get(standardTimeout, timeoutUnit);
 
-                MarketOrder thisOrder = new MarketOrder(marketOrdersInProcess.get(
+                marketOrders.get(new ActualField(lock));
+
+                Object[] thisOrder = marketOrdersInProcess.getp(
                         new ActualField(order.getId()),
                         new FormalField(String.class),
                         new FormalField(String.class),
                         new FormalField(Integer.class),
                         new FormalField(String.class)
-                ));
-                if (thisOrder.getStatus().equals(completedSuccesfully)) {
-                    return null; //TODO: Skal der gøres noget her?
+                );
+                if (thisOrder == null) {
+                    putMarketOrder(matchOrder, marketOrdersInProcess);
+                    return null; //TODO: Skal der gøres mere her?
                 }
 
                 //Scenarios:
@@ -138,10 +140,6 @@ public class Broker {
                 //Here we send a message (to the bank?) to complete the transaction.
                 transactions.put(order.getOrderedBy(), matchOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
                 System.out.printf("%s sold %d shares of %s to %s.%n", order.getOrderedBy(), min, order.getStock(), matchOrder.getOrderedBy());
-
-                matchOrder.setStatus(completedSuccesfully);
-                thisOrder.setStatus(completedSuccesfully);
-                putMarketOrder(matchOrder, );
 
                 if (min < order.getQuantity()) {
                     System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
@@ -176,8 +174,7 @@ public class Broker {
                     order.getOrderedBy(),
                     order.getOrderType(),
                     order.getStock(),
-                    order.getQuantity(),
-                    order.getStatus()
+                    order.getQuantity()
             );
         } catch (InterruptedException e) {
             e.printStackTrace();
