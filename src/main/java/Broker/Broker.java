@@ -5,11 +5,16 @@ import org.jspace.*;
 
 import java.util.concurrent.*;
 
+import static shared.Channels.*;
+import static shared.Requests.*;
+import static shared.StockNames.*;
+
 public class Broker {
 
     //Brokerens hostname og port
-    String hostName = "localhost";
-    int port = 9001;
+    //todo slet
+    String hostName = BROKER_HOSTNAME;
+    int port = BROKER_PORT;
 
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
     SequentialSpace marketOrders = new SequentialSpace();
@@ -18,18 +23,22 @@ public class Broker {
 
     SpaceRepository tradeRepo = new SpaceRepository();
 
-    static final String sellOrderFlag = "SELL";
-    static final String buyOrderFlag = "BUY";
-    static final String msgFlag = "MSG";
-
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 5; //TODO: Consider what this should be, or make it possible to set it per order.
     static final TimeUnit timeoutUnit = TimeUnit.SECONDS;
     boolean serviceRunning;
 
     public Broker() {
-        tradeRepo.add("marketOrders", marketOrders);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
+        tradeRepo.add(MARKET_ORDERS, marketOrders);
+
+        try {
+           var thing = marketOrders.get(new FormalField(String.class));
+            System.out.println(thing[0].toString());
+            marketOrders.put("Hello server");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -39,7 +48,7 @@ public class Broker {
 
     private void startService() throws InterruptedException {
         serviceRunning = true;
-        stocks.put("AAPL", 110);
+        stocks.put(APPLE, 110);
         executor.submit(new MarketSaleOrderHandler());
     }
 
@@ -50,13 +59,14 @@ public class Broker {
     class MarketSaleOrderHandler implements Callable<String> {
         @Override
         public String call() throws Exception {
-            while(serviceRunning) {
+            while (serviceRunning) {
                 try {
                     SellMarketOrder sellOrder = new SellMarketOrder(marketOrders.get(
                             new FormalField(String.class), //Name of the client who made the order
-                            new ActualField(sellOrderFlag), //Type of order, eg. SELL or BUY
+                            new ActualField(SELL), //Type of order, eg. SELL or BUY
                             new FormalField(String.class), //Name of the stock
                             new FormalField(Integer.class))); //Quantity
+                    System.out.println("Broker: Order arrived");
                     Future<String> future = executor.submit(new FindMatchingBuyOrderHandler(sellOrder));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -80,15 +90,16 @@ public class Broker {
 
         Callable<BuyMarketOrder> findBuyerTask = () -> new BuyMarketOrder(marketOrders.get(
                 new FormalField(String.class),
-                new ActualField(buyOrderFlag),
+                new ActualField(BUY),
                 new ActualField(sellOrder.getStock()),
                 new FormalField(Integer.class)));
+
 
         @Override
         public String call() throws InterruptedException {
             try {
                 BuyMarketOrder buyOrder = executor.submit(findBuyerTask).get(standardTimeout, timeoutUnit);
-
+                System.out.println("Er her");
                 //Scenarios:
                 //1. The seller wants to sell more than the buyer. The buyer get to buy all the shares he/she wants. The seller makes a new order.
                 //2. The buyer wants to buy more than the seller. The seller sells everything. The buyer makes a new order.
@@ -100,27 +111,28 @@ public class Broker {
 
                 //We find the current stock price
                 Object[] res = stocks.queryp(new ActualField(sellOrder.getStock()), new FormalField(Integer.class));
-                if (res == null) return null; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
+                if (res == null)
+                    return null; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
                 StockInfo stockInfo = new StockInfo(res);
 
                 //Here we send a message (to the bank?) to complete the transaction.
                 //todo - NJL - her - kald til bank?
                 transactions.put(sellOrder.getOrderedBy(), buyOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
-                //todo - accept af transaktion?
-                System.out.printf("%s sold %d shares of %s to %s.%n", sellOrder.getOrderedBy(), min, sellOrder.getStock(), buyOrder.getOrderedBy());
+                //todo - NJL - accept af transaktion?
+                System.out.printf("Broker: %s sold %d shares of %s to %s.%n", sellOrder.getOrderedBy(), min, sellOrder.getStock(), buyOrder.getOrderedBy());
 
                 if (min < sellOrder.getQuantity()) {
-                    System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", sellOrder.getOrderedBy(), sellOrder.getQuantity() - min, sellOrder.getStock());
+                    System.out.printf("Broker: %s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", sellOrder.getOrderedBy(), sellOrder.getQuantity() - min, sellOrder.getStock());
                     marketOrders.put(
                             sellOrder.getOrderedBy(),
-                            sellOrderFlag,
+                            SELL,
                             sellOrder.getStock(),
                             sellOrder.getQuantity() - min);
                 } else if (min < buyOrder.getQuantity()) {
-                    System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", buyOrder.getOrderedBy(), buyOrder.getQuantity() - min, buyOrder.getStock());
+                    System.out.printf("Broker: %s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", buyOrder.getOrderedBy(), buyOrder.getQuantity() - min, buyOrder.getStock());
                     marketOrders.put(
                             buyOrder.getOrderedBy(),
-                            buyOrderFlag,
+                            SELL,
                             buyOrder.getStock(),
                             buyOrder.getQuantity() - min);
                 }
@@ -129,17 +141,18 @@ public class Broker {
             } catch (ExecutionException e) {
                 e.printStackTrace();
             } catch (TimeoutException e) {
-                marketOrders.put(sellOrder.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
+                marketOrders.put(sellOrder.getOrderedBy(), MSG, "Sale order failed due to timeout.");
             }
             return null;
         }
     }
 
-    //TODO: Denne handler skal nok hellere være i "banken" eller hvor det nu ellers er, at transaktioner skal udføres.. I hvert fald der hvor "transaction spacet" er.
+    //TODO: Denne handler skal nok hellere være i "banken" eller hvor det nu ellers er, at transaktioner skal udføres..
+    // I hvert fald der hvor "transaction spacet" er.
     class TransactionsHandler extends Thread {
         @Override
         public void run() {
-            while(serviceRunning) {
+            while (serviceRunning) {
                 try {
                     Transaction t = new Transaction(transactions.get(
                             new FormalField(String.class),

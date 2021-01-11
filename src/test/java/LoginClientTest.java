@@ -1,3 +1,4 @@
+import Broker.Broker;
 import Service.AccountServiceMain;
 import Service.IdentityProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,10 +22,32 @@ class LoginClientTest {
         Runnable r3 = () -> AccountServiceMain.main(null);
         Thread thread3 = new Thread(r3);
         thread3.start();
+
+        Runnable r4 = () -> {
+            try {
+                Broker.main(null);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        };
+        Thread thread4 = new Thread(r4);
+        thread4.start();
     }
 
     @Test
-    void main() {
+    void sellStock() {
+        String[] args = {"Alice", "password", "3"};
+        LoginClient.main(args);
+    }
+
+    @Test
+    void buyStock() {
+        String[] args = {"Alice", "password", "2"};
+        LoginClient.main(args);
+    }
+
+    @Test
+    void queryStocks() {
         String[] args = {"Alice", "password", "1"};
         LoginClient.main(args);
     }

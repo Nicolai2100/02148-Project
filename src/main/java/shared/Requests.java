@@ -4,13 +4,14 @@ public class Requests {
     //Stocks
     public static final String SELL = "sell";
     public static final String BUY = "buy";
+    public static final String MSG = "msg";
+
     public static final String SELL_STOCK = "sell stocks";
     public static final String BUY_STOCK = "buy stocks";
     public static final String QUERY_STOCKS = "query";
     public static final String INSERT_STOCKS = "insert";
     public static final String DELETE_STOCKS = "delete";
     public static final String GET_STOCKS = "get";
-
 
     public static final String LOGIN = "login";
     public static final String LOG_OUT = "bye";

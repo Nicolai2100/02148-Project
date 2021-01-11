@@ -27,7 +27,7 @@ public class IdentityProvider {
             if (!connectedToServer) {
                 // connect to tuple space
                 try {
-                    System.out.println("Trying to establish connection to remote spaces...");
+                    System.out.println(IdentityProvider.class.getName() + ": Trying to establish connection to remote spaces...");
 
                     String serverService = String.format("tcp://localhost:123/%s?%s", SERVER_ID_PROVIDER, CONNECTION_TYPE);
                     String serviceServer = String.format("tcp://localhost:123/%s?%s", ID_PROVIDER_SERVER, CONNECTION_TYPE);
@@ -35,10 +35,10 @@ public class IdentityProvider {
                     idProviderServer = new RemoteSpace(serviceServer);
 
                     connectedToServer = true;
-                    System.out.printf("Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
+                    System.out.printf(IdentityProvider.class.getName() + ": Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
                             serverIdProvider.getUri(),
                             idProviderServer.getUri());
-                    System.out.println("\n\nWaiting for requests...");
+                    System.out.println(IdentityProvider.class.getName() + ":\n\nWaiting for requests...");
 
                 } catch (IOException e) {
                     System.out.println(e.getMessage());
@@ -54,18 +54,18 @@ public class IdentityProvider {
 
                         String username = credentials[0].toString();
                         String password = credentials[1].toString();
-                        System.out.println("Credentials received: " + username + " " + password);
+                        System.out.println(IdentityProvider.class.getName() + ": Credentials received: " + username + " " + password);
 
                         if (namePasswordMap.containsKey(username)) {
                             if (namePasswordMap.get(username).equals(password)) {
-                                System.out.println("Credentials verified at: " + LocalDateTime.now());
+                                System.out.println(IdentityProvider.class.getName() + ": Credentials verified at: " + LocalDateTime.now());
                                 idProviderServer.put(OK);
                             } else {
-                                System.out.println("User submitted wrong password!");
+                                System.out.println(IdentityProvider.class.getName() + ": User submitted wrong password!");
                                 idProviderServer.put(KO);
                             }
                         } else {
-                            System.out.println("No such user exists");
+                            System.out.println(IdentityProvider.class.getName() + ": No such user exists");
                             idProviderServer.put(KO);
                         }
                     } catch (InterruptedException e) {

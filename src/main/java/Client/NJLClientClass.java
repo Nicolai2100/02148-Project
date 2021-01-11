@@ -41,8 +41,6 @@ public class NJLClientClass {
             }
         }
 
-        Scanner s = new Scanner(System.in);
-
         // connect to tuple space
         try {
             String serverService = String.format("tcp://localhost:123/%s?" + CONNECTION_TYPE, SERVER_CLIENT);
@@ -56,6 +54,7 @@ public class NJLClientClass {
         //System.out.println("Established connection to " + serverClient.getUri() + " and " + clientServer.getUri());
 
         System.out.println("Welcome to the Beast Bank!");
+        Scanner s = new Scanner(System.in);
 
         do {
             if (!loggedIn) {  // Slet - for test
@@ -70,6 +69,7 @@ public class NJLClientClass {
                         }
 
                     requestLoop(s);
+                    s.close();
                     System.exit(7);
                 }
             }
@@ -106,13 +106,42 @@ public class NJLClientClass {
         if (message.equalsIgnoreCase("1")) {
             queryData();
         } else if (message.equalsIgnoreCase("2")) {
-            System.out.println("to be implemented");
-        } else if (message.equalsIgnoreCase("2")) {
-            System.out.println("to be implemented");
+            buyStock();
+        } else if (message.equalsIgnoreCase("3")) {
+            sellStock();
+            //Logout
         } else if (message.equalsIgnoreCase("0")) {
             logOut();
             startClient(new String[]{""});
         }
+    }
+
+    private void sellStock() throws InterruptedException {
+        userServer.put(SELL_STOCK);
+    }
+
+    private void buyStock() throws InterruptedException {
+        userServer.put(BUY_STOCK);
+    }
+
+    private void queryData() throws InterruptedException {
+        System.out.println("Requesting data...");
+        //todo use id
+        userServer.put(QUERY_STOCKS);
+
+        String responseStr = "";
+        do {
+            Object[] response = serverUser.get(new FormalField(String.class));
+            responseStr = response[0].toString();
+
+            if (responseStr.equals(MORE_DATA)) {
+                response = serverUser.get(new FormalField(Stock.class));
+                System.out.println(response[0].toString());
+
+            } else if (responseStr.equals(NO_MORE_DATA)) {
+                continue;
+            }
+        } while (responseStr.equals(MORE_DATA));
     }
 
     private boolean logIn(Scanner s) {
@@ -175,25 +204,7 @@ public class NJLClientClass {
         System.out.println("Logging out...");
     }
 
-    private void queryData() throws InterruptedException {
-        System.out.println("requesting data...");
-        //todo use id
-        userServer.put(QUERY_STOCKS);
 
-        String responseStr = "";
-        do {
-            Object[] response = serverUser.get(new FormalField(String.class));
-            responseStr = response[0].toString();
-
-            if (responseStr.equals(MORE_DATA)) {
-                response = serverUser.get(new FormalField(Stock.class));
-                System.out.println(response[0].toString());
-
-            } else if (responseStr.equals(NO_MORE_DATA)) {
-                continue;
-            }
-        } while (responseStr.equals(MORE_DATA));
-    }
 }
 
 

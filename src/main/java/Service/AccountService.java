@@ -41,17 +41,17 @@ public class AccountService {
             if (!connectedToServer) {
                 // connect to tuple space
                 try {
-                    System.out.println(AccountService.class.getName() + "Trying to establish connection to remote spaces...");
+                    System.out.println(AccountService.class.getName() + ": Trying to establish connection to remote spaces...");
                     String serverService = String.format("tcp://localhost:123/%s?%s", SERVER_ACCOUNT_SERVICE, CONNECTION_TYPE);
                     String serviceServer = String.format("tcp://localhost:123/%s?%s", ACCOUNT_SERVICE_SERVER, CONNECTION_TYPE);
                     serverAccountService = new RemoteSpace(serverService);
                     accountServiceServer = new RemoteSpace(serviceServer);
                     connectedToServer = true;
 
-                    System.out.printf(AccountService.class.getName() + "Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
+                    System.out.printf(AccountService.class.getName() + ": Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
                             serverAccountService.getUri(),
                             accountServiceServer.getUri());
-                    System.out.println(AccountService.class.getName() + "\n\nWaiting for requests...");
+                    System.out.println(AccountService.class.getName() + ":\n\nWaiting for requests...");
 
                 } catch (IOException e) {
                     System.out.println(e.getMessage());
@@ -69,16 +69,16 @@ public class AccountService {
                         String username = request[0].toString();
                         String requestStr = request[1].toString();
 
-                        System.out.println(requestStr + " for " + username + " received...");
+                        System.out.println(AccountService.class.getName() + ": " + requestStr + " for " + username + " received...");
 
                         //Does the system contain the user?
                         if (accountsMap.containsKey(username)) {
-                            System.out.println("Credentials verified");
+                            System.out.println(AccountService.class.getName() + ": Account service: Credentials verified");
                             accountServiceServer.put(username, OK);
                             requestDecider(requestStr, username, accountsMap);
 
                         } else {
-                            System.out.println("No such user exists");
+                            System.out.println(AccountService.class.getName() + ": No such user exists");
                             accountServiceServer.put(username, KO);
                         }
                     } catch (InterruptedException e) {
@@ -95,25 +95,24 @@ public class AccountService {
             case QUERY_STOCKS -> {
                 queryUserStocks(accounts, username);
             }
-            case DELETE_STOCKS -> System.out.println("to be implemented!");
-            case INSERT_STOCKS -> System.out.println("to be implemented!");
+            case DELETE_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
+            case INSERT_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
             default -> {
-                System.out.println("ERROR IN SWITCH STMT");
-                throw new Exception("NOT IMPLEMENTED!");
+                System.out.println(AccountService.class.getName() + ": ERROR IN SWITCH STMT");
+                throw new Exception(AccountService.class.getName() + ": NOT IMPLEMENTED!");
             }
         }
     }
 
     public void queryUserStocks(HashMap<String, HashMap> accounts, String username) throws Exception {
-        System.out.println("Retrieving stocks for user: " + username + "...");
+        System.out.println(AccountService.class.getName() + ": Retrieving stocks for user: " + username + "...");
         ArrayList<Stock> stocks = returnListOfUserStocks(accounts, username);
-        System.out.println("Sending stocks to server...");
+        System.out.println(AccountService.class.getName() + ": Sending stocks to server...");
         for (Stock stock : stocks) {
             accountServiceServer.put(username, MORE_DATA);
             accountServiceServer.put(username, stock);
         }
         accountServiceServer.put(username, NO_MORE_DATA);
-
     }
 
     public ArrayList<Stock> returnListOfUserStocks(HashMap<String, HashMap> accounts, String username) throws InterruptedException {
