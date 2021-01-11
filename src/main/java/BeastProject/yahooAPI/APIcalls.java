@@ -21,10 +21,10 @@ public class APIcalls {
 
     public static void main(String[] args) {
         APIcalls apicalls = new APIcalls();
-         apicalls.findStock("AMRN","US");
+        apicalls.findStock("AMRN","US");
         // apicalls.findStock("TSLA","US");
-         SequentialSpace sequentialSpace = (SequentialSpace) getStockRepository().get("AMRN/US");
-         StockModel stock = apicalls.findLatestStockInfo(sequentialSpace);
+        SequentialSpace sequentialSpace = (SequentialSpace) getStockRepository().get("AMRN/US");
+        StockModel stock = apicalls.findLatestStockInfo(sequentialSpace);
     }
 
     /**
