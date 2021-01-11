@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public class MarketOrder {
 
-    private UUID id;
+    private String id;
     protected String orderType; //BUT or SELL TODO: Skal måske være et enum, eller gøres på anden vis?
     private String orderedBy;
     private String stock; //Stock kan måske være en class for sig selv?
@@ -35,7 +35,7 @@ public class MarketOrder {
             quantity = (Integer) arr[3];
         }
         if (arr.length == 5) {
-            id = (UUID) arr[0];
+            id = (String) arr[0];
             orderedBy = (String) arr[1];
             orderType = (String) arr[2];
             stock = (String) arr[3];
@@ -64,11 +64,11 @@ public class MarketOrder {
         return new Object[]{orderedBy, orderType, stock, quantity};
     }
 
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
 

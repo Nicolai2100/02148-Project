@@ -31,7 +31,7 @@ public class Broker {
 
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
-    static final TimeUnit timeoutUnit = TimeUnit.SECONDS;
+    static final TimeUnit timeoutUnit = TimeUnit.HOURS;
     boolean serviceRunning;
 
     public Broker() {
@@ -47,7 +47,7 @@ public class Broker {
     private void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 110);
-        marketOrders.put(lock);
+        marketOrdersInProcess.put(lock);
         executor.submit(new MarketOrderHandler());
     }
 
@@ -65,7 +65,7 @@ public class Broker {
                             new FormalField(String.class), //Type of order, eg. SELL or BUY
                             new FormalField(String.class), //Name of the stock
                             new FormalField(Integer.class))); //Quantity
-                    order.setId(UUID.randomUUID()); //TODO: Skal dette gøres anderledes?
+                    order.setId(UUID.randomUUID().toString()); //TODO: Skal dette gøres anderledes?
                     marketOrdersInProcess.put(
                             order.getId(),
                             order.getOrderedBy(),
@@ -90,41 +90,52 @@ public class Broker {
 
         private MarketOrder order;
         String matchingOrderType;
+        TemplateField[] thisOrderTemplateFields;
+        TemplateField[] matchingTemplateFields;
 
         public FindMatchingBuyOrderHandler(MarketOrder order) {
             this.order = order;
             matchingOrderType = order.getOrderType().equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
+            thisOrderTemplateFields = new TemplateField[]{
+                    new ActualField(order.getId()),
+                    new FormalField(String.class),
+                    new FormalField(String.class),
+                    new FormalField(String.class),
+                    new FormalField(Integer.class),
+            };
+            matchingTemplateFields = new TemplateField[]{
+                    new FormalField(String.class),
+                    new FormalField(String.class),
+                    new ActualField(matchingOrderType),
+                    new ActualField(order.getStock()),
+                    new FormalField(Integer.class)
+            };
         }
 
-        Callable<BuyMarketOrder> findMatchTask = () -> new BuyMarketOrder(marketOrdersInProcess.get(
-                new FormalField(UUID.class),
-                new FormalField(String.class),
-                new ActualField(matchingOrderType),
-                new ActualField(order.getStock()),
-                new FormalField(Integer.class)));
-
+        Callable<MarketOrder> queryMatchTask = () -> new MarketOrder(marketOrdersInProcess.query(matchingTemplateFields));
 
         @Override
         public String call() throws InterruptedException {
             try {
-                MarketOrder matchOrder = executor.submit(findMatchTask).get(standardTimeout, timeoutUnit);
+                MarketOrder matchOrderQuery = executor.submit(queryMatchTask).get(standardTimeout, timeoutUnit);
 
-                //marketOrders.get(new ActualField(lock));
+                marketOrdersInProcess.get(new ActualField(lock));
 
-                Object[] thisOrder = marketOrdersInProcess.getp(
-                        new ActualField(order.getId()),
-                        new FormalField(String.class),
-                        new FormalField(String.class),
-                        new FormalField(Integer.class),
-                        new FormalField(String.class)
-                );
-                if (thisOrder == null) {
+                /*
+                //Object[] matchingGetRes = marketOrdersInProcess.queryp(matchingTemplateFields);
+                Object[] thisOrderRes = marketOrdersInProcess.queryp(thisOrderTemplateFields);
+                if (thisOrderRes == null) {      //matchingGetRes == null ||
                     //If null, it should mean that this particulat order has aldready been processed.
-                    //In that case, just put the matching order back in the space, and let the task finish.
-                    putMarketOrder(matchOrder, marketOrdersInProcess);
-                    //marketOrders.put(lock);
+                    //In that case, just put the lock back, and let the task finish.
+                    //TODO: Eller hvad, skal der gøres noget andet?
+                    marketOrdersInProcess.put(lock);
                     return null; //TODO: Skal der gøres mere her?
-                }
+                }*/
+
+                MarketOrder matchOrder = new MarketOrder(marketOrdersInProcess.get(matchingTemplateFields));
+                marketOrdersInProcess.get(thisOrderTemplateFields);
+
+                marketOrdersInProcess.put(lock);
 
                 //Scenarios:
                 //1. The seller wants to sell more than the buyer. The buyer get to buy all the shares he/she wants. The seller makes a new order.
