@@ -14,7 +14,7 @@ public class Broker {
 
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
     SequentialSpace marketOrders = new SequentialSpace();
-    SequentialSpace marketOrdersInProcess = new SequentialSpace();
+    SequentialSpace marketOrdersInProcess = new SequentialSpace(); //TODO: Denne kan i princippet slås sammen med marketOrders, og det bør stadig fungere.
     SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
     SequentialSpace transactions = new SequentialSpace();
 
@@ -73,7 +73,7 @@ public class Broker {
                             order.getStock(),
                             order.getQuantity()
                     );
-                    Future<String> future = executor.submit(new FindMatchingBuyOrderHandler(order));
+                    executor.submit(new FindMatchingBuyOrderHandler(order));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -109,7 +109,7 @@ public class Broker {
             try {
                 MarketOrder matchOrder = executor.submit(findMatchTask).get(standardTimeout, timeoutUnit);
 
-                marketOrders.get(new ActualField(lock));
+                //marketOrders.get(new ActualField(lock));
 
                 Object[] thisOrder = marketOrdersInProcess.getp(
                         new ActualField(order.getId()),
@@ -120,6 +120,7 @@ public class Broker {
                 );
                 if (thisOrder == null) {
                     putMarketOrder(matchOrder, marketOrdersInProcess);
+                    //marketOrders.put(lock);
                     return null; //TODO: Skal der gøres mere her?
                 }
 
@@ -139,6 +140,8 @@ public class Broker {
 
                 //Here we send a message (to the bank?) to complete the transaction.
                 transactions.put(order.getOrderedBy(), matchOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
+                //TODO: Get OK or NOT OK from bank the confirm/not confirm the transaction. Do something with the response.
+
                 System.out.printf("%s sold %d shares of %s to %s.%n", order.getOrderedBy(), min, order.getStock(), matchOrder.getOrderedBy());
 
                 if (min < order.getQuantity()) {
