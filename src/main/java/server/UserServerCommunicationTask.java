@@ -87,36 +87,20 @@ public class UserServerCommunicationTask implements Callable<String> {
     private void sellStock() throws InterruptedException {
         System.out.println("USCom: Place order...");
 
+        //todo - Wulff - implementer at ordren til broker bliver sendt her:
+
         try {
             marketOrders.put(username, SELL, APPLE, 10);
 
             Object[] res = this.marketOrders.get(
                     new ActualField(username),
-                    new FormalField(String.class),
+                    new ActualField(MSG),
                     new FormalField(String.class));
+
             System.out.println(res[0].toString() + res[1].toString() + res[2].toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //todo - Wulff - implementer at ordren til broker bliver sendt her:
-
-        System.out.println(marketOrders.size());
-        marketOrders.put("Hello broker2");
-
-        var thing2 = marketOrders.queryp(new FormalField(String.class), new FormalField(Integer.class));
-        System.out.println(thing2[0].toString());
-
-        var thing3 = marketOrders.get(new FormalField(String.class));
-        System.out.println(thing3[0].toString());
-
-        marketOrders.put("Hello broker2");
-        var thing = marketOrders.queryp(new FormalField(String.class));
-        System.out.println(thing[0].toString());
-
-        marketOrders.put(username, SELL, APPLE, 10);
-
-        System.out.println(this.marketOrders.size());
-
 
     }
 
