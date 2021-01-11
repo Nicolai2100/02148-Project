@@ -1,7 +1,7 @@
 package Broker;
 
-import model.StockInfo;
 import org.jspace.*;
+import returntypes.StockInfo;
 
 import java.util.UUID;
 import java.util.concurrent.*;
