@@ -1,4 +1,4 @@
-package Client;
+package client;
 
 import org.jspace.ActualField;
 import org.jspace.FormalField;

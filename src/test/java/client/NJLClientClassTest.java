@@ -1,12 +1,13 @@
-import Broker.Broker;
-import Service.AccountServiceMain;
-import Service.IdentityProvider;
+package client;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import service.AccountServiceMain;
+import service.IdentityProvider;
+import broker.Broker;
+import bank.Program;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-class LoginClientTest {
+class NJLClientClassTest {
 
     @BeforeEach
     void setUp() {
@@ -37,18 +38,18 @@ class LoginClientTest {
     @Test
     void sellStock() {
         String[] args = {"Alice", "password", "3"};
-        LoginClient.main(args);
+        new NJLClientClass().startClient(args);
     }
 
     @Test
     void buyStock() {
         String[] args = {"Alice", "password", "2"};
-        LoginClient.main(args);
+        new NJLClientClass().startClient(args);
     }
 
     @Test
     void queryStocks() {
         String[] args = {"Alice", "password", "1"};
-        LoginClient.main(args);
+        new NJLClientClass().startClient(args);
     }
 }

@@ -1,4 +1,4 @@
-package Client;
+package client;
 
 import model.Stock;
 import org.jspace.FormalField;

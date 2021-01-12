@@ -1,4 +1,4 @@
-package Service;
+package service;
 
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;

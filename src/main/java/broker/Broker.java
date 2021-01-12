@@ -1,4 +1,4 @@
-package Broker;
+package broker;
 
 import org.jspace.*;
 import returntypes.StockInfo;

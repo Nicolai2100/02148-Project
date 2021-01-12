@@ -1,4 +1,4 @@
-package Service;
+package service;
 
 public class AccountServiceMain {
     public static void main(String[] args) {
