@@ -14,16 +14,17 @@ public class WulffClient {
     String serverHost = "localhost"; //Lav denne om.
     RemoteSpace trades; //Kunne være et space på en server der indeholder alle "handler".
     RemoteSpace stocks; //Kunne være et space på en server, der indeholder info/priser/etc. om de forskellige stocks.
-
     //Klient info og spaces
     String name = "Alice"; //bare som test.
     SequentialSpace balance = new SequentialSpace(); //Skal dette være i samme space som stocks?
     SequentialSpace clientShareholdings = new SequentialSpace();
+    RemoteSpace remoteStocks;
 
     public static String lock = "lock";
 
     public WulffClient() throws IOException {
         this.trades = new RemoteSpace("tcp://" + serverHost + ":9001/trades?keep");
+        this.stocks = new RemoteSpace("tcp://" + serverHost + ":9001/trades?keep");
     }
 
     public static void main(String[] args) throws IOException {
@@ -97,6 +98,16 @@ public class WulffClient {
         int quantity = scanner.nextInt();
         try {
             sellShares(stock, quantity);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    void queryRemoteStocks() {
+            // SequentialSpace sequentialSpace = this.stocks.get(new ActualField("hej"));
+
+        try {
+            this.stocks.query(new ActualField("lock"));
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

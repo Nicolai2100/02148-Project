@@ -1,0 +1,8 @@
+Til at arbejde med locks ville det jo være fint hvis man ikke lukkede for alle aktier, men kun dem som man skulle bruge.
+Jeg foreslår at lave market orders om til et repository, og det indeholder et space for hver aktie,
+det space oprettes først når der laves en market ordre, og så får det så lov at stå. Inde i hvert space kommer der
+så en lock, så vi kan styre hvor vidt denne aktie handels eller ej. Det undgår at tråde måske sælger den samme aktie,
+og det bidrager til concurrency problemerne med hvis der f.eks skal handles flere aktier i et atomicitet princip.
+
+Er det forstået rigtigt at en client ikke kan query et bestemt Space i en et remotespace, men kun får det seneste
+space, fra et remote repository?

@@ -3,6 +3,8 @@ package Broker;
 import model.StockInfo;
 import org.jspace.*;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.concurrent.*;
 
 public class Broker {
@@ -15,9 +17,8 @@ public class Broker {
     SequentialSpace marketOrders = new SequentialSpace();
     SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
     SequentialSpace transactions = new SequentialSpace();
-
     SpaceRepository tradeRepo = new SpaceRepository();
-
+    ArrayList<SpaceRepository> remoteStocks = new ArrayList<SpaceRepository>();
     static final String sellOrderFlag = "SELL";
     static final String buyOrderFlag = "BUY";
     static final String msgFlag = "MSG";
@@ -29,12 +30,83 @@ public class Broker {
 
     public Broker() {
         tradeRepo.add("marketOrders", marketOrders);
+        tradeRepo.add("AAPL", new SequentialSpace());
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
+        remoteStocks.add(new SpaceRepository());
+        remoteStocks.get(0).add("AAPL", new SequentialSpace());
+        SpaceRepository object = remoteStocks.get(0);
     }
 
     public static void main(String[] args) throws InterruptedException {
         Broker broker = new Broker();
         broker.startService();
+    }
+    SequentialSpace findstock (String stock) {
+        SequentialSpace sequentialSpace = (SequentialSpace) tradeRepo.get(stock);
+        if (sequentialSpace == null) {
+            sequentialSpace = new SequentialSpace();
+            try {
+                sequentialSpace.put("lock");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            tradeRepo.add(stock, sequentialSpace);
+            return sequentialSpace;
+        } else {
+            return sequentialSpace;
+        }
+    }
+
+    boolean buyOrder (String stock, int amount, String buyer) {
+        SequentialSpace sequentialSpace = findstock(stock);
+        try {
+            sequentialSpace.get(new ActualField("lock"));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+            // Seller tuple: seller, amount, atomic
+            try {
+                LinkedList<Object[]> objects = sequentialSpace.queryAll(new FormalField(String.class),
+                        new FormalField(Integer.class),
+                        new FormalField(Boolean.class));
+                ArrayList<Integer, String> sellerlist = new ArrayList<>();
+                int foundstocks = 0;
+                for (Object[] object : objects) {
+                    if (foundstocks + (int) object[1] < amount) {
+                        foundstocks += (int) object[1];
+                        sellerlist.add((String) object[0]);
+                    } else if (foundstocks + (int) object[1] > amount && (boolean) object[2]) {
+                        sequentialSpace.get(new ActualField(object[0]),
+                                new FormalField(Integer.class),
+                                new FormalField(Boolean.class));
+                        sequentialSpace.put(object[0], foundstocks + (int) object[1] - amount, object[2]);
+
+                    } else if (foundstocks + (int) object[1] == amount) {
+                        // do what
+                        sellerlist.add((String) object[0]);
+                        for (String seller : sellerlist) {
+                            sequentialSpace.get(new ActualField(seller),
+                                    new FormalField(Integer.class),
+                                    new FormalField(Boolean.class));
+                        }
+                        return true;
+                    }
+                }
+                // Clean up the now sold ones
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        return false;
+    }
+
+    void sellOrder (String stock, String seller, int amount, boolean sellSome) {
+        SequentialSpace sequentialSpace = findstock(stock);
+        try {
+            sequentialSpace.put(seller, amount, sellSome);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private void startService() throws InterruptedException {
@@ -42,6 +114,7 @@ public class Broker {
         stocks.put("AAPL", 110);
         executor.submit(new MarketSaleOrderHandler());
     }
+
 
     /**
      * The responsibility of this class is to constantly handle new orders to sell shares of a stock.
@@ -122,9 +195,7 @@ public class Broker {
                             buyOrder.getStock(),
                             buyOrder.getQuantity() - min);
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             } catch (TimeoutException e) {
                 marketOrders.put(sellOrder.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
@@ -152,6 +223,14 @@ public class Broker {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+    public class model  {
+            String name;
+            int amount;
+            public model (String name, int amount) {
+                this.name = name;
+                this.amount = amount;
         }
     }
 }
