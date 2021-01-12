@@ -42,7 +42,6 @@ public class Broker {
     public Broker() {
         tradeRepo.add("marketOrders", marketOrders);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
-        System.out.println("hej");
     }
 
     public static void main(String[] args) throws InterruptedException {

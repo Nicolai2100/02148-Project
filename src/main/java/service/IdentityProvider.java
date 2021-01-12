@@ -1,11 +1,12 @@
 package service;
 
+import dao.FakeUserDataAccessService;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
+import shared.SharedEncryption;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 
 import static shared.Channels.*;
 import static shared.Requests.*;
@@ -16,14 +17,11 @@ public class IdentityProvider {
     static RemoteSpace idProviderServer = null;
 
     public static void main(String[] args) {
-        HashMap<String, String> namePasswordMap = new HashMap<>();
-        namePasswordMap.put("user", "password");
-        namePasswordMap.put("Alice", "password");
-        namePasswordMap.put("Bob", "password");
-        namePasswordMap.put("Charlie", "password");
+        FakeUserDataAccessService dao = new FakeUserDataAccessService();
+
+        FakeUserDataAccessService.getDB();
 
         while (true) {
-
             if (!connectedToServer) {
                 // connect to tuple space
                 try {
@@ -56,8 +54,10 @@ public class IdentityProvider {
                         String password = credentials[1].toString();
                         System.out.println(IdentityProvider.class.getName() + ": Credentials received: " + username + " " + password);
 
-                        if (namePasswordMap.containsKey(username)) {
-                            if (namePasswordMap.get(username).equals(password)) {
+                        var optionalUser = dao.selectUserByUsername(username);
+
+                        if (optionalUser.isPresent()) {
+                            if (SharedEncryption.validatePassword(optionalUser.get().getPassword(), password)) {
                                 System.out.println(IdentityProvider.class.getName() + ": Credentials verified at: " + LocalDateTime.now());
                                 idProviderServer.put(OK);
                             } else {
@@ -77,3 +77,27 @@ public class IdentityProvider {
         }
     }
 }
+
+            //todo - NJL - tokens?
+            /*  // validate credentials
+            String hashed = fetchedUser.getPassword();
+            if (BCrypt.checkpw(password, hashed)) {
+            String token = JWTHandler.provider.generateToken(fetchedUser);
+            ctx.header("Authorization", new JWTResponse(token).jwt);
+            // the golden line. All hail this statement
+            ctx.header("Access-Control-Expose-Headers", "Authorization");
+            ctx.status(HttpStatus.OK_200);
+            ctx.result("Success - User login was successful");
+            ctx.json(fetchedUser);
+
+
+
+
+            fetchedUser = getOrCreateRootUser(username);
+            String token = JWTHandler.provider.generateToken(fetchedUser);
+            ctx.header("Authorization", new JWTResponse(token).jwt);
+            ctx.header("Access-Control-Expose-Headers", "Authorization");
+            ctx.status(HttpStatus.OK_200);
+            ctx.result("Success - User login with root was successful");
+            ctx.json(fetchedUser);
+            ctx.contentType(ContentType.JSON);*/

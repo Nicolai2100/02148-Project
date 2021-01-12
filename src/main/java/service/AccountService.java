@@ -5,6 +5,8 @@ import model.Stock;
 import model.User;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
+import org.mindrot.jbcrypt.BCrypt;
+import shared.SharedEncryption;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -25,15 +27,20 @@ public class AccountService {
     RemoteSpace accountServiceServer = null;
     HashMap<String, HashMap> accountsMap;
 
-    public void startService(String[] args) {
+    public AccountService() {
         accountsMap = instantiateTestData();
+    }
 
+    public void startService(String[] args) {
         try {
             requestHandler();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+     //todo NJL transactions() {
+
 
     private void requestHandler() throws Exception {
         while (true) {
@@ -133,15 +140,20 @@ public class AccountService {
         System.out.println("TO BE IMPLEMENTED");
     }
 
-    static HashMap instantiateTestData() {
+    public HashMap instantiateTestData() {
         //todo udskift map med space
         HashMap<String, HashMap> accountsMap = new HashMap<>();
 
-        User alice = new User("Alice", UUID.randomUUID());
-        User bob = new User("Bob", UUID.randomUUID());
-        User charlie = new User("Charlie", UUID.randomUUID());
+        String password = "password";
 
         Account aliceAccount = new Account(100);
+        User alice = new User("Alice", UUID.randomUUID(), SharedEncryption.encryptPassword(password), aliceAccount);
+
+        Account bobAccount = new Account(1000);
+        User bob = new User("Bob", UUID.randomUUID(), SharedEncryption.encryptPassword(password), bobAccount);
+
+        Account charlieAccount = new Account(10);
+        User charlie = new User("Charlie", UUID.randomUUID(), SharedEncryption.encryptPassword(password), charlieAccount);
 
         HashMap<String, Stock> aliceStockMap1 = new HashMap<>();
         HashMap<String, Stock> bobStockMap2 = new HashMap<>();

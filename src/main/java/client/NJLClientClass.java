@@ -173,7 +173,7 @@ public class NJLClientClass {
                 e.printStackTrace();
             }
 
-            Thread.sleep(3000); //Skal bruges for ellers virker det ikke... ?
+            Thread.sleep(1000); //Skal bruges for ellers virker det ikke... ?
 
             //Object[] serverResponse = serverClient.get(new ActualField(username), new FormalField(String.class));
             //todo wtf, virker ikke, når login er forkert - hvorfor?

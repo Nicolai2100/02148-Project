@@ -52,4 +52,22 @@ class NJLClientClassTest {
         String[] args = {"Alice", "password", "1"};
         new NJLClientClass().startClient(args);
     }
+
+    @Test
+    void loginRealUser() {
+        String[] args = {"Alice", "password"};
+        new NJLClientClass().startClient(args);
+    }
+
+    @Test
+    void loginRealUserWrongPassword() {
+        String[] args = {"Alice", "passwor"};
+        new NJLClientClass().startClient(args);
+    }
+
+    @Test
+    void loginWrongUsernameAndPassword() {
+        String[] args = {"Ali", "passwor"};
+        new NJLClientClass().startClient(args);
+    }
 }

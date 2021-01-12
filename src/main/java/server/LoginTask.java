@@ -21,7 +21,7 @@ public class LoginTask implements Callable<String> {
     private final String username;
     private final String password;
 
-    private ExecutorService executor;
+    private final ExecutorService executor;
 
     public LoginTask(SequentialSpace clientServer,
                      SequentialSpace serverClient,

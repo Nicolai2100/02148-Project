@@ -35,13 +35,13 @@ public class UserServerCommunicationTask implements Callable<String> {
             //var thing = marketOrders.get(new FormalField(String.class));
             //System.out.println(thing[0].toString());
 
-            marketOrders.put(username, SELL, APPLE, 10);
+           /* marketOrders.put(username, SELL, APPLE, 10);
 
             Object[] res = this.marketOrders.get(
                     new ActualField(username),
                     new ActualField(MSG),
                     new FormalField(String.class));
-            System.out.println(res[0].toString() + res[1].toString() + res[2].toString());
+            System.out.println(res[0].toString() + res[1].toString() + res[2].toString());*/
 
 
         } catch (Exception e) {
