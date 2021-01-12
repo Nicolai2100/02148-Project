@@ -33,7 +33,7 @@ public class Broker {
 
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
-    static final TimeUnit timeoutUnit = TimeUnit.SECONDS;
+    static final TimeUnit timeoutUnit = TimeUnit.HOURS; //TODO: Just for now, for testing...
     boolean serviceRunning;
 
     public Broker() {
@@ -160,20 +160,24 @@ public class Broker {
             return matches;
         };
 
-        Callable<Boolean> waitForQuantityTask = () -> {
+        Callable<Boolean> waitForConditionalTotalQuantity = () -> {
             while (true) {
+                //We put a tuple that signals that the task is waiting for the total value to change.
                 marketOrdersInProcess.put(order.getId(), order.getOrderType(), order.getStock(), waitingForNewTotal);
+                //We wait for a tuple that signals that the total value has changed.
                 marketOrdersInProcess.get(
                         new ActualField(order.getId()),
                         new ActualField(order.getOrderType()),
                         new ActualField(order.getStock()),
                         new ActualField(newTotal)
                 );
+                //We retrieve the first signal tuplet, so that the task is not signaling anymore.
                 marketOrdersInProcess.get(
                         new ActualField(order.getId()),
                         new ActualField(order.getOrderType()),
                         new ActualField(order.getStock()),
                         new ActualField(waitingForNewTotal));
+                //We check the condition. If it's true, we break the loop.
                 int currentTotal = (Integer) marketOrdersInProcess.query(totalSharesTemplateFields)[3];
                 if (currentTotal >= order.getQuantity())
                     break;
@@ -184,43 +188,25 @@ public class Broker {
         @Override
         public String call() throws InterruptedException {
             try {
-                //Here we want to get the total number of shares of the specific stock currently for either sale or purchase.
-                //This information is relevant later.
-                int totalShares = (Integer) marketOrdersInProcess.get(totalSharesTemplateFields)[2];
-                //Then we want to update it by adding the quantity of this new order.
-                totalShares += order.getQuantity();
-                marketOrdersInProcess.put(
-                        totalFlag,
-                        order.getOrderType(),
-                        order.getStock(),
-                        totalShares
-                );
-                //Then we need to signal each task waiting for an update on the total, that it has been updated.
-                List<Object[]> listeners = marketOrdersInProcess.queryAll(
-                        new FormalField(UUID.class),
-                        new FormalField(String.class),
-                        new FormalField(String.class),
-                        new ActualField(waitingForNewTotal)
-                );
-                for (Object[] l : listeners) {
-                    marketOrdersInProcess.put(l[0], l[1], l[2], newTotal);
-                }
-                //Done with updating total and notifying waiting threads.
+                //First we update the total amount of shares of the stock that are currently up for sale/purchase
+                //This also notifies each task that are blocking/waiting for the value to change.
+                updateTotalQuantity(order, order.getQuantity());
 
-
-                Order matchOrderQuery = executor.submit(queryMatchTask).get(standardTimeout, timeoutUnit);
+                //Here we start to wait, until the total number of shares that up for sale/purchase
+                //exceeds the amount that this order wants to buy/sell.
+                executor.submit(waitForConditionalTotalQuantity).get(standardTimeout, timeoutUnit); //TODO: Consider what the timout should be.
 
                 marketOrdersInProcess.get(new ActualField(lock));
 
-                //Object[] matchingGetRes = marketOrdersInProcess.queryp(matchingTemplateFields);
+                //Here we check that this order has not been processed/fulfilled by another orders completion.
                 Object[] thisOrderRes = marketOrdersInProcess.queryp(thisOrderTemplateFields);
-                if (thisOrderRes == null) {      //matchingGetRes == null ||
+                if (thisOrderRes == null) {
                     //If null, it should mean that this particular order has aldready been processed.
                     //In that case, just put the lock back, and let the task finish.
-                    //TODO: Eller hvad, skal der gøres noget andet?
                     marketOrdersInProcess.put(lock);
-                    return null; //TODO: Skal der gøres mere her?
+                    return null; //TODO: Should we do something else here?
                 }
+
 
                 Order matchOrder = new Order(marketOrdersInProcess.get(matchingTemplateFields));
                 marketOrdersInProcess.get(thisOrderTemplateFields);
