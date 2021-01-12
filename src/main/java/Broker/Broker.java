@@ -4,7 +4,8 @@ import model.StockInfo;
 import org.jspace.*;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.*;
 
 public class Broker {
@@ -18,10 +19,10 @@ public class Broker {
     SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
     SequentialSpace transactions = new SequentialSpace();
     SpaceRepository tradeRepo = new SpaceRepository();
-    ArrayList<SpaceRepository> remoteStocks = new ArrayList<SpaceRepository>();
     static final String sellOrderFlag = "SELL";
     static final String buyOrderFlag = "BUY";
     static final String msgFlag = "MSG";
+
 
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 5; //TODO: Consider what this should be, or make it possible to set it per order.
@@ -32,31 +33,17 @@ public class Broker {
         tradeRepo.add("marketOrders", marketOrders);
         tradeRepo.add("AAPL", new SequentialSpace());
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
-        remoteStocks.add(new SpaceRepository());
-        remoteStocks.get(0).add("AAPL", new SequentialSpace());
-        SpaceRepository object = remoteStocks.get(0);
     }
 
     public static void main(String[] args) throws InterruptedException {
         Broker broker = new Broker();
         broker.startService();
     }
-    SequentialSpace findstock (String stock) {
-        SequentialSpace sequentialSpace = (SequentialSpace) tradeRepo.get(stock);
-        if (sequentialSpace == null) {
-            sequentialSpace = new SequentialSpace();
-            try {
-                sequentialSpace.put("lock");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            tradeRepo.add(stock, sequentialSpace);
-            return sequentialSpace;
-        } else {
-            return sequentialSpace;
-        }
-    }
 
+
+    /**
+     *
+     * @return
     boolean buyOrder (String stock, int amount, String buyer) {
         SequentialSpace sequentialSpace = findstock(stock);
         try {
@@ -108,7 +95,7 @@ public class Broker {
             e.printStackTrace();
         }
     }
-
+     */
     private void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 110);
