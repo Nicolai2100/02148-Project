@@ -36,15 +36,23 @@ public class WulffTestClient {
         clientID = scanner.nextLine();
         executor.execute(new BrokerMessageListener());
         while (true) {
+            try {
             String[] args = scanner.nextLine().toUpperCase().split(" ");
+            if (args.length == 1 && args[0].equals("CLEAR")){
+                marketOrders.put("CLEAR");
+            }
             if (args.length == 3) {
                 System.out.printf("%s: Placed order to %s %s shares of %s. %n", clientID, args[0], args[2], args[1]);
+                marketOrders.put(clientID, args[0], args[1], Integer.parseInt(args[2]), 0);
             }
             if (args.length == 4) {
                 System.out.printf("%s: Placed order to %s minimum %s, maximum %s shares of %s. %n", clientID, args[0], args[3], args[2], args[1]);
+                marketOrders.put(clientID, args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]));
             }
-            try {
-                marketOrders.put(clientID, args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]));  //Boolean.parseBoolean(args[3])
+            if (args.length == 5) {
+                System.out.printf("%s: Placed order to %s minimum %s, maximum %s shares of %s. %n", args[0], args[1], args[4], args[3], args[2]);
+                marketOrders.put(args[0], args[1], args[2], Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+            }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

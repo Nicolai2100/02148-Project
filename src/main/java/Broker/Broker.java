@@ -51,6 +51,7 @@ public class Broker {
         marketOrdersInProcess.put(totalFlag, "AAPL", buyOrderFlag, 0); //TODO: Også denne?
         marketOrdersInProcess.put(lock);
         //executor.submit(new NewPackagesHandler());
+        executor.submit(test);
         executor.submit(new NewTestOrderHandler());
     }
 
@@ -68,6 +69,8 @@ public class Broker {
                             new FormalField(Integer.class)));
                             //new FormalField(Boolean.class))); //All or nothing
                     order.setId(UUID.randomUUID()); //TODO: Skal dette gøres anderledes?
+                    System.out.println("Received order:");
+                    System.out.println(order.toString());
                     marketOrdersInProcess.put(
                             order.getId(),
                             order.getOrderedBy(),
@@ -85,6 +88,20 @@ public class Broker {
             return "Handler for handling market sale orders stopped!";
         }
     }
+
+    Runnable test = () -> {
+        while(true) {
+            Object[] s = new Object[0];
+            try {
+                marketOrders.get(new ActualField("CLEAR"));
+                marketOrders = new SequentialSpace();
+                marketOrdersInProcess = new RandomSpace();
+                System.out.println("cleared!");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    };
 
     class Test2 implements Runnable {
         Order order;
