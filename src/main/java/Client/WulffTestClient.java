@@ -63,7 +63,6 @@ public class WulffTestClient {
             }
         }
     }
-    /*
     Runnable brokerMsgListener = () -> {
         while (true) {
             try {
@@ -77,5 +76,5 @@ public class WulffTestClient {
                 e.printStackTrace();
             }
         }
-    };*/
+    };
 }

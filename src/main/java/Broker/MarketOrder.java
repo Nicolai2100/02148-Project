@@ -4,12 +4,12 @@ import java.util.UUID;
 
 public class MarketOrder {
 
-    private String id;
+    private UUID id;
     protected String orderType; //BUT or SELL TODO: Skal måske være et enum, eller gøres på anden vis?
     private String orderedBy;
     private String stock; //Stock kan måske være en class for sig selv?
-    private int quantity; //TODO: Vi kan eventuelt starte med, at man kun kan købe én aktie ad gangen, for et gøre det enklere..
-    private String status;
+    private int quantity;
+
 
     final static String allFlag = "ALL";
     final static String mostFlag = "MOST";
@@ -35,7 +35,7 @@ public class MarketOrder {
             quantity = (Integer) arr[3];
         }
         if (arr.length == 5) {
-            id = (String) arr[0];
+            id = (UUID) arr[0];
             orderedBy = (String) arr[1];
             orderType = (String) arr[2];
             stock = (String) arr[3];
@@ -64,19 +64,11 @@ public class MarketOrder {
         return new Object[]{orderedBy, orderType, stock, quantity};
     }
 
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(UUID id) {
         this.id = id;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 }

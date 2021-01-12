@@ -3,6 +3,8 @@ package Broker;
 import model.StockInfo;
 import org.jspace.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -31,7 +33,7 @@ public class Broker {
 
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
-    static final TimeUnit timeoutUnit = TimeUnit.HOURS;
+    static final TimeUnit timeoutUnit = TimeUnit.SECONDS;
     boolean serviceRunning;
 
     public Broker() {
@@ -65,7 +67,7 @@ public class Broker {
                             new FormalField(String.class), //Type of order, eg. SELL or BUY
                             new FormalField(String.class), //Name of the stock
                             new FormalField(Integer.class))); //Quantity
-                    order.setId(UUID.randomUUID().toString()); //TODO: Skal dette gøres anderledes?
+                    order.setId(UUID.randomUUID()); //TODO: Skal dette gøres anderledes?
                     marketOrdersInProcess.put(
                             order.getId(),
                             order.getOrderedBy(),
@@ -104,7 +106,7 @@ public class Broker {
                     new FormalField(Integer.class)
             };
             matchingTemplateFields = new TemplateField[]{
-                    new FormalField(String.class),
+                    new FormalField(UUID.class),
                     new FormalField(String.class),
                     new ActualField(matchingOrderType),
                     new ActualField(order.getStock()),
@@ -188,7 +190,161 @@ public class Broker {
             return null;
         }
     }
+/*
+    class FindMatchingBuyOrderHandler2 implements Callable<String> {
 
+        private MarketOrder order;
+        String matchingOrderType;
+        TemplateField[] thisOrderTemplateFields;
+        TemplateField[] matchingTemplateFields;
+        private List<MarketOrder> matchOrderQueries = new ArrayList<>();
+        private List<MarketOrder> matchOrdersFinal = new ArrayList<>();
+
+        public FindMatchingBuyOrderHandler2(MarketOrder order) {
+            this.order = order;
+            matchingOrderType = order.getOrderType().equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
+            thisOrderTemplateFields = new TemplateField[]{
+                    new ActualField(order.getId()),
+                    new FormalField(String.class),
+                    new FormalField(String.class),
+                    new FormalField(String.class),
+                    new FormalField(Integer.class)
+            };
+            matchingTemplateFields = new TemplateField[]{
+                    new FormalField(String.class),
+                    new FormalField(String.class),
+                    new ActualField(matchingOrderType),
+                    new ActualField(order.getStock()),
+                    new FormalField(Integer.class)
+            };
+        }
+
+        Runnable findMatchOrdersTask = () -> {
+            while (sumStocksOfMatchOrders(matchOrderQueries) < order.getQuantity()) {
+                try {
+                    MarketOrder matchQuery = new MarketOrder(marketOrdersInProcess.get(matchingTemplateFields));
+                    if (!containsMatchOrder(matchQuery)) matchOrderQueries.add(matchQuery);
+                    putMarketOrder(matchQuery, marketOrdersInProcess);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        Runnable findMatchOrdersTask2 = () -> {
+            while (sumStocksOfMatchOrders(matchOrderQueries) < order.getQuantity()) {
+                List<Object[]> resList = marketOrdersInProcess.queryAll(matchingTemplateFields);
+                matchOrderQueries = new ArrayList<>();
+                for (Object[] res : resList) {
+                    if (sumStocksOfMatchOrders(matchOrderQueries) < order.getQuantity())
+                        matchOrderQueries.add(new MarketOrder(res));
+                }
+                if (sumStocksOfMatchOrders(matchOrderQueries) < order.getQuantity()) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+
+        private int sumStocksOfMatchOrders(List<MarketOrder> orders) {
+            int sum = 0;
+            for (MarketOrder order : orders) {
+                sum += order.getQuantity();
+            }
+            return sum;
+        }
+
+        private boolean containsMatchOrder(MarketOrder order) {
+            for (MarketOrder o : matchOrderQueries) {
+                if (order.getId().equals(o.getId())) return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String call() throws InterruptedException {
+            try {
+                //MarketOrder matchOrderQuery = executor.submit(queryMatchTask).get(standardTimeout, timeoutUnit);
+
+                executor.submit(findMatchOrdersTask2).get(standardTimeout, timeoutUnit);
+
+                marketOrdersInProcess.get(new ActualField(lock));
+
+                Object[] thisOrderRes = marketOrdersInProcess.queryp(thisOrderTemplateFields);
+                if (thisOrderRes == null) {
+                    //If null, it should mean that this particular order has aldready been processed.
+                    //In that case, just put the lock back, and let the task finish.
+                    //TODO: Eller hvad, skal der gøres noget andet?
+                    marketOrdersInProcess.put(lock);
+                    return null; //TODO: Skal der gøres mere her?
+                }
+
+                //MarketOrder matchOrder = new MarketOrder(marketOrdersInProcess.get(matchingTemplateFields));
+
+                for (MarketOrder order : matchOrderQueries) {
+
+                }
+
+                marketOrdersInProcess.get(thisOrderTemplateFields);
+
+                marketOrdersInProcess.put(lock);
+
+                //Scenarios:
+                //1. The seller wants to sell more than the buyer. The buyer get to buy all the shares he/she wants. The seller makes a new order.
+                //2. The buyer wants to buy more than the seller. The seller sells everything. The buyer makes a new order.
+                //3. Seller and buyer wants to buy/sell the same amount.
+
+                //We choose the smallest of the two quantities to find the max number of shares
+                //that the two clients may trade.
+                int min = Math.min(order.getQuantity(), matchOrder.getQuantity());
+
+                //We find the current stock price
+                Object[] res = stocks.queryp(new ActualField(order.getStock()), new FormalField(Integer.class));
+                if (res == null) return null; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
+                StockInfo stockInfo = new StockInfo(res);
+
+                //Here we send a message (to the bank?) to complete the transaction.
+                transactions.put(order.getOrderedBy(), matchOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
+                //TODO: Get OK or NOT OK from bank the confirm/not confirm the transaction. Do something with the response.
+
+                System.out.printf("%s sold %d shares of %s to %s.%n", order.getOrderedBy(), min, order.getStock(), matchOrder.getOrderedBy());
+
+                if (min < order.getQuantity()) {
+                    if (order.getOrderType().equals(sellOrderFlag))
+                        System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
+                    if (order.getOrderType().equals(buyOrderFlag))
+                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
+
+                    marketOrders.put(
+                            order.getOrderedBy(),
+                            sellOrderFlag,
+                            order.getStock(),
+                            order.getQuantity() - min);
+                } else if (min < matchOrder.getQuantity()) {
+                    if (matchOrder.getOrderType().equals(sellOrderFlag))
+                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
+                    if (matchOrder.getOrderType().equals(buyOrderFlag))
+                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
+                    marketOrders.put(
+                            matchOrder.getOrderedBy(),
+                            buyOrderFlag,
+                            matchOrder.getStock(),
+                            matchOrder.getQuantity() - min);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                marketOrders.put(order.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
+            }
+            return null;
+        }
+    }
+*/
     void putMarketOrder(MarketOrder order, Space space) {
         try {
             space.put(
