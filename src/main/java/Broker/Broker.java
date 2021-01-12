@@ -3,9 +3,7 @@ package Broker;
 import model.StockInfo;
 import org.jspace.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class Broker {
@@ -17,7 +15,7 @@ public class Broker {
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
     SequentialSpace newOrderPackages = new SequentialSpace();
     SequentialSpace marketOrders = new SequentialSpace();
-    SequentialSpace marketOrdersInProcess = new SequentialSpace(); //TODO: Denne kan i princippet slås sammen med marketOrders, og det bør stadig fungere.
+    SequentialSpace marketOrdersInProcess = new RandomSpace(); //TODO: Denne kan i princippet slås sammen med marketOrders, og det bør stadig fungere.
     SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
     SequentialSpace transactions = new SequentialSpace();
 
@@ -52,7 +50,66 @@ public class Broker {
         marketOrdersInProcess.put(totalFlag, "AAPL", sellOrderFlag, 0); //TODO: Hvordan kan vi gøre dette et andet sted?
         marketOrdersInProcess.put(totalFlag, "AAPL", buyOrderFlag, 0); //TODO: Også denne?
         marketOrdersInProcess.put(lock);
-        executor.submit(new NewPackagesHandler());
+        //executor.submit(new NewPackagesHandler());
+        executor.submit(new NewTestOrderHandler());
+    }
+
+    class NewTestOrderHandler implements Callable<String> {
+
+        @Override
+        public String call() throws Exception {
+            while(serviceRunning) {
+                try {
+                    Order order = new Order(marketOrders.get(
+                            new FormalField(String.class), //Name of the client who made the order
+                            new FormalField(String.class), //Type of order, eg. SELL or BUY
+                            new FormalField(String.class), //Name of the stock
+                            new FormalField(Integer.class), //Quantity
+                            new FormalField(Integer.class)));
+                            //new FormalField(Boolean.class))); //All or nothing
+                    order.setId(UUID.randomUUID()); //TODO: Skal dette gøres anderledes?
+                    marketOrdersInProcess.put(
+                            order.getId(),
+                            order.getOrderedBy(),
+                            order.getOrderType(),
+                            order.getStock(),
+                            order.getQuantity(),
+                            order.getMinQuantity()
+                            //order.isAllOrNothing()
+                    );
+                    executor.submit(new Test2(order));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            return "Handler for handling market sale orders stopped!";
+        }
+    }
+
+    class Test2 implements Runnable {
+        Order order;
+
+        public Test2(Order order) {
+            this.order = order;
+        }
+
+        @Override
+        public void run() {
+            Set<Order> res;
+            try {
+                Set<Order> start = new HashSet<>();
+                start.add(order);
+                res = executor.submit(new TryFindSetOfMatches(start, order.getQuantity(), order.getMatchingOrderType(), order.getStock())).get();
+                System.out.println("Her kommer resultatet:");
+                for (Order o : res) {
+                    System.out.println(o.toString());
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     class NewPackagesHandler implements Callable<String> {
@@ -70,7 +127,7 @@ public class Broker {
                         order.setId(UUID.randomUUID());
 
                     //Submit the package to be processed by a new task
-                    executor.submit(new Broker.Broker.ProcessOrderPkgTask(orderPkg));
+                    executor.submit(new ProcessOrderPkgTask(orderPkg));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -294,6 +351,66 @@ public class Broker {
             marketOrdersInProcess.put(l[0], l[1], l[2], newTotal);
         }
         //Done with updating total and notifying waiting threads.
+    }
+
+
+    /**
+     * This should recursively try to find orders and add them to a set of orders,
+     * such that the final set contains orders, that "solves the puzzle".
+     */
+    class TryFindSetOfMatches implements Callable<Set<Order>> {
+
+        Set<Order> orders;
+        int q;
+        String matchType; //BUY
+        String otherType; //SELL
+        String stock;
+
+        //tomt set, 10, BUY, aapl
+        public TryFindSetOfMatches(Set<Order> orders, int q, String matchType, String stock) {
+            this.orders = orders;
+            this.q = q;
+            this.matchType = matchType;
+            this.otherType = matchType.equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
+            this.stock = stock;
+        }
+
+        private boolean containsOrder(Order order) {
+            for (Order o : orders) {
+                if (o.getId().equals(order.getId())) return true;
+            }
+            return false;
+        }
+
+        @Override
+        public Set<Order> call() throws Exception {
+            TemplateField[] matchFields = new TemplateField[]{
+                    new FormalField(UUID.class),
+                    new FormalField(String.class),
+                    new ActualField(matchType),
+                    new ActualField(stock),
+                    new FormalField(Integer.class),
+                    new FormalField(Integer.class)
+                    //new FormalField(Boolean.class)
+            };
+
+            Order match = null;
+            do {
+                //This is busy waiting. not good. Observe instead...
+                match = new Order(marketOrdersInProcess.query(matchFields)); //space might need to be random.
+            } while (containsOrder(match));
+
+            orders.add(match);
+            if (match.getQuantity() == q) {
+                return orders;
+            } else if (match.getQuantity() < q) {
+                return executor.submit(new TryFindSetOfMatches(orders, q - match.getQuantity(), matchType, stock)).get();
+            } else if (match.getMinQuantity() > q) {
+                return executor.submit(new TryFindSetOfMatches(orders, match.getQuantity() - q, otherType, stock)).get();
+            } else {
+                return orders;
+            }
+        }
     }
 
 /*

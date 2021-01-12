@@ -13,6 +13,9 @@ public class Order implements Serializable {
     private String orderedBy;
     private String stock; //Stock kan måske være en class for sig selv?
     private int quantity;
+    private int minQuantity;
+    boolean allOrNothing;
+
 
 
     final static String allFlag = "ALL";
@@ -32,18 +35,22 @@ public class Order implements Serializable {
     }
 
     public Order(Object[] arr) {
-        if (arr.length == 4) {
+        if (arr.length == 5) {
             orderedBy = (String) arr[0];
             orderType = (String) arr[1];
             stock = (String) arr[2];
             quantity = (Integer) arr[3];
+            //allOrNothing = (Boolean) arr[4];
+            minQuantity = (Integer) arr[4];
         }
-        if (arr.length == 5) {
+        if (arr.length == 6) {
             id = (UUID) arr[0];
             orderedBy = (String) arr[1];
             orderType = (String) arr[2];
             stock = (String) arr[3];
             quantity = (Integer) arr[4];
+            //allOrNothing = (Boolean) arr[5];
+            minQuantity = (Integer) arr[5];
         }
 
     }
@@ -80,5 +87,22 @@ public class Order implements Serializable {
         return orderType.equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
     }
 
-    public String get
+    public int getMinQuantity() {
+        return minQuantity;
+    }
+
+    public boolean isAllOrNothing() {
+        return allOrNothing;
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "id=" + id +
+                ", orderType='" + orderType + '\'' +
+                ", orderedBy='" + orderedBy + '\'' +
+                ", stock='" + stock + '\'' +
+                ", quantity=" + quantity +
+                '}';
+    }
 }
