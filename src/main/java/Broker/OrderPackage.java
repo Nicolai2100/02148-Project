@@ -7,22 +7,27 @@ import java.util.UUID;
 
 public class OrderPackage implements Serializable {
 
-    private UUID id;
-    private Set<MarketOrder> orders = new HashSet<>(); //TODO: Skal nok laves om, så den tager fx en supertype Order, som både kan være MarketOrder eller LimitOrder
+    private UUID clientID;
+    private UUID packageID;
+    private Set<Order> orders = new HashSet<>(); //TODO: Skal nok laves om, så den tager fx en supertype Order, som både kan være MarketOrder eller LimitOrder
 
-    public UUID getId() {
-        return id;
+    public UUID getClientID() {
+        return clientID;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public UUID getPackageID() {
+        return packageID;
     }
 
-    public Set<MarketOrder> getOrders() {
+    public void setPackageID(UUID packageID) {
+        this.packageID = packageID;
+    }
+
+    public Set<Order> getOrders() {
         return orders;
     }
 
-    public void setOrders(Set<MarketOrder> orders) {
+    public void setOrders(Set<Order> orders) {
         this.orders = orders;
     }
 }

@@ -1,8 +1,12 @@
 package Broker;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public class MarketOrder {
+import static Broker.Broker.buyOrderFlag;
+import static Broker.Broker.sellOrderFlag;
+
+public class Order implements Serializable {
 
     private UUID id;
     protected String orderType; //BUT or SELL TODO: Skal måske være et enum, eller gøres på anden vis?
@@ -14,20 +18,20 @@ public class MarketOrder {
     final static String allFlag = "ALL";
     final static String mostFlag = "MOST";
 
-    public MarketOrder(String orderedBy, String stock, int quantity) {
+    public Order(String orderedBy, String stock, int quantity) {
         this.orderedBy = orderedBy;
         this.stock = stock;
         this.quantity = quantity;
     }
 
-    public MarketOrder(String orderedBy, String orderType, String stock, int quantity) {
+    public Order(String orderedBy, String orderType, String stock, int quantity) {
         this.orderedBy = orderedBy;
         this.orderType = orderType;
         this.stock = stock;
         this.quantity = quantity;
     }
 
-    public MarketOrder(Object[] arr) {
+    public Order(Object[] arr) {
         if (arr.length == 4) {
             orderedBy = (String) arr[0];
             orderType = (String) arr[1];
@@ -71,4 +75,10 @@ public class MarketOrder {
     public void setId(UUID id) {
         this.id = id;
     }
+
+    public String getMatchingOrderType() {
+        return orderType.equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
+    }
+
+    public String get
 }
