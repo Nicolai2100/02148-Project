@@ -1,3 +1,5 @@
+package bank;
+
 import server.Server;
 
 public class Program {

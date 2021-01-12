@@ -1,4 +1,4 @@
-package Broker;
+package broker;
 
 public class SellMarketOrder extends MarketOrder {
     public SellMarketOrder(String orderedBy, String stock, int quantity) {
