@@ -3,8 +3,6 @@ package Broker;
 import model.StockInfo;
 import org.jspace.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -26,10 +24,6 @@ public class Broker {
     static final String buyOrderFlag = "BUY";
     static final String msgFlag = "MSG";
     static final String lock = "lock";
-
-    //status flags
-    //static final String inProcessFlag = "IN_PROCESS";
-    //static final String completedSuccesfully = "COMPLETE";
 
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
@@ -359,25 +353,32 @@ public class Broker {
         }
     }
 
-    //TODO: Denne handler skal nok hellere være i "banken" eller hvor det nu ellers er, at transaktioner skal udføres.. I hvert fald der hvor "transaction spacet" er.
-    class TransactionsHandler extends Thread {
+    /*
+    class MarketOrderHandler implements Callable<String> {
         @Override
-        public void run() {
+        public String call() throws Exception {
             while(serviceRunning) {
                 try {
-                    Transaction t = new Transaction(transactions.get(
-                            new FormalField(String.class),
-                            new FormalField(String.class),
-                            new FormalField(String.class),
-                            new FormalField(Integer.class),
-                            new FormalField(Integer.class)
-                    ));
-                    //TODO: Udfør transaktionen..
-
+                    MarketOrder order = new MarketOrder(marketOrders.get(
+                            new FormalField(String.class), //Name of the client who made the order
+                            new FormalField(String.class), //Type of order, eg. SELL or BUY
+                            new FormalField(String.class), //Name of the stock
+                            new FormalField(Integer.class))); //Quantity
+                    order.setId(UUID.randomUUID()); //TODO: Skal dette gøres anderledes?
+                    marketOrdersInProcess.put(
+                            order.getId(),
+                            order.getOrderedBy(),
+                            order.getOrderType(),
+                            order.getStock(),
+                            order.getQuantity()
+                    );
+                    executor.submit(new FindMatchingBuyOrderHandler(order));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
+            return "Handler for handling market sale orders stopped!";
         }
     }
+    */
 }
