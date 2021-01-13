@@ -57,5 +57,22 @@ public class AccountServiceTest {
 
     }
 
+    @Test
+    public void makeWrongTransaction() {
+        AccountService accountService = new AccountService();
+
+        User alice = FakeUserDataAccessService.getInstance().selectUserByUsername("Alice").get();
+        User bob = FakeUserDataAccessService.getInstance().selectUserByUsername("Bob").get();
+
+        assertEquals(alice.getAccount().getStocks().get(TESLA).getAmount(), 2);
+        //He have 1 to begin with
+        assertEquals(bob.getAccount().getStocks().get(TESLA).getAmount(), 1);
+
+        accountService.makeTransaction(TESLA, - 1, alice, bob, 22.2);
+
+        assertEquals(alice.getAccount().getStocks().get(TESLA).getAmount(), 1);
+        assertEquals(bob.getAccount().getStocks().get(TESLA).getAmount(), 2);
+    }
+
 
 }

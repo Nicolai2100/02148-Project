@@ -10,8 +10,15 @@ public class Channels {
     public static final String SERVER_ACCOUNT_SERVICE = "serverAccountService";
     public static final String ACCOUNT_SERVICE_SERVER = "accountServiceServer";
 
+    public static final String SERVER_BROKER = "serverBroker";
+    public static final String BROKER_SERVER = "brokerServer";
+
     //public static final String CONNECTION_TYPE = "conn";
     public static final String CONNECTION_TYPE = "keep";
+
+    //Server
+    public static final String SERVER_HOSTNAME = "localhost";
+    public static final int SERVER_PORT = 123;
 
     //Broker
     public static final String BROKER_HOSTNAME = "localhost";

@@ -5,18 +5,16 @@ import broker.Broker;
 import org.jspace.SequentialSpace;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 import service.AccountServiceMain;
 import service.IdentityProvider;
 
 import static org.junit.Assert.*;
-import static shared.Requests.*;
+import static shared.Requests.MAKE_TRANSACTION;
 
-public class UserServerCommunicationTaskTest {
+public class TransactionTaskTest {
 
-
-    @BeforeEach
-    void setUp() throws InterruptedException {
+    @Before
+    public void setUp() throws Exception {
         Runnable r4 = () -> {
             try {
                 Broker.main(null);
@@ -40,18 +38,12 @@ public class UserServerCommunicationTaskTest {
         thread3.start();
     }
 
-
     @Test
-    public void call() throws InterruptedException {
-        setUp();
+    public void call() throws Exception {
+       // setUp();
 
-        UserServerCommunicationTask uscom = new UserServerCommunicationTask(
-                new SequentialSpace(),
-                new SequentialSpace(),
-                "Alice");
-        Thread.sleep(2000);
-        uscom.requestResolver(MAKE_TRANSACTION);
-
+     TransactionTask transactionTask = new TransactionTask();
+     transactionTask.call();
 
     }
 }

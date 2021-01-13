@@ -94,4 +94,11 @@ public class Account {
     public void setStocks(HashMap<String, Stock> stockMap) {
         this.stockMap = stockMap;
     }
+
+    public void receivePayment(double payment) {
+        if (payment > 0)
+            setBalance(getBalance() + payment);
+        else
+            throw new StockException("Payment can't be negative!");
+    }
 }

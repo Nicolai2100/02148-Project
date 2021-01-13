@@ -206,26 +206,4 @@ public class Broker {
             e.printStackTrace();
         }
     }
-
-    //TODO: Denne handler skal nok hellere være i "banken" eller hvor det nu ellers er, at transaktioner skal udføres.. I hvert fald der hvor "transaction spacet" er.
-    class TransactionsHandler extends Thread {
-        @Override
-        public void run() {
-            while(serviceRunning) {
-                try {
-                    Transaction t = new Transaction(transactions.get(
-                            new FormalField(String.class),
-                            new FormalField(String.class),
-                            new FormalField(String.class),
-                            new FormalField(Integer.class),
-                            new FormalField(Integer.class)
-                    ));
-                    //TODO: Udfør transaktionen..
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 }

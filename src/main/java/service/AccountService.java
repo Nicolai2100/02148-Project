@@ -3,6 +3,7 @@ package service;
 import dao.FakeUserDataAccessService;
 import model.Stock;
 import model.User;
+import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 
@@ -62,11 +63,10 @@ public class AccountService {
                         //Which user account should be accessed? And what is requested?
                         request = serverAccountService.get(new FormalField(String.class), new FormalField(String.class));
 
-                        String requestStr = request[0].toString();
-                        String username = request[1].toString();
-                        System.out.println(requestStr);
-                        //if (requestStr)
+                        String username = request[0].toString();
+                        String requestStr = request[1].toString();
 
+                        System.out.println(requestStr);
 
                         System.out.println(AccountService.class.getName() + ": " + requestStr + " for " + username + " received...");
 
@@ -91,25 +91,38 @@ public class AccountService {
     }
 
     //The buyer has to send the money
-    public void makeTransaction(String stockName, int amount, User sender, User receiver, double price) {
+    public void makeTransaction(String stockName, int amount, User sender, User receiver, double pricePerStock) {
         Stock stock = null;
 
-        try{
+        try {
             stock = sender.getAccount().withDrawStock(stockName, amount);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        if (stock != null){
-            receiver.getAccount().insertStock(stock);
+        if (stock != null) {
+            try {
+                receiver.getAccount().insertStock(stock);
+                sender.getAccount().receivePayment(pricePerStock * amount);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    public void transactionRequest(User user) {
+    public void transactionRequest(User user) throws InterruptedException {
+        //sender, receiver name, stockname, amount, price per stock
+        var response = serverAccountService.get(
+                new ActualField(user.getName()),
+                new FormalField(String.class),
+                new FormalField(String.class),
+                new FormalField(Integer.class)
+                , new FormalField(Double.class));
 
-        makeTransaction(TESLA, 1, FakeUserDataAccessService.getInstance().selectUserByUsername("Alice").get(),
+        System.out.println(response[0].toString() + response[1].toString() + response[2].toString());
+
+        makeTransaction(TESLA, 1, user,
                 FakeUserDataAccessService.getInstance().selectUserByUsername("Bob").get(), 22.2);
-
-        //accountService.makeTransaction(TESLA, 50.0, alice, bob, 22.2);
 
     }
 

@@ -68,7 +68,7 @@ public class UserServerCommunicationTask implements Callable<String> {
         return "USCom: Handler for User Server comm stopped!";
     }
 
-    private void requestResolver(String request) {
+    public void requestResolver(String request) {
         System.out.println("USCom: User requested: " + request);
         try {
             switch (request) {
@@ -77,16 +77,12 @@ public class UserServerCommunicationTask implements Callable<String> {
                 case SELL_STOCK -> sellStock();
                 case LOG_OUT -> logOut();
 
-                case MAKE_TRANSACTION -> makeTransaction();
                 default -> System.out.println("USCom: ERROR IN SWITCH STMT");
             }
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-    }
-
-    private void makeTransaction() {
     }
 
     private void sellStock() throws InterruptedException {
