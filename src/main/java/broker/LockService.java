@@ -1,4 +1,4 @@
-package Broker;
+package broker;
 
 import org.jspace.ActualField;
 import org.jspace.FormalField;
@@ -86,7 +86,7 @@ public class LockService {
             e.printStackTrace();
         }
     }
-
+    // i needed to return two datatypes, so i had to create an object. 
     public class newLock {
         int num;
         boolean newKeyNum;

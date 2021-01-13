@@ -20,7 +20,6 @@ public class Broker {
     SequentialSpace marketOrdersInProcess = new SequentialSpace(); //TODO: Denne kan i princippet slås sammen med marketOrders, og det bør stadig fungere.
     SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
     SequentialSpace transactions = new SequentialSpace();
-
     SpaceRepository tradeRepo = new SpaceRepository();
 
 /*
