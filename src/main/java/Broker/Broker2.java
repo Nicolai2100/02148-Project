@@ -159,7 +159,7 @@ public class Broker2 {
         private void lockTransactions(Space space) throws InterruptedException {
             space.get(new ActualField(lock));
             space.get(thisTemplate);
-            System.out.println("Her er en række transaktions: ");
+            //System.out.println("Her er en række transaktions: ");
             for (Order o : matchingOrders) {
                 space.get(
                         new ActualField(o.getId()),
@@ -169,10 +169,10 @@ public class Broker2 {
                         new FormalField(Integer.class),
                         new FormalField(Integer.class)
                 );
-                System.out.println(o);
+                //System.out.println(o);
             }
             space.put(lock);
-            space.put("DONE!"); //Kun for test
+            space.put("DONE!", matchingOrders); //Kun for test
         }
 
         @Override
