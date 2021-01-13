@@ -150,6 +150,12 @@ public class Broker2 {
                 newOrderPackages.put("DONE!", result); //TODO: Kun for test
             } catch (InterruptedException | ExecutionException e) {
                 //e.printStackTrace();
+                try {
+                    List<Transaction> result = new ArrayList<>();
+                    newOrderPackages.put("DONE!", result); //TODO: Kun for test;
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace();
+                }
             }
 
             //transactions.add(executor.submit(new ProcessOrderTask(orderPkg, order)).get(standardTimeout, timeoutUnit));
@@ -236,7 +242,7 @@ public class Broker2 {
                 if (totalQfound >= order.getMinQuantity()) {
                     break;
                 } else {
-                    if (checkIfThisExists())
+                    if (!checkIfThisExists())
                         break;
                     waitForChange(space);
                 }
@@ -297,7 +303,7 @@ public class Broker2 {
             try {
                 findMatchingOrders(orders);
                 if (!checkIfThisExists())
-                    return null;
+                    return transactions;
                 lockTransactions(orders);
             } catch (InterruptedException e) {
                 e.printStackTrace();
