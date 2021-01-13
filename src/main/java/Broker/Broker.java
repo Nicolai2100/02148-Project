@@ -1,6 +1,7 @@
 package Broker;
 
 import model.StockInfo;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jspace.*;
 
 import java.util.*;
@@ -112,14 +113,17 @@ public class Broker {
 
         @Override
         public void run() {
-            Set<Order> res;
+            Set<Pair<Order, Order>> res;
             try {
                 Set<Order> start = new HashSet<>();
                 start.add(order);
-                res = executor.submit(new TryFindSetOfMatches(start, order.getQuantity(), order.getMatchingOrderType(), order.getStock())).get();
+                //res = executor.submit(new TryFindSetOfMatches(start, new ArrayList<>(), order.getQuantity(), order.getMatchingOrderType(), order.getStock())).get();
+                res = executor.submit(new TryFindSetOfMatches(start, new HashSet<>(), order, order.getQuantity())).get();
                 System.out.println("Her kommer resultatet:");
-                for (Order o : res) {
-                    System.out.println(o.toString());
+                for (Pair<Order, Order> pair : res) {
+                    //System.out.println(o.toString());
+                    System.out.print(pair.getLeft() + " and " + pair.getRight());
+                    System.out.println();
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -375,21 +379,25 @@ public class Broker {
      * This should recursively try to find orders and add them to a set of orders,
      * such that the final set contains orders, that "solves the puzzle".
      */
-    class TryFindSetOfMatches implements Callable<Set<Order>> {
+    class TryFindSetOfMatches implements Callable<Set<Pair<Order, Order>>> {
 
+        Order order;
         Set<Order> orders;
+        Set<Pair<Order, Order>> pairs;
         int q;
         String matchType; //BUY
         String otherType; //SELL
         String stock;
 
         //tomt set, 10, BUY, aapl
-        public TryFindSetOfMatches(Set<Order> orders, int q, String matchType, String stock) {
+        public TryFindSetOfMatches(Set<Order> orders, Set<Pair<Order, Order>> pairs, Order order, int q) { //, String matchType, String stock
+            this.order = order;
             this.orders = orders;
+            this.pairs = pairs;
             this.q = q;
-            this.matchType = matchType;
-            this.otherType = matchType.equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
-            this.stock = stock;
+            this.matchType = order.getMatchingOrderType();
+            this.otherType = order.getOrderType(); //matchType.equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
+            this.stock = order.getStock();
         }
 
         private boolean containsOrder(Order order) {
@@ -400,7 +408,7 @@ public class Broker {
         }
 
         @Override
-        public Set<Order> call() throws Exception {
+        public Set<Pair<Order, Order>> call() throws Exception {
             TemplateField[] matchFields = new TemplateField[]{
                     new FormalField(UUID.class),
                     new FormalField(String.class),
@@ -417,15 +425,18 @@ public class Broker {
                 match = new Order(marketOrdersInProcess.query(matchFields)); //space might need to be random.
             } while (containsOrder(match));
 
+            pairs.add(Pair.of(order, match));
             orders.add(match);
             if (match.getQuantity() == q) {
-                return orders;
+                return pairs;
             } else if (match.getQuantity() < q) {
-                return executor.submit(new TryFindSetOfMatches(orders, q - match.getQuantity(), matchType, stock)).get();
+                return executor.submit(new TryFindSetOfMatches(orders, pairs, order, q - match.getQuantity())).get();
+                //return executor.submit(new TryFindSetOfMatches(orders, q - match.getQuantity(), matchType, stock)).get();
             } else if (match.getMinQuantity() > q) {
-                return executor.submit(new TryFindSetOfMatches(orders, match.getQuantity() - q, otherType, stock)).get();
+                return executor.submit(new TryFindSetOfMatches(orders, pairs, match, match.getQuantity() - q)).get();
+                //return executor.submit(new TryFindSetOfMatches(orders, match.getQuantity() - q, otherType, stock)).get();
             } else {
-                return orders;
+                return pairs;
             }
         }
     }
