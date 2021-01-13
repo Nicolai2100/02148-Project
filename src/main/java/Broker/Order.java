@@ -14,9 +14,6 @@ public class Order implements Serializable {
     private String stock; //Stock kan måske være en class for sig selv?
     private int quantity;
     private int minQuantity;
-    boolean allOrNothing;
-
-
 
     final static String allFlag = "ALL";
     final static String mostFlag = "MOST";
@@ -91,10 +88,6 @@ public class Order implements Serializable {
         return minQuantity;
     }
 
-    public boolean isAllOrNothing() {
-        return allOrNothing;
-    }
-
     @Override
     public String toString() {
         return "Order{" +
@@ -103,6 +96,7 @@ public class Order implements Serializable {
                 ", orderedBy='" + orderedBy + '\'' +
                 ", stock='" + stock + '\'' +
                 ", quantity=" + quantity +
+                ", minQuantity=" + minQuantity +
                 '}';
     }
 }

@@ -44,10 +44,8 @@ public class Broker2 {
     private void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 110);
-        orders.put(totalFlag, "AAPL", sellOrderFlag, 0); //TODO: Hvordan kan vi gøre dette et andet sted?
-        orders.put(totalFlag, "AAPL", buyOrderFlag, 0); //TODO: Også denne?
         orders.put(lock);
-        executor.submit(new Broker.Broker2.NewOrderHandler());
+        executor.submit(new NewOrderHandler());
     }
 
     class NewOrderHandler implements Callable<String> {
@@ -73,6 +71,7 @@ public class Broker2 {
                             order.getQuantity(),
                             order.getMinQuantity()
                     );
+                    notifyListeners(orders, order);
                     executor.submit(new ProcessOrderTask(order));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -82,16 +81,37 @@ public class Broker2 {
         }
     }
 
+    private void notifyListeners(Space space, Order order) throws InterruptedException {
+        List<Object[]> listeners = space.getAll(
+                new FormalField(UUID.class),
+                new FormalField(String.class),
+                new FormalField(String.class),
+                new ActualField(waiting)
+        );
+        for (Object[] l : listeners) {
+            space.put(l[0], l[1], l[2], notifyChange);
+        }
+    }
+
     class ProcessOrderTask implements Runnable {
 
         Order order;
         List<Order> matchingOrders = new ArrayList<>();
         int totalQfound = 0;
+        TemplateField[] thisTemplate;
         TemplateField[] matchTemplate;
 
         public ProcessOrderTask(Order order) {
             this.order = order;
-            matchTemplate= new TemplateField[]{
+            thisTemplate = new TemplateField[]{
+                    new ActualField(order.getId()),
+                    new ActualField(order.getOrderedBy()),
+                    new ActualField(order.getOrderType()),
+                    new ActualField(order.getStock()),
+                    new FormalField(Integer.class),
+                    new FormalField(Integer.class)
+            };
+            matchTemplate = new TemplateField[]{
                     new FormalField(UUID.class),
                     new FormalField(String.class),
                     new ActualField(order.getMatchingOrderType()),
@@ -122,7 +142,7 @@ public class Broker2 {
                 List<Object[]> res = space.queryAll(matchTemplate);
                 for (Object[] e : res) {
                     Order match = new Order(e);
-                    if (!containsOrder(matchingOrders, match)) {
+                    if (!containsOrder(matchingOrders, match) && (totalQfound + match.getMinQuantity() <= order.getQuantity())) {
                         matchingOrders.add(match);
                         totalQfound += match.getQuantity();
                     }
@@ -136,8 +156,33 @@ public class Broker2 {
             }
         }
 
+        private void lockTransactions(Space space) throws InterruptedException {
+            space.get(new ActualField(lock));
+            space.get(thisTemplate);
+            System.out.println("Her er en række transaktions: ");
+            for (Order o : matchingOrders) {
+                space.get(
+                        new ActualField(o.getId()),
+                        new FormalField(String.class),
+                        new FormalField(String.class),
+                        new ActualField(o.getStock()),
+                        new FormalField(Integer.class),
+                        new FormalField(Integer.class)
+                );
+                System.out.println(o);
+            }
+            space.put(lock);
+            space.put("DONE!"); //Kun for test
+        }
+
         @Override
         public void run() {
+            try {
+                findMatches(orders);
+                lockTransactions(orders);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
