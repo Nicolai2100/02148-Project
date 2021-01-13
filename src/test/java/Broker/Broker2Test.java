@@ -42,11 +42,11 @@ class Broker2Test {
         //orders.get(new ActualField("DONE!"));
     }
 
-    private void printRes(List orders) {
+    private void printRes(List transactions) {
         //if (orders == null || orders.isEmpty()) return;
-        System.out.println("Her kommer ordre til en række transaktions:  ");
-        for (Object o : orders) {
-            System.out.println(o.toString());
+        System.out.println("Her kommer  transaktions:  ");
+        for (Object t : transactions) {
+            System.out.println(t.toString());
         }
     }
 
@@ -180,8 +180,19 @@ class Broker2Test {
     }
 
     @Test
-    void test12() throws InterruptedException {
+    void test12() throws InterruptedException, TimeoutException, ExecutionException {
+        orders.put("ALICE", "SELL", "AAPL", 10, 9);
+        orders.put("BOB", "BUY", "AAPL", 1, 1);
+        orders.put("CHARLIE", "BUY", "AAPL", 2, 1);
+        orders.put("DANIEL", "BUY", "AAPL", 2, 2);
+        orders.put("ELLEN", "BUY", "AAPL", 2, 2);
+        orders.put("FRANK", "BUY", "AAPL", 1, 2);
+        orders.put("GERT", "BUY", "AAPL", 3, 1);
+        //Bør give et resultat
 
+        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
+        assertEquals(res.size(), 6);
+        printRes(res);
     }
 
 }

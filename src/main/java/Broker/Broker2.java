@@ -161,7 +161,7 @@ public class Broker2 {
             space.get(new ActualField(lock));
 
             Object[] thisOrder = space.getp(thisTemplate);
-            if (thisOrder != null) {
+            if (thisOrder == null) {
                 space.put(lock);
                 return;
                 //This means that this order has probably already been processed by another orders task.
@@ -178,8 +178,11 @@ public class Broker2 {
                 );
             }
 
+            generateTransactions(matchingOrders);
+
             space.put(lock);
-            space.put("DONE!", matchingOrders); //TODO: Kun for test
+            //space.put("DONE!", matchingOrders); //TODO: Kun for test
+            space.put("DONE!", transactions); //TODO: Kun for test
         }
 
         private void generateTransactions(List<Order> matches) {
@@ -187,11 +190,13 @@ public class Broker2 {
             for (Order match : matches) {
                 int transactionQ = 0;
                 while ((transactionQ <= remainingQ) && (transactionQ <= match.getQuantity())) transactionQ++;
+                transactionQ -= 1;
                 if (order.getOrderType().equals(sellOrderFlag)) {
                     transactions.add(new Transaction(order.getOrderedBy(), match.getOrderedBy(), order.getStock(), 100, transactionQ));
                 } else {
                     transactions.add(new Transaction(match.getOrderedBy(), order.getOrderedBy(), order.getStock(), 100, transactionQ));
                 }
+                remainingQ -= transactionQ;
             }
         }
 
