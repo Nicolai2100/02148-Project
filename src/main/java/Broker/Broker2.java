@@ -97,6 +97,7 @@ public class Broker2 {
 
         Order order;
         List<Order> matchingOrders = new ArrayList<>();
+        List<Transaction> transactions = new ArrayList<>();
         int totalQfound = 0;
         TemplateField[] thisTemplate;
         TemplateField[] matchTemplate;
@@ -158,8 +159,14 @@ public class Broker2 {
 
         private void lockTransactions(Space space) throws InterruptedException {
             space.get(new ActualField(lock));
-            space.get(thisTemplate);
-            //System.out.println("Her er en række transaktions: ");
+
+            Object[] thisOrder = space.getp(thisTemplate);
+            if (thisOrder != null) {
+                space.put(lock);
+                return;
+                //This means that this order has probably already been processed by another orders task.
+            }
+
             for (Order o : matchingOrders) {
                 space.get(
                         new ActualField(o.getId()),
@@ -169,10 +176,10 @@ public class Broker2 {
                         new FormalField(Integer.class),
                         new FormalField(Integer.class)
                 );
-                //System.out.println(o);
             }
+
             space.put(lock);
-            space.put("DONE!", matchingOrders); //Kun for test
+            space.put("DONE!", matchingOrders); //TODO: Kun for test
         }
 
         @Override
