@@ -132,30 +132,26 @@ public class NJLClientClass {
     }
 
     private void queryData() throws InterruptedException {
-        System.out.println("ER HER 1");
         System.out.println("Requesting data...");
         //todo use id
         userServer.put(QUERY_STOCKS);
 
         String responseStr = "";
         Object[] response;
-        do {
-            /*response = serverUser.get(new FormalField(Double.class));
-            System.out.println("Balance: " + response[0].toString());
 
+        response = serverUser.get(new FormalField(Double.class));
+        System.out.println("Balance: " + response[0].toString());
+        do {
             response = serverUser.get(new FormalField(String.class));
             responseStr = response[0].toString();
 
             if (responseStr.equals(MORE_DATA)) {
-                *//*response = serverUser.get(new FormalField(Stock.class));
+                response = serverUser.get(new FormalField(Stock.class));
                 System.out.println(response[0].toString());
-*//*
-                System.out.println("c more data");
-            } else if (responseStr.equals(NO_MORE_DATA)) {
-                System.out.println("c no more data");
 
+            } else if (responseStr.equals(NO_MORE_DATA)) {
                 continue;
-            }*/
+            }
         } while (responseStr.equals(MORE_DATA));
     }
 

@@ -1,19 +1,16 @@
 package service;
 
+import dao.FakeUserDataAccessService;
 import model.Account;
 import model.Stock;
 import model.User;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
-import org.mindrot.jbcrypt.BCrypt;
 import shared.SharedEncryption;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static shared.Requests.*;
 import static shared.StockNames.*;
@@ -25,10 +22,8 @@ public class AccountService {
     boolean connectedToServer = false;
     RemoteSpace serverAccountService = null;
     RemoteSpace accountServiceServer = null;
-    HashMap<String, HashMap> accountsMap;
 
     public AccountService() {
-        accountsMap = instantiateTestData();
     }
 
     public void startService(String[] args) {
@@ -79,10 +74,11 @@ public class AccountService {
                         System.out.println(AccountService.class.getName() + ": " + requestStr + " for " + username + " received...");
 
                         //Does the system contain the user?
-                        if (accountsMap.containsKey(username)) {
+                        Optional<User> optionalUser = FakeUserDataAccessService.getInstance().selectUserByUsername(username);
+                        if (optionalUser.isPresent()) {
                             System.out.println(AccountService.class.getName() + ": Account service: Credentials verified");
                             accountServiceServer.put(username, OK);
-                            requestDecider(requestStr, username, accountsMap);
+                            requestDecider(requestStr, optionalUser.get());
 
                         } else {
                             System.out.println(AccountService.class.getName() + ": No such user exists");
@@ -97,10 +93,10 @@ public class AccountService {
         }
     }
 
-    public void requestDecider(String request, String username, HashMap<String, HashMap> accounts) throws Exception {
+    public void requestDecider(String request, User user) throws Exception {
         switch (request) {
             case QUERY_STOCKS -> {
-                queryUserStocks(accounts, username);
+                queryUserStocks(user);
             }
             case DELETE_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
             case INSERT_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
@@ -111,20 +107,23 @@ public class AccountService {
         }
     }
 
-    public void queryUserStocks(HashMap<String, HashMap> accounts, String username) throws Exception {
-        System.out.println(AccountService.class.getName() + ": Retrieving stocks for user: " + username + "...");
-        ArrayList<Stock> stocks = returnListOfUserStocks(accounts, username);
+    public void queryUserStocks(User user) throws Exception {
+        System.out.println(AccountService.class.getName() + ": Retrieving stocks for user: " + user.getName() + "...");
+        ArrayList<Stock> stocks = returnListOfUserStocks(user);
         System.out.println(AccountService.class.getName() + ": Sending stocks to server...");
+
+        accountServiceServer.put(user.getName(), user.getAccount().getBalance());
+
         for (Stock stock : stocks) {
-            accountServiceServer.put(username, MORE_DATA);
-            accountServiceServer.put(username, stock);
+            accountServiceServer.put(user.getName(), MORE_DATA);
+            accountServiceServer.put(user.getName(), stock);
         }
-        accountServiceServer.put(username, NO_MORE_DATA);
+        accountServiceServer.put(user.getName(), NO_MORE_DATA);
     }
 
-    public ArrayList<Stock> returnListOfUserStocks(HashMap<String, HashMap> accounts, String username) throws InterruptedException {
+    public ArrayList<Stock> returnListOfUserStocks(User user) throws InterruptedException {
         ArrayList<Stock> stocks = new ArrayList<>();
-        Map<String, Stock> map = accounts.get(username);
+        Map<String, Stock> map = user.getAccount().getStocks();
 
         for (Map.Entry<String, Stock> entry : map.entrySet()) {
             stocks.add(entry.getValue());
@@ -140,35 +139,4 @@ public class AccountService {
         System.out.println("TO BE IMPLEMENTED");
     }
 
-    public HashMap instantiateTestData() {
-        //todo udskift map med space
-        HashMap<String, HashMap> accountsMap = new HashMap<>();
-
-        String password = "password";
-
-        Account aliceAccount = new Account(100);
-        User alice = new User("Alice", UUID.randomUUID(), SharedEncryption.encryptPassword(password), aliceAccount);
-
-        Account bobAccount = new Account(1000);
-        User bob = new User("Bob", UUID.randomUUID(), SharedEncryption.encryptPassword(password), bobAccount);
-
-        Account charlieAccount = new Account(10);
-        User charlie = new User("Charlie", UUID.randomUUID(), SharedEncryption.encryptPassword(password), charlieAccount);
-
-        HashMap<String, Stock> aliceStockMap1 = new HashMap<>();
-        HashMap<String, Stock> bobStockMap2 = new HashMap<>();
-        HashMap<String, Stock> charlieStockMap3 = new HashMap<>();
-
-        aliceStockMap1.put(TESLA, new Stock(TESLA, 20));
-        aliceStockMap1.put(APPLE, new Stock(APPLE, 31));
-        accountsMap.put(alice.getName(), aliceStockMap1);
-
-        bobStockMap2.put(MICROSOFT, new Stock(MICROSOFT, 20));
-        accountsMap.put(bob.getName(), bobStockMap2);
-
-        charlieStockMap3.put(GOOGLE, new Stock(GOOGLE, 31));
-        accountsMap.put(charlie.getName(), charlieStockMap3);
-
-        return accountsMap;
-    }
 }

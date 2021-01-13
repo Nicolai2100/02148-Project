@@ -131,25 +131,29 @@ public class UserServerCommunicationTask implements Callable<String> {
         Server.logout(username);
     }
 
-    private void queryStocks() throws InterruptedException {
+    public void queryStocks() throws InterruptedException {
         //Forward request to account service
         System.out.println("USCom: Sending request...");
-        Server.serverAccountService.put(username, QUERY_STOCKS);
+        Server.serverAccountService.put("Alice", QUERY_STOCKS);
 
         Object[] accountServiceResponse = Server.accountServiceServer.get(
-                new ActualField(username),
+                new ActualField("Alice"),
                 new FormalField(String.class));
         String responseStr = accountServiceResponse[1].toString();
 
         if (responseStr.equals(OK)) {
-            do {
-                System.out.println("USCom: Fetching data...");
+            System.out.println("USCom: Fetching data...");
+            accountServiceResponse = Server.accountServiceServer.get(
+                    new ActualField(username),
+                    new FormalField(Double.class));
 
+            serverUser.put(accountServiceResponse[1]);
+
+            do {
                 accountServiceResponse = Server.accountServiceServer.get(
                         new ActualField(username),
                         new FormalField(String.class));
                 responseStr = accountServiceResponse[1].toString();
-                System.out.println(responseStr);
 
                 if (responseStr.equals(MORE_DATA)) {
                     //Fetching data from service
@@ -169,7 +173,6 @@ public class UserServerCommunicationTask implements Callable<String> {
                     serverUser.put(NO_MORE_DATA);
                     break;
                 }
-                System.out.println();
             } while (responseStr.equals(MORE_DATA));
 
         } else if (responseStr.equals(KO)) {

@@ -49,7 +49,7 @@ public class UserServerCommunicationTaskTest {
                 new SequentialSpace(),
                 new SequentialSpace(),
                 "Alice");
-        uscom.requestResolver(QUERY_MARKETORDERS);
+        uscom.queryStocks();
 
     }
 }
