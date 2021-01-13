@@ -381,23 +381,15 @@ public class Broker {
      */
     class TryFindSetOfMatches implements Callable<Set<Pair<Order, Order>>> {
 
+        Space space;
         Order order;
-        Set<Order> orders;
-        Set<Pair<Order, Order>> pairs;
         int q;
-        String matchType; //BUY
-        String otherType; //SELL
-        String stock;
 
         //tomt set, 10, BUY, aapl
-        public TryFindSetOfMatches(Set<Order> orders, Set<Pair<Order, Order>> pairs, Order order, int q) { //, String matchType, String stock
+        public TryFindSetOfMatches(Space space, Order order, int q) { //, String matchType, String stock
+            this.space = space;
             this.order = order;
-            this.orders = orders;
-            this.pairs = pairs;
             this.q = q;
-            this.matchType = order.getMatchingOrderType();
-            this.otherType = order.getOrderType(); //matchType.equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
-            this.stock = order.getStock();
         }
 
         private boolean containsOrder(Order order) {
@@ -412,8 +404,8 @@ public class Broker {
             TemplateField[] matchFields = new TemplateField[]{
                     new FormalField(UUID.class),
                     new FormalField(String.class),
-                    new ActualField(matchType),
-                    new ActualField(stock),
+                    new ActualField(order.getMatchingOrderType()),
+                    new ActualField(order.getStock()),
                     new FormalField(Integer.class),
                     new FormalField(Integer.class)
                     //new FormalField(Boolean.class)
