@@ -17,6 +17,4 @@ public class Channels {
     public static final String BROKER_HOSTNAME = "localhost";
     public static final int BROKER_PORT = 9001;
     public static final String MARKET_ORDERS = "marketOrders";
-
-
 }
