@@ -182,6 +182,19 @@ public class Broker2 {
             space.put("DONE!", matchingOrders); //TODO: Kun for test
         }
 
+        private void generateTransactions(List<Order> matches) {
+            int remainingQ = order.getQuantity();
+            for (Order match : matches) {
+                int transactionQ = 0;
+                while ((transactionQ <= remainingQ) && (transactionQ <= match.getQuantity())) transactionQ++;
+                if (order.getOrderType().equals(sellOrderFlag)) {
+                    transactions.add(new Transaction(order.getOrderedBy(), match.getOrderedBy(), order.getStock(), 100, transactionQ));
+                } else {
+                    transactions.add(new Transaction(match.getOrderedBy(), order.getOrderedBy(), order.getStock(), 100, transactionQ));
+                }
+            }
+        }
+
         @Override
         public void run() {
             try {

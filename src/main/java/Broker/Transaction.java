@@ -10,6 +10,15 @@ public class Transaction {
     private int quantity;
     private Date date;
 
+    public Transaction(String seller, String buyer, String stockName, int price, int quantity) {
+        this.seller = seller;
+        this.buyer = buyer;
+        this.stockName = stockName;
+        this.price = price;
+        this.quantity = quantity;
+        date = new Date();
+    }
+
     public Transaction(Object[] arr) {
         seller = (String) arr[0];
         buyer = (String) arr[1];
