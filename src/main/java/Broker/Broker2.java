@@ -270,6 +270,8 @@ public class Broker2 {
                 List<Object[]> res = space.queryAll(matchTemplate);
                 for (Object[] e : res) {
                     Order match = new Order(e);
+                    //Break if the sender of both orders are the same client.
+                    if (match.getOrderedBy().equals(order.getOrderedBy())) break;
                     if (!containsOrder(
                             matchingOrders, match) &&
                             !containsOrder(orderPkg.getMatchOrders(), match)
