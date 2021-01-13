@@ -154,9 +154,6 @@ public class Broker2 {
                     }
                 }
                  */
-                /*if (allStillExists) {
-
-                }*/
                 for (ProcessOrderTask task : tasks) {
                     finalTransactions.add(task.lockTransactions(orders));
                 }
