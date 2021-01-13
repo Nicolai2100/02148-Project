@@ -17,9 +17,6 @@ public class IdentityProvider {
     static RemoteSpace idProviderServer = null;
 
     public static void main(String[] args) {
-        FakeUserDataAccessService dao = new FakeUserDataAccessService();
-
-        FakeUserDataAccessService.getDB();
 
         while (true) {
             if (!connectedToServer) {
@@ -33,10 +30,7 @@ public class IdentityProvider {
                     idProviderServer = new RemoteSpace(serviceServer);
 
                     connectedToServer = true;
-                    System.out.printf(IdentityProvider.class.getName() + ": Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
-                            serverIdProvider.getUri(),
-                            idProviderServer.getUri());
-                    System.out.println(IdentityProvider.class.getName() + ":\n\nWaiting for requests...");
+                    System.out.println(IdentityProvider.class.getName() + ":\nWaiting for requests...");
 
                 } catch (IOException e) {
                     System.out.println(e.getMessage());
@@ -54,7 +48,7 @@ public class IdentityProvider {
                         String password = credentials[1].toString();
                         System.out.println(IdentityProvider.class.getName() + ": Credentials received: " + username + " " + password);
 
-                        var optionalUser = dao.selectUserByUsername(username);
+                        var optionalUser = FakeUserDataAccessService.getInstance().selectUserByUsername(username);
 
                         if (optionalUser.isPresent()) {
                             if (SharedEncryption.validatePassword(optionalUser.get().getPassword(), password)) {

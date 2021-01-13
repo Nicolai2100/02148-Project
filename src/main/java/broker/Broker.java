@@ -6,14 +6,15 @@ import returntypes.StockInfo;
 import java.util.UUID;
 import java.util.concurrent.*;
 
+import static shared.Channels.*;
 import static shared.Requests.*;
 
 
 public class Broker {
 
     //Brokerens hostname og port
-    String hostName = "localhost";
-    int port = 9001;
+    String hostName = BROKER_HOSTNAME;
+    int port = BROKER_PORT;
 
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
     SequentialSpace marketOrders = new SequentialSpace();
@@ -22,17 +23,6 @@ public class Broker {
     SequentialSpace transactions = new SequentialSpace();
 
     SpaceRepository tradeRepo = new SpaceRepository();
-
-/*
-    static final String sellOrderFlag = "SELL";
-    static final String buyOrderFlag = "BUY";
-    static final String msgFlag = "MSG";
-    static final String lock = "lock";
-*/
-
-    //status flags
-    //static final String inProcessFlag = "IN_PROCESS";
-    //static final String completedSuccesfully = "COMPLETE";
 
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 1; //TODO: Consider what this should be, or make it possible to set it per order.
@@ -49,7 +39,7 @@ public class Broker {
         broker.startService();
     }
 
-    private void startService() throws InterruptedException {
+    public void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 110);
         marketOrdersInProcess.put(LOCK);
@@ -71,6 +61,15 @@ public class Broker {
                             new FormalField(String.class), //Name of the stock
                             new FormalField(Integer.class))); //Quantity
                     order.setId(UUID.randomUUID().toString()); //TODO: Skal dette gøres anderledes?
+
+                    System.out.println("Broker: ");
+                    System.out.println(order.getOrderedBy());
+                    System.out.println(order.getOrderType());
+                    System.out.println(order.getStatus());
+
+                    marketOrders.put("Hello " + order.getOrderedBy() + " from broker");
+
+
                     marketOrdersInProcess.put(
                             order.getId(),
                             order.getOrderedBy(),

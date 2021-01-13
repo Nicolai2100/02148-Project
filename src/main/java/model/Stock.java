@@ -4,13 +4,22 @@ public class Stock {
     private String name;
     private double price;
     private double boughtAtValue;
+    private int amount;
 
-    public Stock(String name, double boughtAtValue) {
+    public int getAmount() {
+        return amount;
+    }
+
+    public void setAmount(int amount) {
+        this.amount = amount;
+    }
+
+    public Stock(String name, double boughtAtValue, int amount) {
         this.name = name;
         this.boughtAtValue = boughtAtValue;
     }
 
-    public Stock(String name, int boughtAtValue) {
+    public Stock(String name, int boughtAtValue, int amount) {
         this.name = name;
         this.boughtAtValue = boughtAtValue;
     }
@@ -42,6 +51,7 @@ public class Stock {
                 "name='" + name + '\'' +
                 ", price=" + price +
                 ", boughtAtValue=" + boughtAtValue +
+                ", amount=" + amount +
                 '}';
     }
 

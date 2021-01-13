@@ -10,21 +10,13 @@ import service.AccountServiceMain;
 import service.IdentityProvider;
 
 import static org.junit.Assert.*;
+import static shared.Requests.*;
 
 public class UserServerCommunicationTaskTest {
 
 
     @BeforeEach
-    void setUp() {
-
-        Runnable r1 = () -> Program.main(null);
-        Thread thread1 = new Thread(r1);
-        thread1.start();
-
-        /*Runnable r3 = () -> AccountServiceMain.main(null);
-        Thread thread3 = new Thread(r3);
-        thread3.start();*/
-
+    void setUp() throws InterruptedException {
         Runnable r4 = () -> {
             try {
                 Broker.main(null);
@@ -34,14 +26,30 @@ public class UserServerCommunicationTaskTest {
         };
         Thread thread4 = new Thread(r4);
         thread4.start();
+
+        Runnable r1 = () -> Program.main(null);
+        Thread thread1 = new Thread(r1);
+        thread1.start();
+
+        Runnable r2 = () -> IdentityProvider.main(null);
+        Thread thread2 = new Thread(r2);
+        thread2.start();
+
+        Runnable r3 = () -> AccountServiceMain.main(null);
+        Thread thread3 = new Thread(r3);
+        thread3.start();
     }
 
 
     @Test
-    public void call() {
+    public void call() throws InterruptedException {
+        setUp();
+
         UserServerCommunicationTask uscom = new UserServerCommunicationTask(
                 new SequentialSpace(),
                 new SequentialSpace(),
                 "Alice");
+        uscom.requestResolver(QUERY_MARKETORDERS);
+
     }
 }

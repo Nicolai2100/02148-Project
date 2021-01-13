@@ -36,20 +36,32 @@ class NJLClientClassTest {
     }
 
     @Test
-    void sellStock() {
-        String[] args = {"Alice", "password", "3"};
+    void queryMarket() {
+        String[] args = {"Alice", "password", "2"};
         new NJLClientClass().startClient(args);
     }
 
     @Test
-    void buyStock() {
-        String[] args = {"Alice", "password", "2"};
+    void loginRealUser2() {
+        String[] args = {"Alice", "password", "1"};
         new NJLClientClass().startClient(args);
     }
 
     @Test
     void queryStocks() {
         String[] args = {"Alice", "password", "1"};
+        new NJLClientClass().startClient(args);
+    }
+
+    @Test
+    void buyStock() {
+        String[] args = {"Alice", "password", "3"};
+        new NJLClientClass().startClient(args);
+    }
+
+    @Test
+    void sellStock() {
+        String[] args = {"Alice", "password", "4"};
         new NJLClientClass().startClient(args);
     }
 

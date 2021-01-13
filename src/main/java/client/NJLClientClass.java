@@ -1,6 +1,8 @@
 package client;
 
+import model.Account;
 import model.Stock;
+import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 
@@ -106,14 +108,19 @@ public class NJLClientClass {
         if (message.equalsIgnoreCase("1")) {
             queryData();
         } else if (message.equalsIgnoreCase("2")) {
-            buyStock();
+            queryMarket();
         } else if (message.equalsIgnoreCase("3")) {
+            buyStock();
+        } else if (message.equalsIgnoreCase("4")) {
             sellStock();
-            //Logout
         } else if (message.equalsIgnoreCase("0")) {
             logOut();
             startClient(new String[]{""});
         }
+    }
+
+    private void queryMarket() throws InterruptedException {
+        userServer.put(QUERY_MARKETORDERS);
     }
 
     private void sellStock() throws InterruptedException {
@@ -125,22 +132,30 @@ public class NJLClientClass {
     }
 
     private void queryData() throws InterruptedException {
+        System.out.println("ER HER 1");
         System.out.println("Requesting data...");
         //todo use id
         userServer.put(QUERY_STOCKS);
 
         String responseStr = "";
+        Object[] response;
         do {
-            Object[] response = serverUser.get(new FormalField(String.class));
+            /*response = serverUser.get(new FormalField(Double.class));
+            System.out.println("Balance: " + response[0].toString());
+
+            response = serverUser.get(new FormalField(String.class));
             responseStr = response[0].toString();
 
             if (responseStr.equals(MORE_DATA)) {
-                response = serverUser.get(new FormalField(Stock.class));
+                *//*response = serverUser.get(new FormalField(Stock.class));
                 System.out.println(response[0].toString());
-
+*//*
+                System.out.println("c more data");
             } else if (responseStr.equals(NO_MORE_DATA)) {
+                System.out.println("c no more data");
+
                 continue;
-            }
+            }*/
         } while (responseStr.equals(MORE_DATA));
     }
 
@@ -155,13 +170,13 @@ public class NJLClientClass {
         } else {
             System.out.println("Username: " + username);
             System.out.println("Password: " + password);
-
         }
 
         try {
             System.out.println("...sending credentials");
-            //clientServer.put(username, LOGIN);
-            //clientServer.put(username, password);
+            System.out.println(LOGIN);
+            System.out.println(username);
+            System.out.println(password);
             clientServer.put(LOGIN, username, password);
 
             try {
@@ -173,10 +188,8 @@ public class NJLClientClass {
                 e.printStackTrace();
             }
 
-            Thread.sleep(1000); //Skal bruges for ellers virker det ikke... ?
+            Thread.sleep(1000); //Skal bruges for ellers går det for hurtigt ved test virker det ikke... ?
 
-            //Object[] serverResponse = serverClient.get(new ActualField(username), new FormalField(String.class));
-            //todo wtf, virker ikke, når login er forkert - hvorfor?
             Object[] serverResponse = serverUser.get(new FormalField(String.class));
 
             String responseStr = KO;
@@ -203,8 +216,6 @@ public class NJLClientClass {
         userServer.put(LOG_OUT);
         System.out.println("Logging out...");
     }
-
-
 }
 
 

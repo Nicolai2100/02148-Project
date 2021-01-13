@@ -1,23 +1,18 @@
 package model;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Account<T> {
+public class Account  {
     //todo Kredit score - skal udregnes automatisk.
     private double balance;
     private double credit;
 
-    private ArrayList<Stock> stockList = new ArrayList<>();
     private HashMap<String, Stock> stockMap = new HashMap<>();
 
-    public Account(int balance, T stocks) {
+    public Account(int balance, HashMap stocks) {
         this.balance = balance;
         this.credit = 0.0;
-        if (stocks instanceof ArrayList)
-            this.stockList = (ArrayList<Stock>) stocks;
-        else if (stocks instanceof HashMap)
-            this.stockMap = (HashMap<String, Stock>) stocks;
+        this.stockMap = (HashMap<String, Stock>) stocks;
     }
 
     public Account(double balance) {
@@ -41,21 +36,11 @@ public class Account<T> {
         this.credit = credit;
     }
 
-    //todo - NJL - Not the smartest?
-    public T getStocks(T obj) {
-        //if (stockMap.isEmpty())
-        //    return (T) stockList;
-        //else return (T) stockMap;
-        if (obj instanceof ArrayList)
-            return (T) this.stockList;
-        else
-            return (T) this.stockMap;
+    public HashMap<String, Stock> getStocks() {
+        return this.stockMap;
     }
 
-    public void setStocks(T stocks) {
-        if (stocks instanceof ArrayList)
-            this.stockList = (ArrayList<Stock>) stocks;
-        else if (stocks instanceof HashMap)
-            this.stockMap = (HashMap<String, Stock>) stocks;
+    public void setStocks(HashMap<String, Stock> stockMap) {
+        this.stockMap = stockMap;
     }
 }

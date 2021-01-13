@@ -10,6 +10,7 @@ public class Requests {
     public static final String SELL_STOCK = "sell stocks";
     public static final String BUY_STOCK = "buy stocks";
     public static final String QUERY_STOCKS = "query";
+    public static final String QUERY_MARKETORDERS = "QUERY_MARKETORDERS";
     public static final String INSERT_STOCKS = "insert";
     public static final String DELETE_STOCKS = "delete";
     public static final String GET_STOCKS = "get";

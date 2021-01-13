@@ -62,6 +62,7 @@ public class Server {
             String username = requestT[1].toString();
             String password = requestT[2].toString();
             System.out.println(username + " " + request);
+
             requestResolver(request, username, password);
         }
     }
