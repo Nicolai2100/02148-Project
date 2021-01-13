@@ -236,6 +236,8 @@ public class Broker2 {
                 if (totalQfound >= order.getMinQuantity()) {
                     break;
                 } else {
+                    if (checkIfThisExists())
+                        break;
                     waitForChange(space);
                 }
             }
@@ -283,29 +285,24 @@ public class Broker2 {
             }
         }
 
+        private boolean checkIfThisExists() throws InterruptedException {
+            orders.get(new ActualField(lock));
+            boolean b = !(orders.queryp(thisTemplate) == null);
+            orders.put(lock);
+            return b;
+        }
+
         @Override
         public List<Transaction> call() {
             try {
                 findMatchingOrders(orders);
+                if (!checkIfThisExists())
+                    return null;
                 lockTransactions(orders);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             return transactions;
-        }
-    }
-
-    void putMarketOrder(Order order, Space space) {
-        try {
-            space.put(
-                    order.getId(),
-                    order.getOrderedBy(),
-                    order.getOrderType(),
-                    order.getStock(),
-                    order.getQuantity()
-            );
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 }

@@ -221,11 +221,11 @@ class Broker2Test {
 
         ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[1];
         ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[1];
-        ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get()[1];
+        //ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get()[1];
         //assertEquals(res.size(), 2);
         printRes(res);
         printRes(res2);
-        printRes(res3);
+        //printRes(res3);
     }
 
 
