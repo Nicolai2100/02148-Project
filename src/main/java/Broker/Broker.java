@@ -81,7 +81,7 @@ public class Broker {
                             order.getMinQuantity()
                             //order.isAllOrNothing()
                     );
-                    executor.submit(new Test2(order));
+                    //executor.submit(new Test2(order));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -103,7 +103,7 @@ public class Broker {
             }
         }
     };
-
+/*
     class Test2 implements Runnable {
         Order order;
 
@@ -132,7 +132,7 @@ public class Broker {
             }
         }
     }
-
+*/
     class NewPackagesHandler implements Callable<String> {
         @Override
         public String call() throws Exception {
@@ -379,6 +379,7 @@ public class Broker {
      * This should recursively try to find orders and add them to a set of orders,
      * such that the final set contains orders, that "solves the puzzle".
      */
+    /*
     class TryFindSetOfMatches implements Callable<Set<Pair<Order, Order>>> {
 
         Space space;
@@ -432,7 +433,7 @@ public class Broker {
             }
         }
     }
-
+*/
 /*
     class FindMatchingBuyOrderHandler2 implements Callable<String> {
 
@@ -633,30 +634,5 @@ public class Broker {
 
     private void putNewOrder(Space space, Order order) {
         
-    }
-
-
-    class HandleOrderTask implements Callable<String> {
-
-        Order order;
-
-        public HandleOrderTask(Order order) {
-            this.order = order;
-        }
-
-        Callable<Order> lookForExactMatch = () -> {
-            return marketOrdersInProcess.query(
-                    new FormalField(UUID.class),
-                    new FormalField(String.class),
-                    new ActualField(order.getMatchingOrderType()),
-                    new ActualField(order.getStock()),
-                    new FormalField(Integer.class),
-                    new FormalField(Integer.class));
-        }
-
-        @Override
-        public String call() throws Exception {
-            return null;
-        }
     }
 }
