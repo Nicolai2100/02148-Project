@@ -19,10 +19,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class Broker2Test {
 
     RemoteSpace orders;
+    RemoteSpace orderPkgs;
     String brokerHostname = "localhost";
     int brokerPort = 9001;
     ExecutorService executor;
-    int timeout = 4;
+    int timeout = 10; //4
     TimeUnit timoutUnit = TimeUnit.SECONDS;
 
     Callable<Object[]> getDoneTask = () -> {
@@ -34,6 +35,7 @@ class Broker2Test {
     void setup() throws InterruptedException, IOException {
         Broker2.main(new String[]{});
         orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orders?keep");
+        orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orderPackages?keep");
         executor = Executors.newFixedThreadPool(1);
     }
 
@@ -194,5 +196,28 @@ class Broker2Test {
         assertEquals(res.size(), 6);
         printRes(res);
     }
+
+    @Test
+    void test13() throws InterruptedException, TimeoutException, ExecutionException {
+        OrderPackage alice = new OrderPackage();
+        alice.getOrders().add(new Order("SELL", "ALICE", "AAPL", 10, 10));
+        alice.getOrders().add(new Order("BUY", "ALICE", "TESLA", 5, 5));
+
+        OrderPackage bob = new OrderPackage();
+        bob.getOrders().add(new Order("BUY", "BOB", "AAPL", 10, 10));
+
+        OrderPackage charlie = new OrderPackage();
+        charlie.getOrders().add(new Order("BUY", "CHARLIE", "TESLA", 5, 5));
+
+        orderPkgs.put(alice);
+        orderPkgs.put(bob);
+        orderPkgs.put(charlie);
+        //Bør give et resultat
+
+        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
+        assertEquals(res.size(), 2);
+        printRes(res);
+    }
+
 
 }

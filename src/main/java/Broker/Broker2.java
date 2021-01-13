@@ -33,6 +33,7 @@ public class Broker2 {
 
     public Broker2() {
         tradeRepo.add("orders", orders);
+        tradeRepo.add("orderPackages", newOrderPackages);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
     }
 
@@ -45,9 +46,22 @@ public class Broker2 {
         serviceRunning = true;
         stocks.put("AAPL", 110);
         orders.put(lock);
-        executor.submit(new NewOrderHandler());
-    }
+        //executor.submit(new NewOrderHandler());
+        executor.submit(new NewOrderPkgHandler());
 
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+        scheduledExecutorService.schedule(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    notifyListeners(orders);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 5, TimeUnit.SECONDS);
+    }
+/*
     class NewOrderHandler implements Callable<String> {
 
         @Override
@@ -80,6 +94,57 @@ public class Broker2 {
             return "Handler for handling market sale orders stopped!";
         }
     }
+*/
+    class NewOrderPkgHandler implements Runnable {
+
+        @Override
+        public void run() {
+            while(serviceRunning) {
+                try {
+                    OrderPackage orderPkg = (OrderPackage) newOrderPackages.get(new FormalField(OrderPackage.class))[0];
+                    executor.submit(new ProcessPackageTask(orderPkg));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
+    }
+
+    class ProcessPackageTask implements Runnable {
+
+        OrderPackage orderPkg;
+
+        public ProcessPackageTask(OrderPackage orderPkg) {
+            this.orderPkg = orderPkg;
+        }
+
+        @Override
+        public void run() {
+            List<ProcessOrderTask> tasks = new ArrayList<>();
+            List<List<Transaction>> transactions = new ArrayList<>();
+
+            try {
+                for (Order order : orderPkg.getOrders()) {
+                    order.setId(UUID.randomUUID());
+                    orders.put(order);
+                    notifyListeners(orders);
+                    tasks.add(new ProcessOrderTask(orderPkg, order));
+                }
+                List<Future<List<Transaction>>> futures = executor.invokeAll(tasks);
+                for (Future<List<Transaction>> future : futures) {
+                    transactions.add(future.get());
+                }
+                newOrderPackages.put("DONE!", transactions); //TODO: Kun for test
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+
+            //transactions.add(executor.submit(new ProcessOrderTask(orderPkg, order)).get(standardTimeout, timeoutUnit));
+            //space.put("DONE!", matchingOrders); //TODO: Kun for test
+           // newOrderPackages.put("DONE!", transactions); //TODO: Kun for test
+        }
+    }
 
     private void notifyListeners(Space space) throws InterruptedException {
         List<Object[]> listeners = space.getAll(
@@ -93,8 +158,9 @@ public class Broker2 {
         }
     }
 
-    class ProcessOrderTask implements Runnable {
+    class ProcessOrderTask implements Callable<List<Transaction>> {
 
+        OrderPackage orderPkg;
         Order order;
         List<Order> matchingOrders = new ArrayList<>();
         List<Transaction> transactions = new ArrayList<>();
@@ -102,7 +168,8 @@ public class Broker2 {
         TemplateField[] thisTemplate;
         TemplateField[] matchTemplate;
 
-        public ProcessOrderTask(Order order) {
+        public ProcessOrderTask(OrderPackage orderPkg, Order order) {
+            this.orderPkg = orderPkg;
             this.order = order;
             thisTemplate = new TemplateField[]{
                     new ActualField(order.getId()),
@@ -143,8 +210,13 @@ public class Broker2 {
                 List<Object[]> res = space.queryAll(matchTemplate);
                 for (Object[] e : res) {
                     Order match = new Order(e);
-                    if (!containsOrder(matchingOrders, match) && (totalQfound + match.getMinQuantity() <= order.getQuantity())) {
+                    if (!containsOrder(
+                            matchingOrders, match) &&
+                            !containsOrder(orderPkg.getMatchOrders(), match)
+                            && (totalQfound + match.getMinQuantity() <= order.getQuantity())
+                    ) {
                         matchingOrders.add(match);
+                        orderPkg.getMatchOrders().add(match);
                         totalQfound += match.getQuantity();
                     }
                     if (totalQfound >= order.getMinQuantity()) break;
@@ -181,8 +253,6 @@ public class Broker2 {
             generateTransactions(matchingOrders);
 
             space.put(lock);
-            //space.put("DONE!", matchingOrders); //TODO: Kun for test
-            space.put("DONE!", transactions); //TODO: Kun for test
         }
 
         private void generateTransactions(List<Order> matches) {
@@ -201,13 +271,14 @@ public class Broker2 {
         }
 
         @Override
-        public void run() {
+        public List<Transaction> call() {
             try {
                 findMatchingOrders(orders);
                 lockTransactions(orders);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            return transactions;
         }
     }
 

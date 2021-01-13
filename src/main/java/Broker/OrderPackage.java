@@ -1,16 +1,14 @@
 package Broker;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class OrderPackage implements Serializable {
 
     private UUID clientID;
     private UUID packageID;
-    private Set<Order> orders = new HashSet<>(); //TODO: Skal nok laves om, så den tager fx en supertype Order, som både kan være MarketOrder eller LimitOrder
-    private Set<Order> matchOrders = new HashSet<>();
+    private List<Order> orders = new ArrayList<>(); //TODO: Skal nok laves om, så den tager fx en supertype Order, som både kan være MarketOrder eller LimitOrder
+    private List<Order> matchOrders = new ArrayList<>();
 
     public UUID getClientID() {
         return clientID;
@@ -24,15 +22,15 @@ public class OrderPackage implements Serializable {
         this.packageID = packageID;
     }
 
-    public Set<Order> getOrders() {
+    public List<Order> getOrders() {
         return orders;
     }
 
-    public void setOrders(Set<Order> orders) {
+    public void setOrders(List<Order> orders) {
         this.orders = orders;
     }
 
-    public Set<Order> getMatchOrders() {
+    public List<Order> getMatchOrders() {
         return matchOrders;
     }
 }

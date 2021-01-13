@@ -24,11 +24,12 @@ public class Order implements Serializable {
         this.quantity = quantity;
     }
 
-    public Order(String orderedBy, String orderType, String stock, int quantity) {
-        this.orderedBy = orderedBy;
+    public Order(String orderType, String orderedBy, String stock, int quantity, int minQuantity) {
         this.orderType = orderType;
+        this.orderedBy = orderedBy;
         this.stock = stock;
         this.quantity = quantity;
+        this.minQuantity = minQuantity;
     }
 
     public Order(Object[] arr) {
