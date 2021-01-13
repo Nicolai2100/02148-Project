@@ -145,6 +145,7 @@ public class Broker2 {
                 }
 
                 orders.get(new ActualField(lock));
+                /*
                 boolean allStillExist = true;
                 for (ProcessOrderTask task : tasks) {
                     if (orders.queryp(task.getThisTemplate()) == null) {
@@ -152,10 +153,12 @@ public class Broker2 {
                         break;
                     }
                 }
-                if (allStillExist) {
-                    for (ProcessOrderTask task : tasks) {
-                        finalTransactions.add(task.lockTransactions(orders));
-                    }
+                 */
+                /*if (allStillExists) {
+
+                }*/
+                for (ProcessOrderTask task : tasks) {
+                    finalTransactions.add(task.lockTransactions(orders));
                 }
                 orders.put(lock);
 
@@ -294,14 +297,12 @@ public class Broker2 {
         public List<Transaction> lockTransactions(Space space) throws InterruptedException {
             //space.get(new ActualField(lock));
 
-            /*
             Object[] thisOrder = space.getp(thisTemplate);
             if (thisOrder == null) {
                 //space.put(lock);
-                return false;
+                return new ArrayList<>();
                 //This means that this order has probably already been processed by another orders task.
             }
-             */
 
             for (Order o : matchingOrders) {
                 space.get(
