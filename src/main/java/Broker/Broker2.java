@@ -127,7 +127,14 @@ public class Broker2 {
             try {
                 for (Order order : orderPkg.getOrders()) {
                     order.setId(UUID.randomUUID());
-                    orders.put(order);
+                    orders.put(
+                            order.getId(),
+                            order.getOrderedBy(),
+                            order.getOrderType(),
+                            order.getStock(),
+                            order.getQuantity(),
+                            order.getMinQuantity()
+                    );
                     notifyListeners(orders);
                     tasks.add(new ProcessOrderTask(orderPkg, order));
                 }
@@ -135,9 +142,14 @@ public class Broker2 {
                 for (Future<List<Transaction>> future : futures) {
                     transactions.add(future.get());
                 }
-                newOrderPackages.put("DONE!", transactions); //TODO: Kun for test
+
+                List<Transaction> result = new ArrayList<>();
+                for (List<Transaction> l : transactions) {
+                    result.addAll(l);
+                }
+                newOrderPackages.put("DONE!", result); //TODO: Kun for test
             } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
 
             //transactions.add(executor.submit(new ProcessOrderTask(orderPkg, order)).get(standardTimeout, timeoutUnit));
@@ -253,6 +265,7 @@ public class Broker2 {
             generateTransactions(matchingOrders);
 
             space.put(lock);
+            notifyListeners(orders);
         }
 
         private void generateTransactions(List<Order> matches) {

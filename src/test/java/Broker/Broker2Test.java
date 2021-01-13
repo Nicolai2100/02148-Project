@@ -31,6 +31,11 @@ class Broker2Test {
         return res;
     };
 
+    Callable<Object[]> getDoneTask2 = () -> {
+        Object[] res = orderPkgs.get(new ActualField("DONE!"), new FormalField(List.class));
+        return res;
+    };
+
     @BeforeEach
     void setup() throws InterruptedException, IOException {
         Broker2.main(new String[]{});
@@ -207,16 +212,20 @@ class Broker2Test {
         bob.getOrders().add(new Order("BUY", "BOB", "AAPL", 10, 10));
 
         OrderPackage charlie = new OrderPackage();
-        charlie.getOrders().add(new Order("BUY", "CHARLIE", "TESLA", 5, 5));
+        charlie.getOrders().add(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
 
         orderPkgs.put(alice);
-        orderPkgs.put(bob);
         orderPkgs.put(charlie);
+        orderPkgs.put(bob);
         //Bør give et resultat
 
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 2);
+        ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[1];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[1];
+        ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get()[1];
+        //assertEquals(res.size(), 2);
         printRes(res);
+        printRes(res2);
+        printRes(res3);
     }
 
 
