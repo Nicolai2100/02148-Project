@@ -34,7 +34,7 @@ public class AccountService {
         }
     }
 
-     //todo NJL transactions() {
+    //todo NJL transactions() {
 
 
     private void requestHandler() throws Exception {
@@ -95,9 +95,7 @@ public class AccountService {
 
     public void requestDecider(String request, User user) throws Exception {
         switch (request) {
-            case QUERY_STOCKS -> {
-                queryUserStocks(user);
-            }
+            case QUERY_STOCKS -> queryUserStocks(user);
             case DELETE_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
             case INSERT_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
             default -> {
