@@ -23,7 +23,7 @@ class Broker2Test {
     String brokerHostname = "localhost";
     int brokerPort = 9001;
     ExecutorService executor;
-    int timeout = 10; //4
+    int timeout = 4;
     TimeUnit timoutUnit = TimeUnit.SECONDS;
 
     Callable<Object[]> getDoneTask = () -> {
@@ -232,7 +232,7 @@ class Broker2Test {
     }
 
     @Test
-    void test14() throws InterruptedException, TimeoutException, ExecutionException {
+    void test14() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
         alice.getOrders().add(new Order("SELL", "ALICE", "AAPL", 10, 10));
         alice.getOrders().add(new Order("BUY", "ALICE", "TESLA", 5, 5));
@@ -253,9 +253,38 @@ class Broker2Test {
         ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[1];
         ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[1];
         ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get()[1];
-        //assertEquals(res.size(), 2);
         printRes(res);
         printRes(res2);
         printRes(res3);
+    }
+
+    @Test
+    void test15() throws InterruptedException, ExecutionException {
+        OrderPackage alice = new OrderPackage();
+        alice.getOrders().add(new Order("SELL", "ALICE", "AAPL", 10, 10));
+        alice.getOrders().add(new Order("BUY", "ALICE", "TESLA", 5, 5));
+
+        OrderPackage bob = new OrderPackage();
+        bob.getOrders().add(new Order("BUY", "BOB", "AAPL", 10, 10));
+        bob.getOrders().add(new Order("SELL", "BOB", "VESTAS", 8, 5));
+        bob.getOrders().add(new Order("BUY", "BOB", "DTU", 10, 10));
+
+        OrderPackage charlie = new OrderPackage();
+        charlie.getOrders().add(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
+        charlie.getOrders().add(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
+
+        orderPkgs.put(alice);
+        orderPkgs.put(charlie);
+        orderPkgs.put(bob);
+        //Bør give et resultat
+
+        ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[1];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[1];
+        printRes(res);
+        printRes(res2);
+
+        assertThrows(TimeoutException.class, () -> {
+            ArrayList res3 = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
+        });
     }
 }
