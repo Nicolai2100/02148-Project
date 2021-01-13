@@ -24,7 +24,7 @@ public class LockService {
         LockService lockService = new LockService();
         for (int i = 0; i < 22; i++) {
             // Insertorder should be called on this whenever you insert an order into the market space.
-            newLock lock = lockService.insertOrder("AAPL");
+            IntBool lock = lockService.insertOrder("AAPL");
             System.out.println("This num is to be appended to the inserted order: " + lock.num + " and this bool is whather or not " +
                     "a new key should be inserted: " + lock.newKeyNum);
         }
@@ -34,7 +34,7 @@ public class LockService {
             lockService.deleteOrder("AAPL", 1);
             System.out.println("Delete order puts deleted  numbers into a stack, such that the system knows which subsections are incomplete");
         }
-        newLock lock = lockService.insertOrder("AAPL");
+        IntBool lock = lockService.insertOrder("AAPL");
         System.out.println("Added into subsection: " + lock.num + " instead of 2 because earlier entrys had been removed");
     }
 
@@ -44,7 +44,7 @@ public class LockService {
      * @param stock
      * @return newLock returns the number of the next entry, which is the same number to be added as the key if the boolean is true.
      */
-    public newLock insertOrder(String stock) {
+    public IntBool insertOrder(String stock) {
         Object[] object = null;
         // This checks if this is the very first time a certain stock is queried, if so it adds the next set of numbers.
         if (nextEntry.get(stock) == null) {
@@ -58,7 +58,7 @@ public class LockService {
                 e.printStackTrace();
             }
             nextEntry.add(stock, pileSpace);
-            return new newLock(0, true);
+            return new IntBool(0, true);
         }
         try {
             // If there has been put in more orders than has been taken out, we put in the numbers for the next key.
@@ -69,14 +69,14 @@ public class LockService {
                 for (int i = 0; i < maxLockShares - 1; i++) {
                     nextEntry.get(stock).put(nextNum[1]);
                 }
-                return new newLock((int) nextNum[1],true);
+                return new IntBool((int) nextNum[1],true);
             }
             object = nextEntry.get(stock).get(new FormalField(Integer.class));
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         // It will hopefully be different from null because we query the field to find out if it's there.
-        return new newLock((int) object[0], false);
+        return new IntBool((int) object[0], false);
     }
 
     public void deleteOrder(String stock, int num) {
@@ -87,10 +87,10 @@ public class LockService {
         }
     }
     // i needed to return two datatypes, so i had to create an object. 
-    public class newLock {
+    public class IntBool {
         int num;
         boolean newKeyNum;
-        public newLock (int num, boolean newKeyNum) {
+        public IntBool(int num, boolean newKeyNum) {
             this.num = num;
             this.newKeyNum = newKeyNum;
         }

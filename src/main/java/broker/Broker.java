@@ -1,8 +1,13 @@
 package broker;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jspace.*;
 import returntypes.StockInfo;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -22,6 +27,9 @@ public class Broker {
     SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
     SequentialSpace transactions = new SequentialSpace();
     SpaceRepository tradeRepo = new SpaceRepository();
+    SpaceRepository sellOrders = new SpaceRepository();
+    SequentialSpace buyOrders = new SequentialSpace();
+    LockService lockService = new LockService();
 
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 1; //TODO: Consider what this should be, or make it possible to set it per order.
@@ -36,6 +44,29 @@ public class Broker {
     public static void main(String[] args) throws InterruptedException {
         Broker broker = new Broker();
         broker.startService();
+        broker.marketOrders.put("Alice", SELL, "AAPL", 5);
+        broker.marketOrders.put("Bob", SELL, "AAPL", 5);
+        broker.marketOrders.put("Alice", SELL, "TSLA", 3);
+        broker.marketOrders.put("Bob", SELL, "TSLA", 5);
+        ArrayList<SellStock> wantToBuy = new ArrayList<>();
+        SellStock buy1 = new SellStock("AAPL", 10, "charlie");
+        SellStock buy2 = new SellStock("TSLA", 5, "charlie");
+
+        SellStock stock = new SellStock("AAPL", 5, "Alice");
+        SellStock stock1 = new SellStock("AAPL", 5, "Bob");
+        SellStock stock2 = new SellStock("TSLA", 5, "Alice");
+        SellStock stock3 = new SellStock("TSLA", 3, "Bob");
+
+        broker.insertIntoSellOrders(stock, broker.sellOrders, broker);
+
+        broker.insertIntoSellOrders(stock1, broker.sellOrders, broker);
+        broker.insertIntoSellOrders(stock2, broker.sellOrders, broker);
+        broker.insertIntoSellOrders(stock3, broker.sellOrders, broker);
+        wantToBuy.add(buy1);
+        wantToBuy.add(buy2);
+        Thread.sleep(500);
+        broker.conditionalTrade(wantToBuy, "charlie");
+        System.out.println("breakpoint");
     }
 
     public void startService() throws InterruptedException {
@@ -190,6 +221,160 @@ public class Broker {
             }
             return null;
         }
+    }
+
+    public void insertIntoSellOrders(SellStock stock, SpaceRepository sellOrders, Broker broker) {
+        if (sellOrders.get(stock.name) == null) {
+            SequentialSpace sequentialSpace = new SequentialSpace();
+            LockService.IntBool intbool = broker.lockService.insertOrder(stock.name);
+            try {
+            if (intbool.newKeyNum) {
+                sequentialSpace.put("lock",intbool.num);
+            }
+                sequentialSpace.put(stock.owner, stock.amount, intbool.num);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            sellOrders.add(stock.name, sequentialSpace);
+        } else {
+            try {
+                LockService.IntBool intbool = broker.lockService.insertOrder(stock.name);
+                if (intbool.newKeyNum) {
+                    sellOrders.get(stock.name).put("key",intbool.num);
+                }
+                sellOrders.get(stock.name).put(stock.owner, stock.amount, intbool.num);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public SequentialSpace getFromSellOrders(String stock, SpaceRepository sellOrders) {
+        if (sellOrders.get(stock) == null) {
+            sellOrders.add(stock, new SequentialSpace());
+            return new SequentialSpace();
+        } else {
+            return (SequentialSpace) sellOrders.get(stock);
+        }
+    }
+
+//TODO problems - handle the problem when a seller has multiple orders in. Do something with the locks, bank transactions.
+    /**
+     *
+     * @Return bool - is it possible? arraylist<seller, num>
+     */
+    boolean conditionalTrade(ArrayList<SellStock> sellstocks, String buyer) {
+        ReturnList[] sellers = new ReturnList[sellstocks.size()];
+        ArrayList<Lock> locklist = new ArrayList<>();
+        for (int i = 0; i < sellers.length; i++) {
+             Object[] response = findSeller(sellstocks.get(i));
+             sellers[i] = (ReturnList) response[1];
+         //    Lock lock = (Lock) response[0];
+         //    locklist.add(lock);
+             locklist.addAll((Collection<? extends Lock>) response[0]);
+             if (!sellers[i].possible) {
+                 System.out.println("Sufficient shares wasn't found for: " + sellstocks.get(i).name);
+                 return false;
+             }
+            System.out.println("Sellers were found for: " + sellstocks.get(i).name);
+         }
+        for (int i = 0; i < sellers.length; i++) {
+            for (SellStock stock : sellers[i].stocks) {
+                //TODO - put back locks, make bank transaction when it goes through.
+                try {
+                    System.out.println("owner: " + stock.owner + " amount: " + stock.amount + " name " + stock.name);
+                    Object[] response = sellOrders.get(stock.name).get(
+                            new ActualField(stock.owner), // owner
+                            new FormalField(Integer.class),// amount
+                            new FormalField(Integer.class)); //The key number
+                    // TODO the amount i currently get is how many i want to sell, and it can therefore be different from the real number, therefore i use a formal field
+                    // But a person can entry multiple sell orders, and if that happens i might get the wrong order.
+                    //lockService.deleteOrder(stock.name, );
+                    if ((int) response[1] > stock.amount) {
+                        sellOrders.get(stock.name).put(stock.owner, SELL, stock.name, (int) response[1] - stock.amount);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        for (Lock lock : locklist) {
+            try {
+                System.out.println(lock.num);
+                // Object[] objects = locklist.get(i);
+                getFromSellOrders(lock.stock, sellOrders).put("lock", lock.num);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("Transaction was succesfull, the shares were bought.");
+        return true;
+    }
+
+    Object[] findSeller(SellStock stock) {
+        int foundstocks = 0;
+        ReturnList returnlist = new ReturnList(false, new ArrayList<>());
+
+        ArrayList<Object> lockList = new ArrayList<>();
+        Object[] response = getFromSellOrders(stock.name, sellOrders).getp(
+                new ActualField("lock"),
+                new FormalField(Integer.class));
+        Lock lock = new Lock((Integer) response[1], stock.name);
+        lockList.add(lock);
+
+        while (true) {
+        LinkedList<Object[]> orders;
+        orders = getFromSellOrders(stock.name, sellOrders).queryAll(
+                 new FormalField(String.class),//Name of the client who made the order
+                 new FormalField(Integer.class),//quantity
+                 new FormalField(Integer.class)); //the key number
+
+        for (Object[] order : orders) {
+            if (foundstocks + (int) order[1] >= stock.amount) {
+               returnlist.possible = true;
+               returnlist.stocks.add(new SellStock(stock.name, (int) order[1] - (foundstocks + (int) order[1] - stock.amount), (String) order[0]));
+               Object[] returnobjects = new Object[2];
+               returnobjects[0] = lockList;
+               returnobjects[1] = returnlist;
+               return returnobjects;
+            } else {
+                foundstocks += (int) order[1];
+                returnlist.stocks.add(new SellStock(stock.name, (int) order[1], (String) order[0]));
+            }
+        }
+            Object[] res = getFromSellOrders(stock.name, sellOrders).getp(
+                    new ActualField(String.class),
+                    new FormalField(Integer.class));
+            if(res == null) {
+                break;
+            }
+            lock.num = (int) res[1];
+            lock.stock = (String) res[0];
+        }
+        Object[] returnobjects = new Object[2];
+        returnobjects[0] = lockList;
+        returnobjects[1] = returnlist;
+        return returnobjects;
+    }
+
+
+    class ReturnList {
+        boolean possible;
+        ArrayList<SellStock> stocks;
+        public ReturnList(boolean possible, ArrayList<SellStock> stocks) {this.possible = possible; this.stocks = stocks; }
+    }
+
+    class Lock {
+        int num;
+        String stock;
+        public Lock (int num, String stock) { this.num = num; this.stock = stock;}
+    }
+
+    static class SellStock {
+        String name;
+        String owner;
+        int amount;
+        public SellStock(String name, int amount, String owner) {this.name = name; this.amount = amount; this.owner = owner;}
     }
 
     void putMarketOrder(MarketOrder order, Space space) {
