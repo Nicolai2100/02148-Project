@@ -1,5 +1,6 @@
 package service;
 
+import broker.Transaction;
 import dao.FakeUserDataAccessService;
 import model.Stock;
 import model.User;
@@ -12,11 +13,9 @@ import java.util.*;
 
 import static shared.Requests.*;
 import static shared.Channels.*;
-import static shared.StockNames.*;
 
 
 public class AccountService {
-    //static boolean serviceRunning = true;
     boolean connectedToServer = false;
     RemoteSpace serverAccountService = null;
     RemoteSpace accountServiceServer = null;
@@ -31,9 +30,6 @@ public class AccountService {
             e.printStackTrace();
         }
     }
-
-    //todo NJL transactions() {
-
 
     private void requestHandler() throws Exception {
         while (true) {
@@ -66,8 +62,6 @@ public class AccountService {
                         String username = request[0].toString();
                         String requestStr = request[1].toString();
 
-                        System.out.println(requestStr);
-
                         System.out.println(AccountService.class.getName() + ": " + requestStr + " for " + username + " received...");
 
                         //Does the system contain the user?
@@ -90,10 +84,8 @@ public class AccountService {
         }
     }
 
-    //The buyer has to send the money
     public void makeTransaction(String stockName, int amount, User sender, User receiver, double pricePerStock) {
         Stock stock = null;
-
         try {
             stock = sender.getAccount().withDrawStock(stockName, amount);
         } catch (Exception e) {
@@ -111,30 +103,34 @@ public class AccountService {
     }
 
     public void transactionRequest(User user) throws InterruptedException {
-        //sender, receiver name, stockname, amount, price per stock
-        var response = serverAccountService.get(
+        //sender name, receiver name, stock name, price per stock, amount
+        Transaction transaction = new Transaction(serverAccountService.get(
                 new ActualField(user.getName()),
                 new FormalField(String.class),
                 new FormalField(String.class),
+                new FormalField(Double.class),
                 new FormalField(Integer.class)
-                , new FormalField(Double.class));
+        ));
 
-        System.out.println(response[0].toString() + response[1].toString() + response[2].toString());
+        User seller = null, buyer = null;
+        try {
+            seller = FakeUserDataAccessService.getInstance().selectUserByUsername(transaction.getSeller()).get();
+            buyer = FakeUserDataAccessService.getInstance().selectUserByUsername(transaction.getBuyer()).get();
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+        }
 
-        makeTransaction(TESLA, 1, user,
-                FakeUserDataAccessService.getInstance().selectUserByUsername("Bob").get(), 22.2);
-
+        makeTransaction(transaction.getStockName(),
+                transaction.getQuantity(),
+                seller,
+                buyer,
+                transaction.getPrice());
     }
 
     public void requestDecider(String request, User user) throws Exception {
         switch (request) {
-            case QUERY_STOCKS -> {
-                queryAccountRequest(user);
-            }
-            case MAKE_TRANSACTION -> transactionRequest(user);
-
-            case DELETE_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
-            case INSERT_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
+            case QUERY_STOCKS -> queryAccountRequest(user);
+            case TRANSACTION -> transactionRequest(user);
             default -> {
                 System.out.println(AccountService.class.getName() + ": ERROR IN SWITCH STMT");
                 throw new Exception(AccountService.class.getName() + ": NOT IMPLEMENTED!");
@@ -165,13 +161,4 @@ public class AccountService {
         }
         return stocks;
     }
-
-    public void insertStocks() {
-        System.out.println("TO BE IMPLEMENTED");
-    }
-
-    public void removeStocks() {
-        System.out.println("TO BE IMPLEMENTED");
-    }
-
 }

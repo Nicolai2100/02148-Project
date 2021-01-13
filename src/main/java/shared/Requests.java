@@ -14,7 +14,7 @@ public class Requests {
     public static final String INSERT_STOCKS = "insert";
     public static final String DELETE_STOCKS = "delete";
     public static final String GET_STOCKS = "get";
-    public static final String MAKE_TRANSACTION = "MAKE_TRANSACTION";
+    public static final String TRANSACTION = "MAKE_TRANSACTION";
 
     public static final String LOGIN = "login";
     public static final String LOG_OUT = "bye";

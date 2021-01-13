@@ -3,6 +3,7 @@ package broker;
 import org.jspace.*;
 import returntypes.StockInfo;
 
+import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -24,14 +25,33 @@ public class Broker {
 
     SpaceRepository tradeRepo = new SpaceRepository();
 
+    RemoteSpace serverBroker;
+    RemoteSpace brokerServer;
+
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 1; //TODO: Consider what this should be, or make it possible to set it per order.
     static final TimeUnit timeoutUnit = TimeUnit.SECONDS;
     boolean serviceRunning;
+    boolean connectedToBankServer = false;
 
     public Broker() {
         tradeRepo.add("marketOrders", marketOrders);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
+
+        while (!connectedToBankServer) {
+            // connect to bank server
+            try {
+                String serverService = String.format("tcp://localhost:123/%s?%s", SERVER_BROKER, CONNECTION_TYPE);
+                String serviceServer = String.format("tcp://localhost:123/%s?%s", BROKER_SERVER, CONNECTION_TYPE);
+                serverBroker = new RemoteSpace(serverService);
+                brokerServer = new RemoteSpace(serviceServer);
+                connectedToBankServer = true;
+                System.out.println("Broker: Connection to bank server up...");
+
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        }
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -53,7 +73,7 @@ public class Broker {
     class MarketOrderHandler implements Callable<String> {
         @Override
         public String call() throws Exception {
-            while(serviceRunning) {
+            while (serviceRunning) {
                 try {
                     MarketOrder order = new MarketOrder(marketOrders.get(
                             new FormalField(String.class), //Name of the client who made the order
@@ -151,7 +171,8 @@ public class Broker {
 
                 //We find the current stock price
                 Object[] res = stocks.queryp(new ActualField(order.getStock()), new FormalField(Integer.class));
-                if (res == null) return null; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
+                if (res == null)
+                    return null; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
                 StockInfo stockInfo = new StockInfo(res);
 
                 //Here we send a message (to the bank?) to complete the transaction.
@@ -193,7 +214,7 @@ public class Broker {
         }
     }
 
-    void putMarketOrder(MarketOrder order, Space space) {
+    public void putMarketOrder(MarketOrder order, Space space) {
         try {
             space.put(
                     order.getId(),
@@ -206,4 +227,20 @@ public class Broker {
             e.printStackTrace();
         }
     }
+
+    //Lavet af NJL - virker ;)
+    public void startTransaction(Transaction transaction) {
+        System.out.println("Broker: Starting transaction...");
+        try {
+            brokerServer.put(
+                    transaction.getSeller(),
+                    transaction.getBuyer(),
+                    transaction.getStockName(),
+                    transaction.getPrice(),
+                    transaction.getQuantity());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

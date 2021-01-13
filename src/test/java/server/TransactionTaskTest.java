@@ -2,28 +2,18 @@ package server;
 
 import bank.Program;
 import broker.Broker;
-import org.jspace.SequentialSpace;
+import broker.Transaction;
 import org.junit.Before;
 import org.junit.Test;
 import service.AccountServiceMain;
 import service.IdentityProvider;
 
-import static org.junit.Assert.*;
-import static shared.Requests.MAKE_TRANSACTION;
+import static shared.StockNames.TESLA;
 
 public class TransactionTaskTest {
 
     @Before
     public void setUp() throws Exception {
-        Runnable r4 = () -> {
-            try {
-                Broker.main(null);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        };
-        Thread thread4 = new Thread(r4);
-        thread4.start();
 
         Runnable r1 = () -> Program.main(null);
         Thread thread1 = new Thread(r1);
@@ -40,10 +30,24 @@ public class TransactionTaskTest {
 
     @Test
     public void call() throws Exception {
-       // setUp();
+        // setUp();
+        Runnable r4 = () -> {
+            try {
+                Broker.main(null);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        };
+        Thread thread4 = new Thread(r4);
+        thread4.start();
 
-     TransactionTask transactionTask = new TransactionTask();
-     transactionTask.call();
+        Transaction transaction = new Transaction("Alice", "Bob", TESLA, 20, 1);
+
+        Broker broker = new Broker();
+        broker.startTransaction(transaction);
+
+        TransactionTask transactionTask = new TransactionTask();
+        transactionTask.call();
 
     }
 }
