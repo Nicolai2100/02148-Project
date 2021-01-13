@@ -50,8 +50,11 @@ class Broker2Test {
     }
 
     private void printRes(List transactions) {
-        //if (orders == null || orders.isEmpty()) return;
-        System.out.println("Her kommer  transaktions:  ");
+        if (transactions == null || transactions.isEmpty()) {
+            System.out.println("An order package was completed by other orders.");
+            return;
+        }
+        System.out.println("An order package was completed with these transactions:  ");
         for (Object t : transactions) {
             System.out.println(t.toString());
         }

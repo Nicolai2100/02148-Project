@@ -122,7 +122,8 @@ public class Broker2 {
         @Override
         public void run() {
             List<ProcessOrderTask> tasks = new ArrayList<>();
-            List<List<Transaction>> transactions = new ArrayList<>();
+            List<List<Order>> finalOrders = new ArrayList<>();
+            List<List<Transaction>> finalTransactions = new ArrayList<>();
 
             try {
                 for (Order order : orderPkg.getOrders()) {
@@ -138,13 +139,28 @@ public class Broker2 {
                     notifyListeners(orders);
                     tasks.add(new ProcessOrderTask(orderPkg, order));
                 }
-                List<Future<List<Transaction>>> futures = executor.invokeAll(tasks);
-                for (Future<List<Transaction>> future : futures) {
-                    transactions.add(future.get());
+                List<Future<List<Order>>> futures = executor.invokeAll(tasks);
+                for (Future<List<Order>> future : futures) {
+                    finalOrders.add(future.get());
                 }
 
+                orders.get(new ActualField(lock));
+                boolean allStillExist = true;
+                for (ProcessOrderTask task : tasks) {
+                    if (orders.queryp(task.getThisTemplate()) == null) {
+                        allStillExist = false;
+                        break;
+                    }
+                }
+                if (allStillExist) {
+                    for (ProcessOrderTask task : tasks) {
+                        finalTransactions.add(task.lockTransactions(orders));
+                    }
+                }
+                orders.put(lock);
+
                 List<Transaction> result = new ArrayList<>();
-                for (List<Transaction> l : transactions) {
+                for (List<Transaction> l : finalTransactions) {
                     result.addAll(l);
                 }
                 newOrderPackages.put("DONE!", result); //TODO: Kun for test
@@ -157,11 +173,37 @@ public class Broker2 {
                     interruptedException.printStackTrace();
                 }
             }
-
-            //transactions.add(executor.submit(new ProcessOrderTask(orderPkg, order)).get(standardTimeout, timeoutUnit));
-            //space.put("DONE!", matchingOrders); //TODO: Kun for test
-           // newOrderPackages.put("DONE!", transactions); //TODO: Kun for test
         }
+    }
+
+
+    public void lockTransactions(Space space, List<Transaction> transactions) throws InterruptedException {
+            /*
+            Object[] thisOrder = space.getp(thisTemplate);
+            if (thisOrder == null) {
+                space.put(lock);
+                return;
+                //This means that this order has probably already been processed by another orders task.
+            }
+            */
+
+        /*
+        for (Order o : matchingOrders) {
+            space.get(
+                    new ActualField(o.getId()),
+                    new FormalField(String.class),
+                    new FormalField(String.class),
+                    new ActualField(o.getStock()),
+                    new FormalField(Integer.class),
+                    new FormalField(Integer.class)
+            );
+        }
+
+        generateTransactions(matchingOrders);
+
+        space.put(lock);
+        notifyListeners(orders);
+         */
     }
 
     private void notifyListeners(Space space) throws InterruptedException {
@@ -176,7 +218,7 @@ public class Broker2 {
         }
     }
 
-    class ProcessOrderTask implements Callable<List<Transaction>> {
+    class ProcessOrderTask implements Callable<List<Order>> {
 
         OrderPackage orderPkg;
         Order order;
@@ -249,15 +291,17 @@ public class Broker2 {
             }
         }
 
-        private void lockTransactions(Space space) throws InterruptedException {
-            space.get(new ActualField(lock));
+        public List<Transaction> lockTransactions(Space space) throws InterruptedException {
+            //space.get(new ActualField(lock));
 
+            /*
             Object[] thisOrder = space.getp(thisTemplate);
             if (thisOrder == null) {
-                space.put(lock);
-                return;
+                //space.put(lock);
+                return false;
                 //This means that this order has probably already been processed by another orders task.
             }
+             */
 
             for (Order o : matchingOrders) {
                 space.get(
@@ -272,8 +316,9 @@ public class Broker2 {
 
             generateTransactions(matchingOrders);
 
-            space.put(lock);
+            //space.put(lock);
             notifyListeners(orders);
+            return transactions;
         }
 
         private void generateTransactions(List<Order> matches) {
@@ -299,16 +344,20 @@ public class Broker2 {
         }
 
         @Override
-        public List<Transaction> call() {
+        public List<Order> call() {
             try {
                 findMatchingOrders(orders);
                 if (!checkIfThisExists())
-                    return transactions;
-                lockTransactions(orders);
+                    return matchingOrders;
+                //lockTransactions(orders);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            return transactions;
+            return matchingOrders;
+        }
+
+        public TemplateField[] getThisTemplate() {
+            return thisTemplate;
         }
     }
 }

@@ -3,12 +3,25 @@ package Broker;
 import java.util.Date;
 
 public class Transaction {
+    private Order sellerOrder;
+    private Order buyerOrder;
     private String seller;
     private String buyer;
     private String stockName;
     private int price;
     private int quantity;
     private Date date;
+
+    public Transaction(Order sellerOrder, Order buyerOrder, int price, int quantity) {
+        this.sellerOrder = sellerOrder;
+        this.buyerOrder = buyerOrder;
+        this.price = price;
+        this.quantity = quantity;
+        this.date = new Date();
+        seller = sellerOrder.getOrderedBy();
+        buyer = buyerOrder.getOrderedBy();
+        stockName = sellerOrder.getStock();
+    }
 
     public Transaction(String seller, String buyer, String stockName, int price, int quantity) {
         this.seller = seller;
