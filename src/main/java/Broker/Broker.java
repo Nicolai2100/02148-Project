@@ -630,4 +630,33 @@ public class Broker {
         }
     }
     */
+
+    private void putNewOrder(Space space, Order order) {
+        
+    }
+
+
+    class HandleOrderTask implements Callable<String> {
+
+        Order order;
+
+        public HandleOrderTask(Order order) {
+            this.order = order;
+        }
+
+        Callable<Order> lookForExactMatch = () -> {
+            return marketOrdersInProcess.query(
+                    new FormalField(UUID.class),
+                    new FormalField(String.class),
+                    new ActualField(order.getMatchingOrderType()),
+                    new ActualField(order.getStock()),
+                    new FormalField(Integer.class),
+                    new FormalField(Integer.class));
+        }
+
+        @Override
+        public String call() throws Exception {
+            return null;
+        }
+    }
 }
