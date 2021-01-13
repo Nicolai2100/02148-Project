@@ -10,7 +10,7 @@ import bank.Program;
 class NJLClientClassTest {
 
     @BeforeEach
-    void setUp() {
+        void setUp() {
 
         Runnable r4 = () -> {
             try {
