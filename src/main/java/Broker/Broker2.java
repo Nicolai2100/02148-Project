@@ -137,7 +137,7 @@ public class Broker2 {
             return false;
         }
 
-        private void findMatches(Space space) throws InterruptedException {
+        private void findMatchingOrders(Space space) throws InterruptedException {
             while (true) {
                 List<Object[]> res = space.queryAll(matchTemplate);
                 for (Object[] e : res) {
@@ -178,7 +178,7 @@ public class Broker2 {
         @Override
         public void run() {
             try {
-                findMatches(orders);
+                findMatchingOrders(orders);
                 lockTransactions(orders);
             } catch (InterruptedException e) {
                 e.printStackTrace();
