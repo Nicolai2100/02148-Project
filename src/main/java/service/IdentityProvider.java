@@ -30,7 +30,7 @@ public class IdentityProvider {
                     idProviderServer = new RemoteSpace(serviceServer);
 
                     connectedToServer = true;
-                    System.out.println(IdentityProvider.class.getName() + ":\nWaiting for requests...");
+                    System.out.println(IdentityProvider.class.getName() + ": Waiting for requests...");
 
                 } catch (IOException e) {
                     System.out.println(e.getMessage());

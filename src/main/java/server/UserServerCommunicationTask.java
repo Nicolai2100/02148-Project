@@ -76,12 +76,17 @@ public class UserServerCommunicationTask implements Callable<String> {
                 case BUY_STOCK -> buyStock();
                 case SELL_STOCK -> sellStock();
                 case LOG_OUT -> logOut();
+
+                case MAKE_TRANSACTION -> makeTransaction();
                 default -> System.out.println("USCom: ERROR IN SWITCH STMT");
             }
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    private void makeTransaction() {
     }
 
     private void sellStock() throws InterruptedException {
