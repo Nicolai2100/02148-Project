@@ -1,6 +1,6 @@
 package model;
 
-public class Stock {
+public class Stock implements java.io.Serializable {
     private String name;
     private double price;
     private double boughtAtValue;
@@ -17,20 +17,13 @@ public class Stock {
     public Stock(String name, double boughtAtValue, int amount) {
         this.name = name;
         this.boughtAtValue = boughtAtValue;
+        this.amount = amount;
     }
 
     public Stock(String name, int boughtAtValue, int amount) {
         this.name = name;
         this.boughtAtValue = boughtAtValue;
-    }
-
-    public Stock(Object[] arr) {
-        name = (String) arr[0];
-        if (arr[1] instanceof Integer)
-            boughtAtValue = (Integer) arr[1];
-        else
-            boughtAtValue = (Double) arr[1];
-
+        this.amount = amount;
     }
 
     public double getBoughtAtValue() {

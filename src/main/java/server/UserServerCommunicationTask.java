@@ -87,17 +87,19 @@ public class UserServerCommunicationTask implements Callable<String> {
     private void sellStock() throws InterruptedException {
         System.out.println("USCom: Place order...");
 
-        //todo - Wulff - implementer at ordren til broker bliver sendt her:
-
+        var thing = userServer.get(new FormalField(String.class), new FormalField(Integer.class));
+        String stockName = thing[0].toString();
+        int amount = Integer.parseInt(thing[1].toString());
         try {
-            marketOrders.put(username, SELL, APPLE, 10);
+            marketOrders.put(username, SELL, stockName, amount);
 
-            Object[] res = this.marketOrders.get(
+            serverUser.put("Order placed");
+            /*Object[] res = this.marketOrders.get(
                     new ActualField(username),
                     new ActualField(MSG),
                     new FormalField(String.class));
 
-            System.out.println(res[0].toString() + res[1].toString() + res[2].toString());
+            System.out.println(res[0].toString() + res[1].toString() + res[2].toString());*/
         } catch (Exception e) {
             e.printStackTrace();
         }

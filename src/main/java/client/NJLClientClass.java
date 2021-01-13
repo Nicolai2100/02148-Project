@@ -85,7 +85,7 @@ public class NJLClientClass {
             System.out.println("\n1: Fetch account data \n2: Buy stocks \n3: Sell stocks \n0: Log out");
             System.out.println("Processing request " + argList.get(0));
             message = argList.remove(0);
-            sendRequest(message);
+            sendRequest(message, new Scanner(System.in));
             System.out.println("Test client finished");
             System.exit(2);
         }
@@ -97,14 +97,14 @@ public class NJLClientClass {
             System.out.println("\n1: Fetch account data \n2: Buy stocks \n3: Sell stocks \n0: Log out");
             message = s.nextLine();
             try {
-                sendRequest(message);
+                sendRequest(message, s);
             } catch (InterruptedException e) {
                 System.out.println(e.getMessage());
             }
         } while (!message.equalsIgnoreCase("exit"));
     }
 
-    private void sendRequest(String message) throws InterruptedException {
+    private void sendRequest(String message, Scanner scanner) throws InterruptedException {
         if (message.equalsIgnoreCase("1")) {
             queryData();
         } else if (message.equalsIgnoreCase("2")) {
@@ -112,7 +112,7 @@ public class NJLClientClass {
         } else if (message.equalsIgnoreCase("3")) {
             buyStock();
         } else if (message.equalsIgnoreCase("4")) {
-            sellStock();
+            sellStock(scanner);
         } else if (message.equalsIgnoreCase("0")) {
             logOut();
             startClient(new String[]{""});
@@ -123,8 +123,24 @@ public class NJLClientClass {
         userServer.put(QUERY_MARKETORDERS);
     }
 
-    private void sellStock() throws InterruptedException {
+    private void sellStock(Scanner scanner) throws InterruptedException {
+
+        /*System.out.println("Write name of stock to sell:");
+        String stockName = scanner.nextLine();
+        System.out.println("Write number of stocks to sell:");
+        int amount = scanner.nextInt();
         userServer.put(SELL_STOCK);
+        userServer.put(stockName, amount);*/
+
+        System.out.println("Write name of stock to sell:");
+        String stockName = argList.remove(0);
+        System.out.println("Write number of stocks to sell:");
+        int amount = Integer.parseInt(argList.remove(0));
+        userServer.put(SELL_STOCK);
+        userServer.put(stockName, amount);
+
+        var thing = serverUser.get(new FormalField(String.class));
+        System.out.println(thing[0]);
     }
 
     private void buyStock() throws InterruptedException {
@@ -170,9 +186,6 @@ public class NJLClientClass {
 
         try {
             System.out.println("...sending credentials");
-            System.out.println(LOGIN);
-            System.out.println(username);
-            System.out.println(password);
             clientServer.put(LOGIN, username, password);
 
             try {

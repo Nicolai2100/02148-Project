@@ -63,7 +63,7 @@ class NJLClientClassTest {
 
     @Test
     void sellStock() {
-        String[] args = {"Alice", "password", "4"};
+        String[] args = {"Alice", "password", "4", "Tesla", "2"};
         new NJLClientClass().startClient(args);
     }
 

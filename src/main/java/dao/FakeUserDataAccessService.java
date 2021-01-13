@@ -20,7 +20,7 @@ public class FakeUserDataAccessService implements UserDao {
         //todo udskift map med space
 
         String password = "password";
-        Account aliceAccount = new Account(100);
+        Account aliceAccount = new Account(100.0);
         HashMap<String, Stock> aliceStockMap = new HashMap<>();
         aliceStockMap.put(TESLA, new Stock(TESLA, 20, 2));
         aliceStockMap.put(APPLE, new Stock(APPLE, 31, 1));
