@@ -59,6 +59,8 @@ public class Broker {
             while(serviceRunning) {
                 try {
                     OrderPackage orderPkg = (OrderPackage) newOrderPackages.get(new FormalField(OrderPackage.class))[0];
+                    for (Order order : orderPkg.getOrders())
+                        System.out.println("order submitted" + order.toString());
                     executor.submit(new ProcessPackageTask(orderPkg));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -107,7 +109,8 @@ public class Broker {
                     insertIntoSellOrders(order);
                     //We notifiy any listeners, that the space has been changed.
                     //notifyListeners(orders);
-                    notifyListeners(orderRepository.get(order.getStock()));
+                    notifyListeners(order.getStock());
+                    System.out.println("thread: " + threadidentifier + " " + order.toString());
                     //We instantiate a new task to find matching orders of the order, and add it to a list of tasks.
                     tasks.add(new ProcessOrderTask(orderPkg, order, threadidentifier));
                 }
@@ -157,8 +160,8 @@ public class Broker {
      * @throws InterruptedException
      */
     private void waitForChange(Order order, Space space) throws InterruptedException {
-        space.put(order.getId(), order.getMatchingOrderType(), order.getStock(), waiting);
-        space.get(
+        orderRepository.get(order.getStock()).put(order.getId(), order.getMatchingOrderType(), order.getStock(), waiting);
+        orderRepository.get(order.getStock()).get(
                 new ActualField(order.getId()),
                 new ActualField(order.getMatchingOrderType()),
                 new ActualField(order.getStock()),
@@ -169,18 +172,18 @@ public class Broker {
      * Signals that a change has occured in the space. Does so by first retrieving
      * all current waiting signals, and for each of these puts a corresponding signal
      * back.
-     * @param space
+     * @param
      * @throws InterruptedException
      */
-    private void notifyListeners(Space space) throws InterruptedException {
-        List<Object[]> listeners = space.getAll(
+    private void notifyListeners(String stock) throws InterruptedException {
+        List<Object[]> listeners = orderRepository.get(stock).getAll(
                 new FormalField(UUID.class),
                 new FormalField(String.class),
                 new FormalField(String.class),
-                new ActualField(waiting)
-        );
+                new ActualField(waiting));
+
         for (Object[] l : listeners) {
-            space.put(l[0], l[1], l[2], notifyChange);
+            orderRepository.get(stock).put(l[0], l[1], l[2], notifyChange);
         }
     }
 
@@ -222,19 +225,19 @@ public class Broker {
         public List<Order> call() {
             try {
                 // findMatchingOrders(orders, counter);
-                findMatchingOrders(orderRepository.get(order.getStock()), counter);
+                findMatchingOrders(order.getStock(), counter);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             return matchingOrders;
         }
 
-        private void findMatchingOrders(Space space, int counter) throws InterruptedException {
-            Object[] responseLock = space.get(new ActualField(lock), new FormalField(Integer.class));
-            space.put(lock, responseLock[1], counter);
+        private void findMatchingOrders(String stock, int counter) throws InterruptedException {
+            Object[] responseLock = orderRepository.get(stock).get(new ActualField(lock), new FormalField(Integer.class));
+            orderRepository.get(stock).put(lock, responseLock[1], counter);
             while (true) {
                 //First we query all orders that match the matching template.
-                List<Object[]> res = space.queryAll(matchTemplate); //TODO gustav this needs an additional integer for the lock identifier
+                List<Object[]> res = orderRepository.get(stock).queryAll(matchTemplate); //TODO gustav this needs an additional integer for the lock identifier
                 //Then we loop over them.
                 for (Object[] e : res) {
                     Order match = new Order(e); //TODO - this needs a constructor
@@ -255,22 +258,21 @@ public class Broker {
                         totalQfound += match.getQuantity();
                     }
                     //If the total quantity found is greater or equal to the minimum quantity of this order, break.
-                    if (totalQfound >= order.getMinQuantity()) break;
+                    if (totalQfound >= order.getMinQuantity()) System.out.println("Found for " + order.getStock()); break;
                 }
                 if (totalQfound >= order.getMinQuantity()) {
                     System.out.println("Found for " + order.getStock());
                     break;
                 } else {
-                    if (!checkIfThisExists()) //TODO: Not sure if this is necessary
-                        break;
+                    //if (!checkIfThisExists()) break;//TODO: Not sure if this is necessary
                     //if not enough matching orders were found, wait until a change has happened in the space.
                     //This is to avoid "busy waiting".
                     // A new key is checked out to see see if we should wait or not.
-                    if (space.getp(new ActualField(lock), new FormalField(Integer.class)) == null) {
-                    waitForChange(order, space);
+                    if (orderRepository.get(stock).getp(new ActualField(lock), new FormalField(Integer.class)) == null) {
+                    waitForChange(order, orderRepository.get(stock));
                     } else {
-                        responseLock = space.get(new ActualField(lock), new FormalField(Integer.class));
-                        space.put(lock, responseLock[1], counter);
+                        responseLock = orderRepository.get(stock).get(new ActualField(lock), new FormalField(Integer.class));
+                        orderRepository.get(stock).put(lock, responseLock[1], counter);
                     }
                 }
             }
@@ -314,7 +316,7 @@ public class Broker {
 
             }
             //We notify listeners that a change has happened.
-            notifyListeners(orders);
+            notifyListeners(order.getStock());
 
             //We return a list of transactions.
             return generateTransactions(matchingOrders);
