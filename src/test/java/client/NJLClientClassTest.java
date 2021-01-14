@@ -1,6 +1,6 @@
 package client;
 
-import broker.Broker2;
+import broker.Broker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import service.AccountServiceMain;
@@ -14,7 +14,7 @@ class NJLClientClassTest {
 
         Runnable r4 = () -> {
             try {
-                Broker2.main(null);
+                Broker.main(null);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

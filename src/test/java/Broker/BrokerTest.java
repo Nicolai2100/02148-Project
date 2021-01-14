@@ -1,6 +1,6 @@
 package Broker;
 
-import broker.Broker2;
+import broker.Broker;
 import broker.Order;
 import broker.OrderPackage;
 import org.jspace.ActualField;
@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class Broker2Test {
+class BrokerTest {
 
     RemoteSpace orders;
     RemoteSpace orderPkgs;
@@ -41,7 +41,7 @@ class Broker2Test {
 
     @BeforeEach
     void setup() throws InterruptedException, IOException {
-        Broker2.main(new String[]{});
+        Broker.main(new String[]{});
         orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orders?keep");
         orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orderPackages?keep");
         transactions = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/transactions?keep");
