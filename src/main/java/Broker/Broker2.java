@@ -51,7 +51,6 @@ public class Broker2 {
     }
 
     class NewOrderPkgHandler implements Runnable {
-
         @Override
         public void run() {
             while(serviceRunning) {
@@ -66,6 +65,11 @@ public class Broker2 {
         }
     }
 
+    /**
+     * A task that processes a package of orders by starting new tasks for each order that it contains.
+     * Each of these tasks returns a list of matching orders. When they all complete, this task
+     * tries to secure them all, and finally send a list of transactions to the bank.
+     */
     class ProcessPackageTask implements Runnable {
 
         OrderPackage orderPkg;
@@ -128,6 +132,13 @@ public class Broker2 {
         }
     }
 
+    /**
+     * Lets an order signal that it waits for a change in space.
+     * The method then blocks until the corresponding signal of change has been received.
+     * @param order The order that wants to signal that it is waiting.
+     * @param space The space where the signal should be put in.
+     * @throws InterruptedException
+     */
     private void waitForChange(Order order, Space space) throws InterruptedException {
         space.put(order.getId(), order.getMatchingOrderType(), order.getStock(), waiting);
         space.get(
@@ -137,6 +148,13 @@ public class Broker2 {
                 new ActualField(notifyChange));
     }
 
+    /**
+     * Signals that a change has occured in the space. Does so by first retrieving
+     * all current waiting signals, and for each of these puts a corresponding signal
+     * back.
+     * @param space
+     * @throws InterruptedException
+     */
     private void notifyListeners(Space space) throws InterruptedException {
         List<Object[]> listeners = space.getAll(
                 new FormalField(UUID.class),
@@ -191,11 +209,18 @@ public class Broker2 {
 
         private void findMatchingOrders(Space space) throws InterruptedException {
             while (true) {
+                //First we query all orders that match the matching template.
                 List<Object[]> res = space.queryAll(matchTemplate);
+                //Then we loop over them.
                 for (Object[] e : res) {
                     Order match = new Order(e);
                     //Break if the sender of both orders are the same client.
                     if (match.getOrderedBy().equals(order.getOrderedBy())) break;
+
+                    //We only want to add the order to the final matches, if:
+                    //  1. It is not already added to the matches of this order.
+                    //  2. It is not already added to the matches of another order in the same order package.
+                    //  3. The current total amount of match quantities plus the minimum quantity of the new match does not exceed this orders max quantity.
                     if (!containsOrder(
                             matchingOrders, match) &&
                             !containsOrder(orderPkg.getMatchOrders(), match)
@@ -205,6 +230,7 @@ public class Broker2 {
                         orderPkg.getMatchOrders().add(match);
                         totalQfound += match.getQuantity();
                     }
+                    //If the total quantity found is greater or equal to the minimum quantity of this order, break.
                     if (totalQfound >= order.getMinQuantity()) break;
                 }
                 if (totalQfound >= order.getMinQuantity()) {
