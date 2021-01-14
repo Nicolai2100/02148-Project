@@ -12,6 +12,18 @@ public class MarketOrder {
     final static String allFlag = "ALL";
     final static String mostFlag = "MOST";
 
+    @Override
+    public String toString() {
+        return "MarketOrder{" +
+                "id='" + id + '\'' +
+                ", orderType='" + orderType + '\'' +
+                ", orderedBy='" + orderedBy + '\'' +
+                ", stock='" + stock + '\'' +
+                ", quantity=" + quantity +
+                ", status='" + status + '\'' +
+                '}';
+    }
+
     public MarketOrder(String orderedBy, String stock, int quantity) {
         this.orderedBy = orderedBy;
         this.stock = stock;

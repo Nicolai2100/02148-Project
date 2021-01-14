@@ -33,19 +33,11 @@ class NJLClientClassTest {
         Runnable r3 = () -> AccountServiceMain.main(null);
         Thread thread3 = new Thread(r3);
         thread3.start();
-
-
     }
 
     @Test
     void queryMarket() {
         String[] args = {"Alice", "password", "2"};
-        new NJLClientClass().startClient(args);
-    }
-
-    @Test
-    void loginRealUser2() {
-        String[] args = {"Alice", "password", "1"};
         new NJLClientClass().startClient(args);
     }
 

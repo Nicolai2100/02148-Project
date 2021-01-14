@@ -3,13 +3,11 @@ package server;
 import bank.Program;
 import broker.Broker;
 import org.jspace.SequentialSpace;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
 import service.AccountServiceMain;
 import service.IdentityProvider;
 
-import static org.junit.Assert.*;
 import static shared.Requests.*;
 
 public class UserServerCommunicationTaskTest {
@@ -49,7 +47,9 @@ public class UserServerCommunicationTaskTest {
                 new SequentialSpace(),
                 new SequentialSpace(),
                 "Alice");
-        uscom.queryStocks();
+        Thread.sleep(2000);
+        uscom.requestResolver(TRANSACTION);
+
 
     }
 }

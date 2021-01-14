@@ -22,6 +22,9 @@ public class Server {
     static SequentialSpace accountServiceServer;
     static SequentialSpace serverAccountService;
 
+    static SequentialSpace serverBroker;
+    static SequentialSpace brokerServer;
+
     static int numOfClientsConnected = 0;
     static ExecutorService executor;
 
@@ -36,21 +39,31 @@ public class Server {
         accountServiceServer = new QueueSpace();
         serverAccountService = new QueueSpace();
 
+        serverBroker = new QueueSpace();
+        brokerServer = new QueueSpace();
+
         //Add the spaces/channels to the repository
-        repository.add("clientServer", clientServer);
-        repository.add("serverClient", serverClient);
-        repository.add("serverIdProvider", serverIdProvider);
-        repository.add("idProviderServer", idProviderServer);
-        repository.add("accountServiceServer", accountServiceServer);
-        repository.add("serverAccountService", serverAccountService);
+        repository.add(CLIENT_SERVER, clientServer);
+        repository.add(SERVER_CLIENT, serverClient);
+        repository.add(SERVER_ID_PROVIDER, serverIdProvider);
+        repository.add(ID_PROVIDER_SERVER, idProviderServer);
+        repository.add(ACCOUNT_SERVICE_SERVER, accountServiceServer);
+        repository.add(SERVER_ACCOUNT_SERVICE, serverAccountService);
+
+        repository.add(SERVER_BROKER, serverBroker);
+        repository.add(BROKER_SERVER, brokerServer);
 
         // Open a gate
-        repository.addGate("tcp://localhost:123/?" + CONNECTION_TYPE);
+        String uri = String.format("tcp://%s:%d/?%s", SERVER_HOSTNAME, SERVER_PORT, CONNECTION_TYPE);
+        repository.addGate(uri);
 
         // Keep reading chat messages and printing them
-        System.out.println("Server: Started server on port 123");
+        System.out.println("Server: Started server on: " + uri);
 
         executor = Executors.newCachedThreadPool();
+
+        //Start TransactionTask
+        executor.submit(new TransactionTask());
 
         //Main loop where client requests are resolved
         while (true) {
@@ -75,6 +88,7 @@ public class Server {
                 case LOGIN -> {
                     login(username, password);
                 }
+
                 default -> System.out.println("ERROR IN SWITCH STMT");
             }
 

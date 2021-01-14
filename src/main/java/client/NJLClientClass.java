@@ -1,8 +1,6 @@
 package client;
 
-import model.Account;
 import model.Stock;
-import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 
@@ -53,8 +51,6 @@ public class NJLClientClass {
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
-        //System.out.println("Established connection to " + serverClient.getUri() + " and " + clientServer.getUri());
-
         System.out.println("Welcome to the Beast Bank!");
         Scanner s = new Scanner(System.in);
 
@@ -86,9 +82,9 @@ public class NJLClientClass {
             System.out.println("Processing request " + argList.get(0));
             message = argList.remove(0);
             sendRequest(message, new Scanner(System.in));
-            System.out.println("Test client finished");
-            System.exit(2);
         }
+        System.out.println("Test client finished");
+        System.exit(2);
     }
 
     private void requestLoop(Scanner s) {

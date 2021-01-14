@@ -1,24 +1,21 @@
 package service;
 
+import broker.Transaction;
 import dao.FakeUserDataAccessService;
-import model.Account;
 import model.Stock;
 import model.User;
+import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
-import shared.SharedEncryption;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.*;
 
 import static shared.Requests.*;
-import static shared.StockNames.*;
 import static shared.Channels.*;
 
 
 public class AccountService {
-    //static boolean serviceRunning = true;
     boolean connectedToServer = false;
     RemoteSpace serverAccountService = null;
     RemoteSpace accountServiceServer = null;
@@ -34,9 +31,6 @@ public class AccountService {
         }
     }
 
-    //todo NJL transactions() {
-
-
     private void requestHandler() throws Exception {
         while (true) {
 
@@ -50,10 +44,7 @@ public class AccountService {
                     accountServiceServer = new RemoteSpace(serviceServer);
                     connectedToServer = true;
 
-                    System.out.printf(AccountService.class.getName() + ": Established connection to remote spaces:\n%s and \n%s at " + LocalDateTime.now(),
-                            serverAccountService.getUri(),
-                            accountServiceServer.getUri());
-                    System.out.println(AccountService.class.getName() + ":\n\nWaiting for requests...");
+                    System.out.println(AccountService.class.getName() + ": Waiting for requests...");
 
                 } catch (IOException e) {
                     System.out.println(e.getMessage());
@@ -67,7 +58,7 @@ public class AccountService {
                     try {
                         //Which user account should be accessed? And what is requested?
                         request = serverAccountService.get(new FormalField(String.class), new FormalField(String.class));
-                        System.out.println(request);
+
                         String username = request[0].toString();
                         String requestStr = request[1].toString();
 
@@ -93,11 +84,53 @@ public class AccountService {
         }
     }
 
+    public void makeTransaction(String stockName, int amount, User sender, User receiver, double pricePerStock) {
+        Stock stock = null;
+        try {
+            stock = sender.getAccount().withDrawStock(stockName, amount);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (stock != null) {
+            try {
+                receiver.getAccount().insertStock(stock);
+                sender.getAccount().receivePayment(pricePerStock * amount);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void transactionRequest(User user) throws InterruptedException {
+        //sender name, receiver name, stock name, price per stock, amount
+        Transaction transaction = new Transaction(serverAccountService.get(
+                new ActualField(user.getName()),
+                new FormalField(String.class),
+                new FormalField(String.class),
+                new FormalField(Double.class),
+                new FormalField(Integer.class)
+        ));
+
+        User seller = null, buyer = null;
+        try {
+            seller = FakeUserDataAccessService.getInstance().selectUserByUsername(transaction.getSeller()).get();
+            buyer = FakeUserDataAccessService.getInstance().selectUserByUsername(transaction.getBuyer()).get();
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+        }
+
+        makeTransaction(transaction.getStockName(),
+                transaction.getQuantity(),
+                seller,
+                buyer,
+                transaction.getPrice());
+    }
+
     public void requestDecider(String request, User user) throws Exception {
         switch (request) {
-            case QUERY_STOCKS -> queryUserStocks(user);
-            case DELETE_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
-            case INSERT_STOCKS -> System.out.println(AccountService.class.getName() + ": to be implemented!");
+            case QUERY_STOCKS -> queryAccountRequest(user);
+            case TRANSACTION -> transactionRequest(user);
             default -> {
                 System.out.println(AccountService.class.getName() + ": ERROR IN SWITCH STMT");
                 throw new Exception(AccountService.class.getName() + ": NOT IMPLEMENTED!");
@@ -105,7 +138,7 @@ public class AccountService {
         }
     }
 
-    public void queryUserStocks(User user) throws Exception {
+    public void queryAccountRequest(User user) throws Exception {
         System.out.println(AccountService.class.getName() + ": Retrieving stocks for user: " + user.getName() + "...");
         ArrayList<Stock> stocks = returnListOfUserStocks(user);
         System.out.println(AccountService.class.getName() + ": Sending stocks to server...");
@@ -128,13 +161,4 @@ public class AccountService {
         }
         return stocks;
     }
-
-    public void insertStocks() {
-        System.out.println("TO BE IMPLEMENTED");
-    }
-
-    public void removeStocks() {
-        System.out.println("TO BE IMPLEMENTED");
-    }
-
 }
