@@ -33,4 +33,8 @@ public class OrderPackage implements Serializable {
     public List<Order> getMatchOrders() {
         return matchOrders;
     }
+
+    public void addOrder(Order order) {
+        orders.add(order);
+    }
 }

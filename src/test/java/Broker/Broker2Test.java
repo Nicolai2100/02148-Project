@@ -66,6 +66,13 @@ class Broker2Test {
     void test1() throws InterruptedException, TimeoutException, ExecutionException {
         orders.put("ALICE", "SELL", "AAPL", 10, 5);
         orders.put("BOB", "BUY", "AAPL", 10, 5);
+     /*   OrderPackage pkg1 = new OrderPackage();
+        OrderPackage pkg2 = new OrderPackage();
+        pkg1.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 5));
+        pkg2.addOrder(new Order("BUY", "BOB", "AAPL", 10, 5));
+        orderPkgs.put(pkg1);
+        orderPkgs.put(pkg2);
+        */
         //Bør give et resultat
 
         ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
@@ -210,14 +217,14 @@ class Broker2Test {
     @Test
     void test13() throws InterruptedException, TimeoutException, ExecutionException {
         OrderPackage alice = new OrderPackage();
-        alice.getOrders().add(new Order("SELL", "ALICE", "AAPL", 10, 10));
-        alice.getOrders().add(new Order("BUY", "ALICE", "TESLA", 5, 5));
+        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
+        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
 
         OrderPackage bob = new OrderPackage();
-        bob.getOrders().add(new Order("BUY", "BOB", "AAPL", 10, 10));
+        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
 
         OrderPackage charlie = new OrderPackage();
-        charlie.getOrders().add(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
+        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
 
         orderPkgs.put(alice);
         orderPkgs.put(charlie);
@@ -236,16 +243,16 @@ class Broker2Test {
     @Test
     void test14() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
-        alice.getOrders().add(new Order("SELL", "ALICE", "AAPL", 10, 10));
-        alice.getOrders().add(new Order("BUY", "ALICE", "TESLA", 5, 5));
+        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
+        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
 
         OrderPackage bob = new OrderPackage();
-        bob.getOrders().add(new Order("BUY", "BOB", "AAPL", 10, 10));
-        bob.getOrders().add(new Order("SELL", "BOB", "VESTAS", 8, 5));
+        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
+        bob.addOrder(new Order("SELL", "BOB", "VESTAS", 8, 5));
 
         OrderPackage charlie = new OrderPackage();
-        charlie.getOrders().add(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
-        charlie.getOrders().add(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
+        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
+        charlie.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
 
         orderPkgs.put(alice);
         orderPkgs.put(charlie);
@@ -263,17 +270,17 @@ class Broker2Test {
     @Test
     void test15() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
-        alice.getOrders().add(new Order("SELL", "ALICE", "AAPL", 10, 10));
-        alice.getOrders().add(new Order("BUY", "ALICE", "TESLA", 5, 5));
+        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
+        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
 
         OrderPackage bob = new OrderPackage();
-        bob.getOrders().add(new Order("BUY", "BOB", "AAPL", 10, 10));
-        bob.getOrders().add(new Order("SELL", "BOB", "VESTAS", 8, 5));
-        bob.getOrders().add(new Order("BUY", "BOB", "DTU", 10, 10));
+        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
+        bob.addOrder(new Order("SELL", "BOB", "VESTAS", 8, 5));
+        bob.addOrder(new Order("BUY", "BOB", "DTU", 10, 10));
 
         OrderPackage charlie = new OrderPackage();
-        charlie.getOrders().add(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
-        charlie.getOrders().add(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
+        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
+        charlie.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
 
         orderPkgs.put(alice);
         orderPkgs.put(charlie);
