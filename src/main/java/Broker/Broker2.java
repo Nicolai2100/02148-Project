@@ -5,7 +5,7 @@ import org.jspace.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class Broker {
+public class Broker2 {
 
     //Brokerens hostname og port
     String hostName = "localhost";
@@ -31,7 +31,7 @@ public class Broker {
     static final TimeUnit timeoutUnit = TimeUnit.HOURS; //TODO: Just for now, for testing...
     boolean serviceRunning;
 
-    public Broker() {
+    public Broker2() {
         tradeRepo.add("orders", orders);
         tradeRepo.add("orderPackages", newOrderPackages);
         tradeRepo.add("transactions", transactions);
@@ -39,8 +39,8 @@ public class Broker {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        Broker broker = new Broker();
-        broker.startService();
+        Broker2 broker2 = new Broker2();
+        broker2.startService();
     }
 
     private void startService() throws InterruptedException {
