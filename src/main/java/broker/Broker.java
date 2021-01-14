@@ -15,8 +15,11 @@ public class Broker {
     SequentialSpace newOrderPackages = new SequentialSpace();
     SequentialSpace orders = new SequentialSpace();
     SequentialSpace transactions = new SequentialSpace();
-
     SpaceRepository tradeRepo = new SpaceRepository();
+
+    SpaceRepository orderRepository = new SpaceRepository();
+    LockService lockService = new LockService();
+    int counter = 0;
 
     public static final String sellOrderFlag = "SELL";
     public static final String buyOrderFlag = "BUY";
@@ -39,6 +42,7 @@ public class Broker {
     }
 
     public static void main(String[] args) throws InterruptedException {
+        System.out.println("Starting the broker class...");
         Broker broker = new Broker();
         broker.startService();
     }
@@ -83,24 +87,30 @@ public class Broker {
             List<ProcessOrderTask> tasks = new ArrayList<>();
             List<List<Order>> finalOrders = new ArrayList<>();
             List<Transaction> finalTransactions = new ArrayList<>();
+            // To be able to put back the locks it is needed to know something about this thread, so it is assigned a unique integer.
+            int threadidentifier = counter++;
 
             try {
                 //First we give each order of the package a unique ID
                 //Then we put the order in the orders space.
                 for (Order order : orderPkg.getOrders()) {
                     order.setId(UUID.randomUUID());
-                    orders.put(
-                            order.getId(),
-                            order.getOrderedBy(),
-                            order.getOrderType(),
-                            order.getStock(),
-                            order.getQuantity(),
-                            order.getMinQuantity()
-                    );
+                    order.setLockNumber(0);
+//                    orders.put(
+//                            order.getId(),
+//                            order.getOrderedBy(),
+//                            order.getOrderType(),
+//                            order.getStock(),
+//                            order.getQuantity(),
+//                            order.getMinQuantity()
+//                    );
+                    // Made by Gustav - trying to migrate the data to a repository instead and using the lock service.
+                    insertIntoSellOrders(order);
                     //We notifiy any listeners, that the space has been changed.
-                    notifyListeners(orders);
+                    //notifyListeners(orders);
+                    notifyListeners(orderRepository.get(order.getStock()));
                     //We instantiate a new task to find matching orders of the order, and add it to a list of tasks.
-                    tasks.add(new ProcessOrderTask(orderPkg, order));
+                    tasks.add(new ProcessOrderTask(orderPkg, order, threadidentifier));
                 }
 
                 //We invoke all the tasks at once.
@@ -114,15 +124,23 @@ public class Broker {
 
                 //Now we are ready the lock all the orders, remove them and create the transactions.
                 //We grab the lock.
-                orders.get(new ActualField(lock));
+                //orders.get(new ActualField(lock));
 
                 //We call lockTransaction() on each task, which removes the orders, and returns transactions.
                 //We add the transactions to a list.
                 for (ProcessOrderTask task : tasks) {
-                    finalTransactions.addAll(task.lockTransactions(orders));
+                    //finalTransactions.addAll(task.lockTransactions(orders));
+                    finalTransactions.addAll(task.lockTransactions(orderRepository.get(task.order.getStock())));
+
+                    // Putting back the locks where they belong, here we query all the gathered locks.
+                    List<Object[]> response = orderRepository.get(task.order.getStock()).getAll(new ActualField(lock), new FormalField(Integer.class), new ActualField(threadidentifier));
+                    // And we put them back in.
+                    for (Object[] locks : response) {
+                        orderRepository.get(task.order.getStock()).put(lock, locks[1]);
+                    }
                 }
-                //We put the lock back.
-                orders.put(lock);
+                System.out.println("thread identifier " + threadidentifier);
+               // orders.put(lock);
 
                 //We put the final transactions in the transactions space.
                 transactions.put(finalTransactions); //TODO: Kun for test
@@ -173,10 +191,12 @@ public class Broker {
         Order order;
         List<Order> matchingOrders = new ArrayList<>();
         int totalQfound = 0;
+        int counter;
         TemplateField[] thisTemplate;
         TemplateField[] matchTemplate;
 
-        public ProcessOrderTask(OrderPackage orderPkg, Order order) {
+        public ProcessOrderTask(OrderPackage orderPkg, Order order, int counter) {
+            this.counter = counter;
             this.orderPkg = orderPkg;
             this.order = order;
             thisTemplate = new TemplateField[]{
@@ -184,6 +204,7 @@ public class Broker {
                     new ActualField(order.getOrderedBy()),
                     new ActualField(order.getOrderType()),
                     new ActualField(order.getStock()),
+                    new FormalField(Integer.class),
                     new FormalField(Integer.class),
                     new FormalField(Integer.class)
             };
@@ -193,6 +214,7 @@ public class Broker {
                     new ActualField(order.getMatchingOrderType()),
                     new ActualField(order.getStock()),
                     new FormalField(Integer.class),
+                    new FormalField(Integer.class),
                     new FormalField(Integer.class)
             };
         }
@@ -200,17 +222,20 @@ public class Broker {
         @Override
         public List<Order> call() {
             try {
-                findMatchingOrders(orders);
+                // findMatchingOrders(orders, counter);
+                findMatchingOrders(orderRepository.get(order.getStock()), counter);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             return matchingOrders;
         }
 
-        private void findMatchingOrders(Space space) throws InterruptedException {
+        private void findMatchingOrders(Space space, int counter) throws InterruptedException {
+            Object[] responseLock = space.get(new ActualField(lock), new FormalField(Integer.class));
+            space.put(lock, responseLock[1], counter);
             while (true) {
                 //First we query all orders that match the matching template.
-                List<Object[]> res = space.queryAll(matchTemplate);
+                List<Object[]> res = space.queryAll(matchTemplate); //TODO gustav this needs an additional integer for the lock identifier
                 //Then we loop over them.
                 for (Object[] e : res) {
                     Order match = new Order(e); //TODO - this needs a constructor
@@ -234,13 +259,20 @@ public class Broker {
                     if (totalQfound >= order.getMinQuantity()) break;
                 }
                 if (totalQfound >= order.getMinQuantity()) {
+                    System.out.println("Found for " + order.getStock());
                     break;
                 } else {
                     if (!checkIfThisExists()) //TODO: Not sure if this is necessary
                         break;
                     //if not enough matching orders were found, wait until a change has happened in the space.
                     //This is to avoid "busy waiting".
+                    // A new key is checked out to see see if we should wait or not.
+                    if (space.getp(new ActualField(lock), new FormalField(Integer.class)) == null) {
                     waitForChange(order, space);
+                    } else {
+                        responseLock = space.get(new ActualField(lock), new FormalField(Integer.class));
+                        space.put(lock, responseLock[1], counter);
+                    }
                 }
             }
         }
@@ -276,6 +308,7 @@ public class Broker {
                         new FormalField(String.class),
                         new FormalField(String.class),
                         new ActualField(o.getStock()),
+                        new FormalField(Integer.class),
                         new FormalField(Integer.class),
                         new FormalField(Integer.class)
                 );
@@ -328,6 +361,55 @@ public class Broker {
             boolean b = !(orders.queryp(thisTemplate) == null);
             orders.put(lock);
             return b;
+        }
+    }
+//TODO test if this works accordingly, changed the type it inputs to the type order.
+    public void insertIntoSellOrders(Order order) {
+        if (orderRepository.get(order.getStock()) == null) {
+            SequentialSpace sequentialSpace = new SequentialSpace();
+            LockService.newLock intbool = lockService.insertOrder(order.getStock());
+            try {
+                if (intbool.newKeyNum) {
+                    sequentialSpace.put("lock",intbool.num);
+                }
+                sequentialSpace.put(
+                            order.getId(),
+                            order.getOrderedBy(),
+                            order.getOrderType(),
+                            order.getStock(),
+                            order.getQuantity(),
+                            order.getMinQuantity(),
+                            intbool.num);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            orderRepository.add(order.getStock(), sequentialSpace);
+        } else {
+            try {
+                LockService.newLock intbool = lockService.insertOrder(order.getStock());
+                if (intbool.newKeyNum) {
+                    orderRepository.get(order.getStock()).put("key",intbool.num);
+                }
+                orderRepository.get(order.getStock()).put(
+                        order.getId(),
+                        order.getOrderedBy(),
+                        order.getOrderType(),
+                        order.getStock(),
+                        order.getQuantity(),
+                        order.getMinQuantity(),
+                        intbool.num);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public SequentialSpace getFromSellOrders(String stock, SpaceRepository sellOrders) {
+        if (sellOrders.get(stock) == null) {
+            sellOrders.add(stock, new SequentialSpace());
+            return new SequentialSpace();
+        } else {
+            return (SequentialSpace) sellOrders.get(stock);
         }
     }
 

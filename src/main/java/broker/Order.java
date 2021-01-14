@@ -15,6 +15,7 @@ public class Order implements Serializable {
     private String stock; //Stock kan måske være en class for sig selv?
     private int quantity;
     private int minQuantity;
+    private int lockNumber;
 
     final static String allFlag = "ALL";
     final static String mostFlag = "MOST";
@@ -31,6 +32,7 @@ public class Order implements Serializable {
         this.stock = stock;
         this.quantity = quantity;
         this.minQuantity = minQuantity;
+        this.lockNumber = 0;
     }
 
     public Order(Object[] arr) {
@@ -41,6 +43,7 @@ public class Order implements Serializable {
             quantity = (Integer) arr[3];
             //allOrNothing = (Boolean) arr[4];
             minQuantity = (Integer) arr[4];
+            lockNumber = 0;
         }
         if (arr.length == 6) {
             id = (UUID) arr[0];
@@ -50,8 +53,18 @@ public class Order implements Serializable {
             quantity = (Integer) arr[4];
             //allOrNothing = (Boolean) arr[5];
             minQuantity = (Integer) arr[5];
+            lockNumber = 0;
         }
-
+        if (arr.length == 7) {
+            id = (UUID) arr[0];
+            orderedBy = (String) arr[1];
+            orderType = (String) arr[2];
+            stock = (String) arr[3];
+            quantity = (Integer) arr[4];
+            //allOrNothing = (Boolean) arr[5];
+            minQuantity = (Integer) arr[5];
+            lockNumber = (Integer) arr[6];
+        }
     }
 
     public String getOrderedBy() {
@@ -100,5 +113,13 @@ public class Order implements Serializable {
                 ", quantity=" + quantity +
                 ", minQuantity=" + minQuantity +
                 '}';
+    }
+
+    public int getLockNumber() {
+        return lockNumber;
+    }
+
+    public void setLockNumber(int lockNumber) {
+        this.lockNumber = lockNumber;
     }
 }
