@@ -1,7 +1,5 @@
 package Broker;
 
-import model.StockInfo;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jspace.*;
 
 import java.util.*;
@@ -15,9 +13,7 @@ public class Broker {
 
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
     SequentialSpace newOrderPackages = new SequentialSpace();
-    SequentialSpace marketOrders = new SequentialSpace();
-    SequentialSpace marketOrdersInProcess = new RandomSpace(); //TODO: Denne kan i princippet slås sammen med marketOrders, og det bør stadig fungere.
-    SequentialSpace limitOrders = new SequentialSpace(); //TODO: Bør både market og limit orders være i samme space?
+    SequentialSpace orders = new SequentialSpace();
     SequentialSpace transactions = new SequentialSpace();
 
     SpaceRepository tradeRepo = new SpaceRepository();
@@ -27,8 +23,8 @@ public class Broker {
     static final String msgFlag = "MSG";
     static final String totalFlag = "TOTAL";
     static final String lock = "lock";
-    static final String waitingForNewTotal = "WAITING_FOR_NEW_TOTAL";
-    static final String newTotal = "NEW_TOTAL";
+    static final String waiting = "WAITING";
+    static final String notifyChange = "CHANGE";
 
     ExecutorService executor = Executors.newCachedThreadPool();
     static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
@@ -36,7 +32,9 @@ public class Broker {
     boolean serviceRunning;
 
     public Broker() {
-        tradeRepo.add("marketOrders", marketOrders);
+        tradeRepo.add("orders", orders);
+        tradeRepo.add("orderPackages", newOrderPackages);
+        tradeRepo.add("transactions", transactions);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
     }
 
@@ -48,591 +46,288 @@ public class Broker {
     private void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 110);
-        marketOrdersInProcess.put(totalFlag, "AAPL", sellOrderFlag, 0); //TODO: Hvordan kan vi gøre dette et andet sted?
-        marketOrdersInProcess.put(totalFlag, "AAPL", buyOrderFlag, 0); //TODO: Også denne?
-        marketOrdersInProcess.put(lock);
-        //executor.submit(new NewPackagesHandler());
-        executor.submit(test);
-        executor.submit(new NewTestOrderHandler());
+        orders.put(lock);
+        executor.submit(new NewOrderPkgHandler());
     }
 
-    class NewTestOrderHandler implements Callable<String> {
-
+    class NewOrderPkgHandler implements Runnable {
         @Override
-        public String call() throws Exception {
+        public void run() {
             while(serviceRunning) {
                 try {
-                    Order order = new Order(marketOrders.get(
-                            new FormalField(String.class), //Name of the client who made the order
-                            new FormalField(String.class), //Type of order, eg. SELL or BUY
-                            new FormalField(String.class), //Name of the stock
-                            new FormalField(Integer.class), //Quantity
-                            new FormalField(Integer.class)));
-                            //new FormalField(Boolean.class))); //All or nothing
-                    order.setId(UUID.randomUUID()); //TODO: Skal dette gøres anderledes?
-                    System.out.println("Received order:");
-                    System.out.println(order.toString());
-                    marketOrdersInProcess.put(
+                    OrderPackage orderPkg = (OrderPackage) newOrderPackages.get(new FormalField(OrderPackage.class))[0];
+                    executor.submit(new ProcessPackageTask(orderPkg));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
+    }
+
+    /**
+     * A task that processes a package of orders by starting new tasks for each order that it contains.
+     * Each of these tasks returns a list of matching orders. When they all complete, this task
+     * tries to secure them all, and finally send a list of transactions to the bank.
+     */
+    class ProcessPackageTask implements Runnable {
+
+        OrderPackage orderPkg;
+
+        public ProcessPackageTask(OrderPackage orderPkg) {
+            this.orderPkg = orderPkg;
+        }
+
+        @Override
+        public void run() {
+            List<ProcessOrderTask> tasks = new ArrayList<>();
+            List<List<Order>> finalOrders = new ArrayList<>();
+            List<Transaction> finalTransactions = new ArrayList<>();
+
+            try {
+                //First we give each order of the package a unique ID
+                //Then we put the order in the orders space.
+                for (Order order : orderPkg.getOrders()) {
+                    order.setId(UUID.randomUUID());
+                    orders.put(
                             order.getId(),
                             order.getOrderedBy(),
                             order.getOrderType(),
                             order.getStock(),
                             order.getQuantity(),
                             order.getMinQuantity()
-                            //order.isAllOrNothing()
                     );
-                    //executor.submit(new Test2(order));
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    //We notifiy any listeners, that the space has been changed.
+                    notifyListeners(orders);
+                    //We instantiate a new task to find matching orders of the order, and add it to a list of tasks.
+                    tasks.add(new ProcessOrderTask(orderPkg, order));
                 }
-            }
-            return "Handler for handling market sale orders stopped!";
-        }
-    }
 
-    Runnable test = () -> {
-        while(true) {
-            Object[] s = new Object[0];
-            try {
-                marketOrders.get(new ActualField("CLEAR"));
-                marketOrders = new SequentialSpace();
-                marketOrdersInProcess = new RandomSpace();
-                System.out.println("cleared!");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    };
-/*
-    class Test2 implements Runnable {
-        Order order;
+                //We invoke all the tasks at once.
+                List<Future<List<Order>>> futures = executor.invokeAll(tasks);
 
-        public Test2(Order order) {
-            this.order = order;
-        }
-
-        @Override
-        public void run() {
-            Set<Pair<Order, Order>> res;
-            try {
-                Set<Order> start = new HashSet<>();
-                start.add(order);
-                //res = executor.submit(new TryFindSetOfMatches(start, new ArrayList<>(), order.getQuantity(), order.getMatchingOrderType(), order.getStock())).get();
-                res = executor.submit(new TryFindSetOfMatches(start, new HashSet<>(), order, order.getQuantity())).get();
-                System.out.println("Her kommer resultatet:");
-                for (Pair<Order, Order> pair : res) {
-                    //System.out.println(o.toString());
-                    System.out.print(pair.getLeft() + " and " + pair.getRight());
-                    System.out.println();
+                //We try to retrieve a result for each of the tasks
+                //TODO: Should we use a timeout on the .get() ?
+                for (Future<List<Order>> future : futures) {
+                    finalOrders.add(future.get());
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
+
+                //Now we are ready the lock all the orders, remove them and create the transactions.
+                //We grab the lock.
+                orders.get(new ActualField(lock));
+
+                //We call lockTransaction() on each task, which removes the orders, and returns transactions.
+                //We add the transactions to a list.
+                for (ProcessOrderTask task : tasks) {
+                    finalTransactions.addAll(task.lockTransactions(orders));
+                }
+                //We put the lock back.
+                orders.put(lock);
+
+                //We put the final transactions in the transactions space.
+                transactions.put(finalTransactions); //TODO: Kun for test
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
     }
-*/
-    class NewPackagesHandler implements Callable<String> {
-        @Override
-        public String call() throws Exception {
-            while(serviceRunning) {
-                try {
-                    OrderPackage orderPkg = (OrderPackage) newOrderPackages.get(new FormalField(OrderPackage.class))[0];
 
-                    //Give the new package a UUID
-                    orderPkg.setPackageID(UUID.randomUUID());
-
-                    //Give each order in the package a UUID;
-                    for (Order order : orderPkg.getOrders())
-                        order.setId(UUID.randomUUID());
-
-                    //Submit the package to be processed by a new task
-                    executor.submit(new ProcessOrderPkgTask(orderPkg));
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            return "Handler for handling market sale orders stopped!";
-        }
+    /**
+     * Lets an order signal that it waits for a change in space.
+     * The method then blocks until the corresponding signal of change has been received.
+     * @param order The order that wants to signal that it is waiting.
+     * @param space The space where the signal should be put in.
+     * @throws InterruptedException
+     */
+    private void waitForChange(Order order, Space space) throws InterruptedException {
+        space.put(order.getId(), order.getMatchingOrderType(), order.getStock(), waiting);
+        space.get(
+                new ActualField(order.getId()),
+                new ActualField(order.getMatchingOrderType()),
+                new ActualField(order.getStock()),
+                new ActualField(notifyChange));
     }
 
-    class ProcessOrderPkgTask implements Callable<String> {
-
-        private OrderPackage orderPkg;
-
-        public ProcessOrderPkgTask(OrderPackage orderPkg) {
-            this.orderPkg = orderPkg;
-        }
-
-        @Override
-        public String call() throws Exception {
-            for (Order order : orderPkg.getOrders()) {
-
-            }
-            return null;
-        }
-    }
-
-    class QueryAllPkgOrdersTask implements Callable<Boolean> {
-
-        private OrderPackage orderPkg;
-
-        public QueryAllPkgOrdersTask(OrderPackage orderPkg) {
-            this.orderPkg = orderPkg;
-        }
-
-        @Override
-        public Boolean call() throws Exception {
-
-            return null;
-        }
-    }
-
-    class ProcessOrderTask implements Callable<String> {
-
-        private Order order;
-        TemplateField[] totalSharesTemplateFields;
-        TemplateField[] thisOrderTemplateFields;
-        TemplateField[] matchingTemplateFields;
-
-        public ProcessOrderTask(Order order) {
-            this.order = order;
-
-            totalSharesTemplateFields = new TemplateField[]{
-                    new ActualField(totalFlag), //Indicates we want to get the total quantity
-                    new ActualField(order.getOrderType()), //Indicates if it's the total for sale ("SELL") or purchase ("BUY")
-                    new ActualField(order.getStock()), //The name of the stock
-                    new FormalField(Integer.class) //The quantity
-            };
-            thisOrderTemplateFields = new TemplateField[]{
-                    new ActualField(order.getId()),
-                    new FormalField(String.class),
-                    new FormalField(String.class),
-                    new FormalField(String.class),
-                    new FormalField(Integer.class)
-            };
-            matchingTemplateFields = new TemplateField[]{
-                    new FormalField(UUID.class),
-                    new FormalField(String.class),
-                    new ActualField(order.getMatchingOrderType()),
-                    new ActualField(order.getStock()),
-                    new FormalField(Integer.class)
-            };
-        }
-
-        Callable<Order> queryMatchTask = () -> new Order(marketOrdersInProcess.query(matchingTemplateFields));
-
-        Callable<List<Order>> queryMatchesTask = () -> {
-            List<Object[]> allMatches = marketOrdersInProcess.queryAll(matchingTemplateFields);
-            List<Order> matches = new ArrayList<>();
-            int qTotal = 0;
-            for (Object match : allMatches) {
-                if (qTotal >= order.getQuantity())
-                    break;
-                matches.add((Order) match);
-                qTotal += ((Order) match).getQuantity();
-            }
-            if (qTotal < (order).getQuantity())
-                throw new Exception("Not enough");
-            return matches;
-        };
-
-        Callable<Boolean> waitForConditionalTotalQuantity = () -> {
-            while (true) {
-                //We put a tuple that signals that the task is waiting for the total value to change.
-                marketOrdersInProcess.put(order.getId(), order.getOrderType(), order.getStock(), waitingForNewTotal);
-                //We wait for a tuple that signals that the total value has changed.
-                marketOrdersInProcess.get(
-                        new ActualField(order.getId()),
-                        new ActualField(order.getOrderType()),
-                        new ActualField(order.getStock()),
-                        new ActualField(newTotal)
-                );
-                //We retrieve the first signal tuplet, so that the task is not signaling anymore.
-                marketOrdersInProcess.get(
-                        new ActualField(order.getId()),
-                        new ActualField(order.getOrderType()),
-                        new ActualField(order.getStock()),
-                        new ActualField(waitingForNewTotal));
-                //We check the condition. If it's true, we break the loop.
-                int currentTotal = (Integer) marketOrdersInProcess.query(totalSharesTemplateFields)[3];
-                if (currentTotal >= order.getQuantity())
-                    break;
-            }
-            return null;
-        };
-
-        @Override
-        public String call() throws InterruptedException {
-            try {
-                //First we update the total amount of shares of the stock that are currently up for sale/purchase
-                //This also notifies each task that are blocking/waiting for the value to change.
-                updateTotalQuantity(order, order.getQuantity());
-
-                //Here we start to wait, until the total number of shares that up for sale/purchase
-                //exceeds the amount that this order wants to buy/sell.
-                executor.submit(waitForConditionalTotalQuantity).get(standardTimeout, timeoutUnit); //TODO: Consider what the timout should be.
-
-                marketOrdersInProcess.get(new ActualField(lock));
-
-                //Here we check that this order has not been processed/fulfilled by another orders completion.
-                Object[] thisOrderRes = marketOrdersInProcess.queryp(thisOrderTemplateFields);
-                if (thisOrderRes == null) {
-                    //If null, it should mean that this particular order has aldready been processed.
-                    //In that case, just put the lock back, and let the task finish.
-                    marketOrdersInProcess.put(lock);
-                    return null; //TODO: Should we do something else here?
-                }
-
-
-                Order matchOrder = new Order(marketOrdersInProcess.get(matchingTemplateFields));
-                marketOrdersInProcess.get(thisOrderTemplateFields);
-
-                marketOrdersInProcess.put(lock);
-
-                //Scenarios:
-                //1. The seller wants to sell more than the buyer. The buyer get to buy all the shares he/she wants. The seller makes a new order.
-                //2. The buyer wants to buy more than the seller. The seller sells everything. The buyer makes a new order.
-                //3. Seller and buyer wants to buy/sell the same amount.
-
-                //We choose the smallest of the two quantities to find the max number of shares
-                //that the two clients may trade.
-                int min = Math.min(order.getQuantity(), matchOrder.getQuantity());
-
-                //We find the current stock price
-                Object[] res = stocks.queryp(new ActualField(order.getStock()), new FormalField(Integer.class));
-                if (res == null) return null; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
-                StockInfo stockInfo = new StockInfo(res);
-
-                //Here we send a message (to the bank?) to complete the transaction.
-                transactions.put(order.getOrderedBy(), matchOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
-                //TODO: Get OK or NOT OK from bank the confirm/not confirm the transaction. Do something with the response.
-
-                System.out.printf("%s sold %d shares of %s to %s.%n", order.getOrderedBy(), min, order.getStock(), matchOrder.getOrderedBy());
-
-                if (min < order.getQuantity()) {
-                    if (order.getOrderType().equals(sellOrderFlag))
-                        System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
-                    if (order.getOrderType().equals(buyOrderFlag))
-                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
-
-                    marketOrders.put(
-                            order.getOrderedBy(),
-                            sellOrderFlag,
-                            order.getStock(),
-                            order.getQuantity() - min);
-                } else if (min < matchOrder.getQuantity()) {
-                    if (matchOrder.getOrderType().equals(sellOrderFlag))
-                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
-                    if (matchOrder.getOrderType().equals(buyOrderFlag))
-                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
-                    marketOrders.put(
-                            matchOrder.getOrderedBy(),
-                            buyOrderFlag,
-                            matchOrder.getStock(),
-                            matchOrder.getQuantity() - min);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            } catch (TimeoutException e) {
-                marketOrders.put(order.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
-            }
-            return null;
-        }
-    }
-
-    private void updateTotalQuantity(Order order, int change) throws InterruptedException {
-        //Here we want to get the total number of shares of the specific stock currently for either sale or purchase.
-        //This information is relevant later.
-        int totalShares = (Integer) marketOrdersInProcess.get(
-                new ActualField(totalFlag), //Indicates we want to get the total quantity
-                new ActualField(order.getOrderType()), //Indicates if it's the total for sale ("SELL") or purchase ("BUY")
-                new ActualField(order.getStock()), //The name of the stock
-                new FormalField(Integer.class) //The quantity
-        )[2];
-        //Then we want to update it by adding the quantity of this new order.
-        totalShares += order.getQuantity();
-        marketOrdersInProcess.put(
-                totalFlag,
-                order.getOrderType(),
-                order.getStock(),
-                totalShares
-        );
-        //Then we need to signal each task waiting for an update on the total, that it has been updated.
-        List<Object[]> listeners = marketOrdersInProcess.queryAll(
+    /**
+     * Signals that a change has occured in the space. Does so by first retrieving
+     * all current waiting signals, and for each of these puts a corresponding signal
+     * back.
+     * @param space
+     * @throws InterruptedException
+     */
+    private void notifyListeners(Space space) throws InterruptedException {
+        List<Object[]> listeners = space.getAll(
                 new FormalField(UUID.class),
                 new FormalField(String.class),
                 new FormalField(String.class),
-                new ActualField(waitingForNewTotal)
+                new ActualField(waiting)
         );
         for (Object[] l : listeners) {
-            marketOrdersInProcess.put(l[0], l[1], l[2], newTotal);
+            space.put(l[0], l[1], l[2], notifyChange);
         }
-        //Done with updating total and notifying waiting threads.
     }
 
+    class ProcessOrderTask implements Callable<List<Order>> {
 
-    /**
-     * This should recursively try to find orders and add them to a set of orders,
-     * such that the final set contains orders, that "solves the puzzle".
-     */
-    /*
-    class TryFindSetOfMatches implements Callable<Set<Pair<Order, Order>>> {
-
-        Space space;
+        OrderPackage orderPkg;
         Order order;
-        int q;
+        List<Order> matchingOrders = new ArrayList<>();
+        int totalQfound = 0;
+        TemplateField[] thisTemplate;
+        TemplateField[] matchTemplate;
 
-        //tomt set, 10, BUY, aapl
-        public TryFindSetOfMatches(Space space, Order order, int q) { //, String matchType, String stock
-            this.space = space;
+        public ProcessOrderTask(OrderPackage orderPkg, Order order) {
+            this.orderPkg = orderPkg;
             this.order = order;
-            this.q = q;
-        }
-
-        private boolean containsOrder(Order order) {
-            for (Order o : orders) {
-                if (o.getId().equals(order.getId())) return true;
-            }
-            return false;
-        }
-
-        @Override
-        public Set<Pair<Order, Order>> call() throws Exception {
-            TemplateField[] matchFields = new TemplateField[]{
+            thisTemplate = new TemplateField[]{
+                    new ActualField(order.getId()),
+                    new ActualField(order.getOrderedBy()),
+                    new ActualField(order.getOrderType()),
+                    new ActualField(order.getStock()),
+                    new FormalField(Integer.class),
+                    new FormalField(Integer.class)
+            };
+            matchTemplate = new TemplateField[]{
                     new FormalField(UUID.class),
                     new FormalField(String.class),
                     new ActualField(order.getMatchingOrderType()),
                     new ActualField(order.getStock()),
                     new FormalField(Integer.class),
                     new FormalField(Integer.class)
-                    //new FormalField(Boolean.class)
-            };
-
-            Order match = null;
-            do {
-                //This is busy waiting. not good. Observe instead...
-                match = new Order(marketOrdersInProcess.query(matchFields)); //space might need to be random.
-            } while (containsOrder(match));
-
-            pairs.add(Pair.of(order, match));
-            orders.add(match);
-            if (match.getQuantity() == q) {
-                return pairs;
-            } else if (match.getQuantity() < q) {
-                return executor.submit(new TryFindSetOfMatches(orders, pairs, order, q - match.getQuantity())).get();
-                //return executor.submit(new TryFindSetOfMatches(orders, q - match.getQuantity(), matchType, stock)).get();
-            } else if (match.getMinQuantity() > q) {
-                return executor.submit(new TryFindSetOfMatches(orders, pairs, match, match.getQuantity() - q)).get();
-                //return executor.submit(new TryFindSetOfMatches(orders, match.getQuantity() - q, otherType, stock)).get();
-            } else {
-                return pairs;
-            }
-        }
-    }
-*/
-/*
-    class FindMatchingBuyOrderHandler2 implements Callable<String> {
-
-        private MarketOrder order;
-        String matchingOrderType;
-        TemplateField[] thisOrderTemplateFields;
-        TemplateField[] matchingTemplateFields;
-        private List<MarketOrder> matchOrderQueries = new ArrayList<>();
-        private List<MarketOrder> matchOrdersFinal = new ArrayList<>();
-
-        public FindMatchingBuyOrderHandler2(MarketOrder order) {
-            this.order = order;
-            matchingOrderType = order.getOrderType().equals(sellOrderFlag) ? buyOrderFlag : sellOrderFlag;
-            thisOrderTemplateFields = new TemplateField[]{
-                    new ActualField(order.getId()),
-                    new FormalField(String.class),
-                    new FormalField(String.class),
-                    new FormalField(String.class),
-                    new FormalField(Integer.class)
-            };
-            matchingTemplateFields = new TemplateField[]{
-                    new FormalField(String.class),
-                    new FormalField(String.class),
-                    new ActualField(matchingOrderType),
-                    new ActualField(order.getStock()),
-                    new FormalField(Integer.class)
             };
         }
 
-        Runnable findMatchOrdersTask = () -> {
-            while (sumStocksOfMatchOrders(matchOrderQueries) < order.getQuantity()) {
-                try {
-                    MarketOrder matchQuery = new MarketOrder(marketOrdersInProcess.get(matchingTemplateFields));
-                    if (!containsMatchOrder(matchQuery)) matchOrderQueries.add(matchQuery);
-                    putMarketOrder(matchQuery, marketOrdersInProcess);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        @Override
+        public List<Order> call() {
+            try {
+                findMatchingOrders(orders);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        };
+            return matchingOrders;
+        }
 
-        Runnable findMatchOrdersTask2 = () -> {
-            while (sumStocksOfMatchOrders(matchOrderQueries) < order.getQuantity()) {
-                List<Object[]> resList = marketOrdersInProcess.queryAll(matchingTemplateFields);
-                matchOrderQueries = new ArrayList<>();
-                for (Object[] res : resList) {
-                    if (sumStocksOfMatchOrders(matchOrderQueries) < order.getQuantity())
-                        matchOrderQueries.add(new MarketOrder(res));
-                }
-                if (sumStocksOfMatchOrders(matchOrderQueries) < order.getQuantity()) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+        private void findMatchingOrders(Space space) throws InterruptedException {
+            while (true) {
+                //First we query all orders that match the matching template.
+                List<Object[]> res = space.queryAll(matchTemplate);
+                //Then we loop over them.
+                for (Object[] e : res) {
+                    Order match = new Order(e);
+                    //Break if the sender of both orders are the same client.
+                    if (match.getOrderedBy().equals(order.getOrderedBy())) break;
+
+                    //We only want to add the order to the final matches, if:
+                    //  1. It is not already added to the matches of this order.
+                    //  2. It is not already added to the matches of another order in the same order package.
+                    //  3. The current total amount of match quantities plus the minimum quantity of the new match does not exceed this orders max quantity.
+                    if (!containsOrder(
+                            matchingOrders, match) &&
+                            !containsOrder(orderPkg.getMatchOrders(), match)
+                            && (totalQfound + match.getMinQuantity() <= order.getQuantity())
+                    ) {
+                        matchingOrders.add(match);
+                        orderPkg.getMatchOrders().add(match);
+                        totalQfound += match.getQuantity();
                     }
+                    //If the total quantity found is greater or equal to the minimum quantity of this order, break.
+                    if (totalQfound >= order.getMinQuantity()) break;
+                }
+                if (totalQfound >= order.getMinQuantity()) {
+                    break;
+                } else {
+                    if (!checkIfThisExists()) //TODO: Not sure if this is necessary
+                        break;
+                    //if not enough matching orders were found, wait until a change has happened in the space.
+                    //This is to avoid "busy waiting".
+                    waitForChange(order, space);
                 }
             }
-        };
-
-        private int sumStocksOfMatchOrders(List<MarketOrder> orders) {
-            int sum = 0;
-            for (MarketOrder order : orders) {
-                sum += order.getQuantity();
-            }
-            return sum;
         }
 
-        private boolean containsMatchOrder(MarketOrder order) {
-            for (MarketOrder o : matchOrderQueries) {
-                if (order.getId().equals(o.getId())) return true;
+        private boolean containsOrder(List<Order> list, Order order) {
+            for (Order e : list) {
+                if (e.getId() == order.getId()) return true;
             }
             return false;
         }
 
-        @Override
-        public String call() throws InterruptedException {
-            try {
-                //MarketOrder matchOrderQuery = executor.submit(queryMatchTask).get(standardTimeout, timeoutUnit);
+        /**
+         * TODO: Should be renamed, and maybe also refactorized.
+         * Removes the order and all the final matching orders from the space.
+         * Then it calls generateTransactions() to generate a list of transactions, which
+         * it then returns.
+         * @param space the space to remove tuples from.
+         * @return A list of transactions.
+         * @throws InterruptedException
+         */
+        public List<Transaction> lockTransactions(Space space) throws InterruptedException {
 
-                executor.submit(findMatchOrdersTask2).get(standardTimeout, timeoutUnit);
-
-                marketOrdersInProcess.get(new ActualField(lock));
-
-                Object[] thisOrderRes = marketOrdersInProcess.queryp(thisOrderTemplateFields);
-                if (thisOrderRes == null) {
-                    //If null, it should mean that this particular order has aldready been processed.
-                    //In that case, just put the lock back, and let the task finish.
-                    //TODO: Eller hvad, skal der gøres noget andet?
-                    marketOrdersInProcess.put(lock);
-                    return null; //TODO: Skal der gøres mere her?
-                }
-
-                //MarketOrder matchOrder = new MarketOrder(marketOrdersInProcess.get(matchingTemplateFields));
-
-                for (MarketOrder order : matchOrderQueries) {
-
-                }
-
-                marketOrdersInProcess.get(thisOrderTemplateFields);
-
-                marketOrdersInProcess.put(lock);
-
-                //Scenarios:
-                //1. The seller wants to sell more than the buyer. The buyer get to buy all the shares he/she wants. The seller makes a new order.
-                //2. The buyer wants to buy more than the seller. The seller sells everything. The buyer makes a new order.
-                //3. Seller and buyer wants to buy/sell the same amount.
-
-                //We choose the smallest of the two quantities to find the max number of shares
-                //that the two clients may trade.
-                int min = Math.min(order.getQuantity(), matchOrder.getQuantity());
-
-                //We find the current stock price
-                Object[] res = stocks.queryp(new ActualField(order.getStock()), new FormalField(Integer.class));
-                if (res == null) return null; //TODO: Bør der gives besked til klienten om, at der er sket en fejl – eller sørger vi for dette et andet sted?
-                StockInfo stockInfo = new StockInfo(res);
-
-                //Here we send a message (to the bank?) to complete the transaction.
-                transactions.put(order.getOrderedBy(), matchOrder.getOrderedBy(), stockInfo.getName(), stockInfo.getPrice(), min);
-                //TODO: Get OK or NOT OK from bank the confirm/not confirm the transaction. Do something with the response.
-
-                System.out.printf("%s sold %d shares of %s to %s.%n", order.getOrderedBy(), min, order.getStock(), matchOrder.getOrderedBy());
-
-                if (min < order.getQuantity()) {
-                    if (order.getOrderType().equals(sellOrderFlag))
-                        System.out.printf("%s sold less shares than he/her wanted. Placing new sale order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
-                    if (order.getOrderType().equals(buyOrderFlag))
-                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", order.getOrderedBy(), order.getQuantity() - min, order.getStock());
-
-                    marketOrders.put(
-                            order.getOrderedBy(),
-                            sellOrderFlag,
-                            order.getStock(),
-                            order.getQuantity() - min);
-                } else if (min < matchOrder.getQuantity()) {
-                    if (matchOrder.getOrderType().equals(sellOrderFlag))
-                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
-                    if (matchOrder.getOrderType().equals(buyOrderFlag))
-                        System.out.printf("%s bought less shares than he/her wanted. Placing new buy order of %d shares of %s.%n", matchOrder.getOrderedBy(), matchOrder.getQuantity() - min, matchOrder.getStock());
-                    marketOrders.put(
-                            matchOrder.getOrderedBy(),
-                            buyOrderFlag,
-                            matchOrder.getStock(),
-                            matchOrder.getQuantity() - min);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            } catch (TimeoutException e) {
-                marketOrders.put(order.getOrderedBy(), msgFlag, "Sale order failed due to timeout.");
+            Object[] thisOrder = space.getp(thisTemplate);
+            if (thisOrder == null) {
+                //This means that this order has probably already been processed by another orders task.
+                return new ArrayList<>();
             }
-            return null;
-        }
-    }
-*/
-    void putMarketOrder(Order order, Space space) {
-        try {
-            space.put(
-                    order.getId(),
-                    order.getOrderedBy(),
-                    order.getOrderType(),
-                    order.getStock(),
-                    order.getQuantity()
-            );
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 
-    /*
-    class MarketOrderHandler implements Callable<String> {
-        @Override
-        public String call() throws Exception {
-            while(serviceRunning) {
-                try {
-                    MarketOrder order = new MarketOrder(marketOrders.get(
-                            new FormalField(String.class), //Name of the client who made the order
-                            new FormalField(String.class), //Type of order, eg. SELL or BUY
-                            new FormalField(String.class), //Name of the stock
-                            new FormalField(Integer.class))); //Quantity
-                    order.setId(UUID.randomUUID()); //TODO: Skal dette gøres anderledes?
-                    marketOrdersInProcess.put(
-                            order.getId(),
-                            order.getOrderedBy(),
-                            order.getOrderType(),
-                            order.getStock(),
-                            order.getQuantity()
-                    );
-                    executor.submit(new FindMatchingBuyOrderHandler(order));
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            //We remove each of the matching orders from the space.
+            for (Order o : matchingOrders) {
+                space.get(
+                        new ActualField(o.getId()),
+                        new FormalField(String.class),
+                        new FormalField(String.class),
+                        new ActualField(o.getStock()),
+                        new FormalField(Integer.class),
+                        new FormalField(Integer.class)
+                );
+
             }
-            return "Handler for handling market sale orders stopped!";
-        }
-    }
-    */
+            //We notify listeners that a change has happened.
+            notifyListeners(orders);
 
-    private void putNewOrder(Space space, Order order) {
-        
+            //We return a list of transactions.
+            return generateTransactions(matchingOrders);
+        }
+
+        /**
+         * Generates a list of transactions from this orders matching orders.
+         * @param matches
+         * @return list of transactions.
+         */
+        private List<Transaction> generateTransactions(List<Order> matches) {
+            List<Transaction> transactions = new ArrayList<>();
+
+            //remainingQ is the remaining amount of shares that this order wants to trade. Starts at the max quantity.
+            int remainingQ = order.getQuantity();
+
+            for (Order match : matches) {
+                //Find the max numbers of shares that this order and the match may trade.
+                //TODO: This is a silly way of doing it. Figure out the math..
+                int transactionQ = 0;
+                while ((transactionQ <= remainingQ) && (transactionQ <= match.getQuantity())) transactionQ++;
+                transactionQ -= 1;
+
+                //Put a transaction in the list.
+                if (order.getOrderType().equals(sellOrderFlag)) {
+                    transactions.add(new Transaction(order.getOrderedBy(), match.getOrderedBy(), order.getStock(), 100, transactionQ));
+                } else {
+                    transactions.add(new Transaction(match.getOrderedBy(), order.getOrderedBy(), order.getStock(), 100, transactionQ));
+                }
+                //Update the remaining quantity.
+                remainingQ -= transactionQ;
+            }
+            return transactions;
+        }
+
+        /**
+         * @return True if this order still exists in the space, which means it hasn't been processed by another order yet.
+         * False false if it no longer exists. This means it has been processed by another order.
+         * @throws InterruptedException
+         */
+        private boolean checkIfThisExists() throws InterruptedException {
+            orders.get(new ActualField(lock));
+            boolean b = !(orders.queryp(thisTemplate) == null);
+            orders.put(lock);
+            return b;
+        }
     }
 }
