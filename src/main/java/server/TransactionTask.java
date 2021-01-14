@@ -1,6 +1,6 @@
 package server;
 
-import Broker.Transaction;
+import broker.Transaction;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
 

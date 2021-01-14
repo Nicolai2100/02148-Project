@@ -3,7 +3,6 @@ package Broker;
 import broker.Broker;
 import broker.Order;
 import broker.OrderPackage;
-import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 import org.junit.jupiter.api.AfterEach;
@@ -30,11 +29,6 @@ class BrokerTest {
     TimeUnit timoutUnit = TimeUnit.SECONDS;
 
     Callable<Object[]> getDoneTask = () -> {
-        Object[] res = orders.get(new ActualField("DONE!"), new FormalField(List.class));
-        return res;
-    };
-
-    Callable<Object[]> getDoneTask2 = () -> {
         Object[] res = transactions.get(new FormalField(List.class));
         return res;
     };
@@ -65,159 +59,7 @@ class BrokerTest {
     }
 
     @Test
-    void test1() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 5);
-        orders.put("BOB", "BUY", "AAPL", 10, 5);
-     /*   OrderPackage pkg1 = new OrderPackage();
-        OrderPackage pkg2 = new OrderPackage();
-        pkg1.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 5));
-        pkg2.addOrder(new Order("BUY", "BOB", "AAPL", 10, 5));
-        orderPkgs.put(pkg1);
-        orderPkgs.put(pkg2);
-        */
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 1);
-        printRes(res);
-    }
-
-    @Test
-    void test2() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 10);
-        orders.put("BOB", "BUY", "AAPL", 10, 10);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 1);
-        printRes(res);
-    }
-
-    @Test
-    void test3() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 10);
-        orders.put("BOB", "BUY", "AAPL", 10, 5);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 1);
-        printRes(res);
-    }
-
-    @Test
-    void test4() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 5);
-        orders.put("BOB", "BUY", "AAPL", 10, 10);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 1);
-        printRes(res);
-    }
-
-    @Test
-    void test5() throws InterruptedException {
-        orders.put("ALICE", "SELL", "AAPL", 5, 5);
-        orders.put("BOB", "BUY", "AAPL", 10, 10);
-        //Bør IKKE give et resultat
-
-        assertThrows(TimeoutException.class, () -> {
-            ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        });
-    }
-
-    @Test
-    void test6() throws InterruptedException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 10);
-        orders.put("BOB", "BUY", "AAPL", 5, 5);
-        //Bør IKKE give et resultat
-
-        assertThrows(TimeoutException.class, () -> {
-            ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        });
-    }
-
-    @Test
-    void test7() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 5);
-        orders.put("BOB", "BUY", "AAPL", 5, 5);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 1);
-        printRes(res);
-    }
-
-    @Test
-    void test8() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 10);
-        orders.put("BOB", "BUY", "AAPL", 5, 5);
-        orders.put("CHARLIE", "BUY", "AAPL", 5, 5);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 2);
-        printRes(res);
-    }
-
-    @Test
-    void test9() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 10);
-        orders.put("BOB", "BUY", "AAPL", 5, 5);
-        orders.put("CHARLIE", "BUY", "AAPL", 10, 5);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 2);
-        printRes(res);
-    }
-
-    @Test
-    void test10() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 10);
-        orders.put("BOB", "BUY", "AAPL", 5, 5);
-        orders.put("CHARLIE", "BUY", "AAPL", 10, 10);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 1);
-        printRes(res);
-    }
-
-    @Test
-    void test11() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 5);
-        orders.put("BOB", "BUY", "AAPL", 5, 5);
-        orders.put("CHARLIE", "BUY", "TESLA", 10, 10);
-        orders.put("BOB", "SELL", "TESLA", 20, 10);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 1);
-        printRes(res);
-        res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 1);
-        printRes(res);
-    }
-
-    @Test
-    void test12() throws InterruptedException, TimeoutException, ExecutionException {
-        orders.put("ALICE", "SELL", "AAPL", 10, 9);
-        orders.put("BOB", "BUY", "AAPL", 1, 1);
-        orders.put("CHARLIE", "BUY", "AAPL", 2, 1);
-        orders.put("DANIEL", "BUY", "AAPL", 2, 2);
-        orders.put("ELLEN", "BUY", "AAPL", 2, 2);
-        orders.put("FRANK", "BUY", "AAPL", 1, 2);
-        orders.put("GERT", "BUY", "AAPL", 3, 1);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
-        assertEquals(res.size(), 6);
-        printRes(res);
-    }
-
-    @Test
-    void test13() throws InterruptedException, TimeoutException, ExecutionException {
+    void test1() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
         alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
         alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
@@ -233,9 +75,9 @@ class BrokerTest {
         orderPkgs.put(bob);
         //Bør give et resultat
 
-        ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[1];
-        ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[1];
-        ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get()[1];
+        ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get()[0];
+        ArrayList res3 = (ArrayList) executor.submit(getDoneTask).get()[0];
         //assertEquals(res.size(), 2);
         printRes(res);
         printRes(res2);
@@ -243,7 +85,7 @@ class BrokerTest {
     }
 
     @Test
-    void test14() throws InterruptedException, ExecutionException {
+    void test2() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
         alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
         alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
@@ -261,16 +103,16 @@ class BrokerTest {
         orderPkgs.put(bob);
         //Bør give et resultat
 
-        ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[0];
-        ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[0];
-        ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get()[0];
+        ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get()[0];
+        ArrayList res3 = (ArrayList) executor.submit(getDoneTask).get()[0];
         printRes(res);
         printRes(res2);
         printRes(res3);
     }
 
     @Test
-    void test15() throws InterruptedException, ExecutionException {
+    void test3() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
         alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
         alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
@@ -289,13 +131,13 @@ class BrokerTest {
         orderPkgs.put(bob);
         //Bør give et resultat
 
-        ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[0];
-        ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[0];
+        ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get()[0];
         printRes(res);
         printRes(res2);
 
         assertThrows(TimeoutException.class, () -> {
-            ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get(timeout, timoutUnit)[0];
+            ArrayList res3 = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[0];
         });
     }
 }
