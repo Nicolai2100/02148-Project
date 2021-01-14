@@ -288,23 +288,41 @@ public class Broker2 {
             return generateTransactions(matchingOrders);
         }
 
+        /**
+         * Generates a list of transactions from this orders matching orders.
+         * @param matches
+         * @return list of transactions.
+         */
         private List<Transaction> generateTransactions(List<Order> matches) {
             List<Transaction> transactions = new ArrayList<>();
+
+            //remainingQ is the remaining amount of shares that this order wants to trade. Starts at the max quantity.
             int remainingQ = order.getQuantity();
+
             for (Order match : matches) {
+                //Find the max numbers of shares that this order and the match may trade.
+                //TODO: This is a silly way of doing it. Figure out the math..
                 int transactionQ = 0;
                 while ((transactionQ <= remainingQ) && (transactionQ <= match.getQuantity())) transactionQ++;
                 transactionQ -= 1;
+
+                //Put a transaction in the list.
                 if (order.getOrderType().equals(sellOrderFlag)) {
                     transactions.add(new Transaction(order.getOrderedBy(), match.getOrderedBy(), order.getStock(), 100, transactionQ));
                 } else {
                     transactions.add(new Transaction(match.getOrderedBy(), order.getOrderedBy(), order.getStock(), 100, transactionQ));
                 }
+                //Update the remaining quantity.
                 remainingQ -= transactionQ;
             }
             return transactions;
         }
 
+        /**
+         * @return True if this order still exists in the space, which means it hasn't been processed by another order yet.
+         * False false if it no longer exists. This means it has been processed by another order.
+         * @throws InterruptedException
+         */
         private boolean checkIfThisExists() throws InterruptedException {
             orders.get(new ActualField(lock));
             boolean b = !(orders.queryp(thisTemplate) == null);
