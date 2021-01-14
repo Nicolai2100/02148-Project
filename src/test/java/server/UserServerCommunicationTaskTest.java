@@ -1,7 +1,7 @@
 package server;
 
 import bank.Program;
-import broker.Broker;
+import broker.Broker2;
 import org.jspace.SequentialSpace;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +17,7 @@ public class UserServerCommunicationTaskTest {
     void setUp() throws InterruptedException {
         Runnable r4 = () -> {
             try {
-                Broker.main(null);
+                Broker2.main(null);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

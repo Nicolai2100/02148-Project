@@ -1,5 +1,8 @@
 package Broker;
 
+import broker.Broker2;
+import broker.Order;
+import broker.OrderPackage;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;

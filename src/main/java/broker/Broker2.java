@@ -1,4 +1,5 @@
 package broker;
+import Broker.Transaction;
 import org.jspace.*;
 
 import java.util.*;
@@ -38,7 +39,8 @@ public class Broker2 {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        //TODO deleted this by accident
+        Broker2 broker2 = new Broker2();
+        broker2.startService();
     }
 
     private void startService() throws InterruptedException {
@@ -211,7 +213,7 @@ public class Broker2 {
                 List<Object[]> res = space.queryAll(matchTemplate);
                 //Then we loop over them.
                 for (Object[] e : res) {
-                    Order match = new Order(); //TODO - this needs a constructor
+                    Order match = new Order(e); //TODO - this needs a constructor
                     //Break if the sender of both orders are the same client.
                     if (match.getOrderedBy().equals(order.getOrderedBy())) break;
 
@@ -327,5 +329,21 @@ public class Broker2 {
             orders.put(lock);
             return b;
         }
+    }
+
+    public void startTransaction(Transaction transaction) {
+        System.out.println("Broker: Starting transaction...");
+        /*
+        try {
+            brokerServer.put(
+                    transaction.getSeller(),
+                    transaction.getBuyer(),
+                    transaction.getStockName(),
+                    transaction.getPrice(),
+                    transaction.getQuantity());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        */
     }
 }

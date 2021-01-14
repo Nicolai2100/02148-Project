@@ -1,8 +1,8 @@
 package server;
 
+import Broker.Transaction;
 import bank.Program;
-import broker.Broker;
-import broker.Transaction;
+import broker.Broker2;
 import org.junit.Before;
 import org.junit.Test;
 import service.AccountServiceMain;
@@ -33,7 +33,7 @@ public class TransactionTaskTest {
         // setUp();
         Runnable r4 = () -> {
             try {
-                Broker.main(null);
+                Broker2.main(null);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -43,7 +43,7 @@ public class TransactionTaskTest {
 
         Transaction transaction = new Transaction("Alice", "Bob", TESLA, 20, 1);
 
-        Broker broker = new Broker();
+        Broker2 broker = new Broker2();
         broker.startTransaction(transaction);
 
         TransactionTask transactionTask = new TransactionTask();

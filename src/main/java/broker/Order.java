@@ -3,6 +3,8 @@ package broker;
 import java.io.Serializable;
 import java.util.UUID;
 
+import static broker.Broker2.buyOrderFlag;
+import static broker.Broker2.sellOrderFlag;
 
 
 public class Order implements Serializable {
