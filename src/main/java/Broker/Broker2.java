@@ -34,6 +34,7 @@ public class Broker2 {
     public Broker2() {
         tradeRepo.add("orders", orders);
         tradeRepo.add("orderPackages", newOrderPackages);
+        tradeRepo.add("transactions", transactions);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
     }
 
@@ -46,55 +47,9 @@ public class Broker2 {
         serviceRunning = true;
         stocks.put("AAPL", 110);
         orders.put(lock);
-        //executor.submit(new NewOrderHandler());
         executor.submit(new NewOrderPkgHandler());
-
-        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        scheduledExecutorService.schedule(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    notifyListeners(orders);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, 5, TimeUnit.SECONDS);
     }
-/*
-    class NewOrderHandler implements Callable<String> {
 
-        @Override
-        public String call() throws Exception {
-            while(serviceRunning) {
-                try {
-                    Order order = new Order(orders.get(
-                            new FormalField(String.class), //Name of the client who made the order
-                            new FormalField(String.class), //Type of order, eg. SELL or BUY
-                            new FormalField(String.class), //Name of the stock
-                            new FormalField(Integer.class), //Quantity
-                            new FormalField(Integer.class)));
-                    order.setId(UUID.randomUUID()); //TODO: Skal dette gøres anderledes?
-                    System.out.println("Received order:");
-                    System.out.println(order.toString());
-                    orders.put(
-                            order.getId(),
-                            order.getOrderedBy(),
-                            order.getOrderType(),
-                            order.getStock(),
-                            order.getQuantity(),
-                            order.getMinQuantity()
-                    );
-                    notifyListeners(orders);
-                    executor.submit(new ProcessOrderTask(order));
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            return "Handler for handling market sale orders stopped!";
-        }
-    }
-*/
     class NewOrderPkgHandler implements Runnable {
 
         @Override
@@ -123,9 +78,11 @@ public class Broker2 {
         public void run() {
             List<ProcessOrderTask> tasks = new ArrayList<>();
             List<List<Order>> finalOrders = new ArrayList<>();
-            List<List<Transaction>> finalTransactions = new ArrayList<>();
+            List<Transaction> finalTransactions = new ArrayList<>();
 
             try {
+                //First we give each order of the package a unique ID
+                //Then we put the order in the orders space.
                 for (Order order : orderPkg.getOrders()) {
                     order.setId(UUID.randomUUID());
                     orders.put(
@@ -136,74 +93,48 @@ public class Broker2 {
                             order.getQuantity(),
                             order.getMinQuantity()
                     );
+                    //We notifiy any listeners, that the space has been changed.
                     notifyListeners(orders);
+                    //We instantiate a new task to find matching orders of the order, and add it to a list of tasks.
                     tasks.add(new ProcessOrderTask(orderPkg, order));
                 }
+
+                //We invoke all the tasks at once.
                 List<Future<List<Order>>> futures = executor.invokeAll(tasks);
+
+                //We try to retrieve a result for each of the tasks
+                //TODO: Should we use a timeout on the .get() ?
                 for (Future<List<Order>> future : futures) {
                     finalOrders.add(future.get());
                 }
 
+                //Now we are ready the lock all the orders, remove them and create the transactions.
+                //We grab the lock.
                 orders.get(new ActualField(lock));
-                /*
-                boolean allStillExist = true;
+
+                //We call lockTransaction() on each task, which removes the orders, and returns transactions.
+                //We add the transactions to a list.
                 for (ProcessOrderTask task : tasks) {
-                    if (orders.queryp(task.getThisTemplate()) == null) {
-                        allStillExist = false;
-                        break;
-                    }
+                    finalTransactions.addAll(task.lockTransactions(orders));
                 }
-                 */
-                for (ProcessOrderTask task : tasks) {
-                    finalTransactions.add(task.lockTransactions(orders));
-                }
+                //We put the lock back.
                 orders.put(lock);
 
-                List<Transaction> result = new ArrayList<>();
-                for (List<Transaction> l : finalTransactions) {
-                    result.addAll(l);
-                }
-                newOrderPackages.put("DONE!", result); //TODO: Kun for test
+                //We put the final transactions in the transactions space.
+                transactions.put(finalTransactions); //TODO: Kun for test
             } catch (InterruptedException | ExecutionException e) {
-                //e.printStackTrace();
-                try {
-                    List<Transaction> result = new ArrayList<>();
-                    newOrderPackages.put("DONE!", result); //TODO: Kun for test;
-                } catch (InterruptedException interruptedException) {
-                    interruptedException.printStackTrace();
-                }
+                e.printStackTrace();
             }
         }
     }
 
-
-    public void lockTransactions(Space space, List<Transaction> transactions) throws InterruptedException {
-            /*
-            Object[] thisOrder = space.getp(thisTemplate);
-            if (thisOrder == null) {
-                space.put(lock);
-                return;
-                //This means that this order has probably already been processed by another orders task.
-            }
-            */
-
-        /*
-        for (Order o : matchingOrders) {
-            space.get(
-                    new ActualField(o.getId()),
-                    new FormalField(String.class),
-                    new FormalField(String.class),
-                    new ActualField(o.getStock()),
-                    new FormalField(Integer.class),
-                    new FormalField(Integer.class)
-            );
-        }
-
-        generateTransactions(matchingOrders);
-
-        space.put(lock);
-        notifyListeners(orders);
-         */
+    private void waitForChange(Order order, Space space) throws InterruptedException {
+        space.put(order.getId(), order.getMatchingOrderType(), order.getStock(), waiting);
+        space.get(
+                new ActualField(order.getId()),
+                new ActualField(order.getMatchingOrderType()),
+                new ActualField(order.getStock()),
+                new ActualField(notifyChange));
     }
 
     private void notifyListeners(Space space) throws InterruptedException {
@@ -223,7 +154,6 @@ public class Broker2 {
         OrderPackage orderPkg;
         Order order;
         List<Order> matchingOrders = new ArrayList<>();
-        List<Transaction> transactions = new ArrayList<>();
         int totalQfound = 0;
         TemplateField[] thisTemplate;
         TemplateField[] matchTemplate;
@@ -249,20 +179,14 @@ public class Broker2 {
             };
         }
 
-        private void waitForChange(Space space) throws InterruptedException {
-            space.put(order.getId(), order.getMatchingOrderType(), order.getStock(), waiting);
-            space.get(
-                    new ActualField(order.getId()),
-                    new ActualField(order.getMatchingOrderType()),
-                    new ActualField(order.getStock()),
-                    new ActualField(notifyChange));
-        }
-
-        private boolean containsOrder(List<Order> list, Order order) {
-            for (Order e : list) {
-                if (e.getId() == order.getId()) return true;
+        @Override
+        public List<Order> call() {
+            try {
+                findMatchingOrders(orders);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            return false;
+            return matchingOrders;
         }
 
         private void findMatchingOrders(Space space) throws InterruptedException {
@@ -288,13 +212,19 @@ public class Broker2 {
                 } else {
                     if (!checkIfThisExists())
                         break;
-                    waitForChange(space);
+                    waitForChange(order, space);
                 }
             }
         }
 
+        private boolean containsOrder(List<Order> list, Order order) {
+            for (Order e : list) {
+                if (e.getId() == order.getId()) return true;
+            }
+            return false;
+        }
+
         public List<Transaction> lockTransactions(Space space) throws InterruptedException {
-            //space.get(new ActualField(lock));
 
             Object[] thisOrder = space.getp(thisTemplate);
             if (thisOrder == null) {
@@ -312,16 +242,14 @@ public class Broker2 {
                         new FormalField(Integer.class),
                         new FormalField(Integer.class)
                 );
+
             }
-
-            generateTransactions(matchingOrders);
-
-            //space.put(lock);
             notifyListeners(orders);
-            return transactions;
+            return generateTransactions(matchingOrders);
         }
 
-        private void generateTransactions(List<Order> matches) {
+        private List<Transaction> generateTransactions(List<Order> matches) {
+            List<Transaction> transactions = new ArrayList<>();
             int remainingQ = order.getQuantity();
             for (Order match : matches) {
                 int transactionQ = 0;
@@ -334,6 +262,7 @@ public class Broker2 {
                 }
                 remainingQ -= transactionQ;
             }
+            return transactions;
         }
 
         private boolean checkIfThisExists() throws InterruptedException {
@@ -341,23 +270,6 @@ public class Broker2 {
             boolean b = !(orders.queryp(thisTemplate) == null);
             orders.put(lock);
             return b;
-        }
-
-        @Override
-        public List<Order> call() {
-            try {
-                findMatchingOrders(orders);
-                if (!checkIfThisExists())
-                    return matchingOrders;
-                //lockTransactions(orders);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return matchingOrders;
-        }
-
-        public TemplateField[] getThisTemplate() {
-            return thisTemplate;
         }
     }
 }

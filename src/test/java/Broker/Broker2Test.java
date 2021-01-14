@@ -20,6 +20,7 @@ class Broker2Test {
 
     RemoteSpace orders;
     RemoteSpace orderPkgs;
+    RemoteSpace transactions;
     String brokerHostname = "localhost";
     int brokerPort = 9001;
     ExecutorService executor;
@@ -32,7 +33,7 @@ class Broker2Test {
     };
 
     Callable<Object[]> getDoneTask2 = () -> {
-        Object[] res = orderPkgs.get(new ActualField("DONE!"), new FormalField(List.class));
+        Object[] res = transactions.get(new FormalField(List.class));
         return res;
     };
 
@@ -41,6 +42,7 @@ class Broker2Test {
         Broker2.main(new String[]{});
         orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orders?keep");
         orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orderPackages?keep");
+        transactions = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/transactions?keep");
         executor = Executors.newFixedThreadPool(1);
     }
 
@@ -250,9 +252,9 @@ class Broker2Test {
         orderPkgs.put(bob);
         //Bør give et resultat
 
-        ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[1];
-        ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[1];
-        ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get()[1];
+        ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[0];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[0];
+        ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get()[0];
         printRes(res);
         printRes(res2);
         printRes(res3);
@@ -278,13 +280,13 @@ class Broker2Test {
         orderPkgs.put(bob);
         //Bør give et resultat
 
-        ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[1];
-        ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[1];
+        ArrayList res = (ArrayList) executor.submit(getDoneTask2).get()[0];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask2).get()[0];
         printRes(res);
         printRes(res2);
 
         assertThrows(TimeoutException.class, () -> {
-            ArrayList res3 = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[1];
+            ArrayList res3 = (ArrayList) executor.submit(getDoneTask2).get(timeout, timoutUnit)[0];
         });
     }
 }
