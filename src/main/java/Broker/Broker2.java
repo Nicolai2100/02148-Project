@@ -236,8 +236,10 @@ public class Broker2 {
                 if (totalQfound >= order.getMinQuantity()) {
                     break;
                 } else {
-                    if (!checkIfThisExists())
+                    if (!checkIfThisExists()) //TODO: Not sure if this is necessary
                         break;
+                    //if not enough matching orders were found, wait until a change has happened in the space.
+                    //This is to avoid "busy waiting".
                     waitForChange(order, space);
                 }
             }
@@ -250,15 +252,24 @@ public class Broker2 {
             return false;
         }
 
+        /**
+         * TODO: Should be renamed, and maybe also refactorized.
+         * Removes the order and all the final matching orders from the space.
+         * Then it calls generateTransactions() to generate a list of transactions, which
+         * it then returns.
+         * @param space the space to remove tuples from.
+         * @return A list of transactions.
+         * @throws InterruptedException
+         */
         public List<Transaction> lockTransactions(Space space) throws InterruptedException {
 
             Object[] thisOrder = space.getp(thisTemplate);
             if (thisOrder == null) {
-                //space.put(lock);
-                return new ArrayList<>();
                 //This means that this order has probably already been processed by another orders task.
+                return new ArrayList<>();
             }
 
+            //We remove each of the matching orders from the space.
             for (Order o : matchingOrders) {
                 space.get(
                         new ActualField(o.getId()),
@@ -270,7 +281,10 @@ public class Broker2 {
                 );
 
             }
+            //We notify listeners that a change has happened.
             notifyListeners(orders);
+
+            //We return a list of transactions.
             return generateTransactions(matchingOrders);
         }
 
