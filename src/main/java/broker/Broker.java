@@ -10,7 +10,8 @@ import java.util.concurrent.*;
 import static shared.Channels.*;
 import static shared.Requests.*;
 
-
+/**
+ *
 public class Broker {
 
     //Brokerens hostname og port
@@ -68,7 +69,7 @@ public class Broker {
     /**
      * The responsibility of this class is to constantly handle new orders to sell shares of a stock.
      * This is done by starting a new thread that tries to find a matching buyer of the shares.
-     */
+
     class MarketOrderHandler implements Callable<String> {
         @Override
         public String call() throws Exception {
@@ -108,7 +109,7 @@ public class Broker {
     /**
      * The responsibility of this class is to take a sale order as an argument, and then try
      * to find a matching buyer of the shares.
-     */
+
     class FindMatchingBuyOrderHandler implements Callable<String> {
 
         private MarketOrder order;
@@ -243,3 +244,4 @@ public class Broker {
     }
 
 }
+*/
