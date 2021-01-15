@@ -62,7 +62,7 @@ class BrokerTest {
             System.out.println("An order package was completed by other orders.");
             return;
         }
-        System.out.println("An order package was completed with these transactions:  ");
+        System.out.println("An order package was completed with these transactions: ");
         for (Object t : transactions) {
             System.out.println(t.toString());
         }
@@ -216,15 +216,17 @@ class BrokerTest {
             ArrayList res1 = (ArrayList) executor.submit(getDoneTask).get(4, TimeUnit.SECONDS)[0];
             ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get(4, TimeUnit.SECONDS)[0];
         });
+    }
+    @Test
+    void test8() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(tesla).limit(150).build());
 
-        OrderPackage alicepkg2 = new OrderPackage();
-        alicepkg2.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(tesla).limit(150).build());
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(tesla).build());
 
-        OrderPackage bobpkg2 = new OrderPackage();
-        bobpkg2.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(tesla).build());
-
-        orderPkgs.put(alicepkg2);
-        orderPkgs.put(bobpkg2);
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(bobpkg);
 
         Thread.sleep(2000);
         stocks.get(new ActualField(tesla), new FormalField(Integer.class));
