@@ -1,6 +1,6 @@
 package server;
 
-import broker.Transaction;
+import Broker.Transaction;
 import bank.Program;
 import broker.Broker;
 import org.junit.Before;

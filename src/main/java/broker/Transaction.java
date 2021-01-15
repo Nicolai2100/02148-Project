@@ -1,4 +1,4 @@
-package broker;
+package Broker;
 
 import broker.Order;
 
@@ -10,7 +10,7 @@ public class Transaction {
     private String seller;
     private String buyer;
     private String stockName;
-    private double price;
+    private int price;
     private int quantity;
     private Date date;
 
@@ -38,7 +38,7 @@ public class Transaction {
         seller = (String) arr[0];
         buyer = (String) arr[1];
         stockName = (String) arr[2];
-        price = (Double) arr[3];
+        price = (Integer) arr[3];
         quantity = (Integer) arr[4];
         date = new Date();
     }
@@ -55,7 +55,7 @@ public class Transaction {
         return stockName;
     }
 
-    public double getPrice() {
+    public int getPrice() {
         return price;
     }
 

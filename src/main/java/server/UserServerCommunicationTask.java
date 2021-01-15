@@ -89,9 +89,8 @@ public class UserServerCommunicationTask implements Callable<String> {
 
         try {
             var op = new OrderPackage();
-            op.addOrder(new Order(SELL, username, stockName, amount, minAmountReq));
+            op.addOrder(new Order.OrderBuilder().sell().orderedBy(username).stock(stockName).quantity(amount).minQuantity(minAmountReq).build());
             orderPackages.put(op);
-
             System.out.println("USCom: Order placed...");
             serverUser.put("Order placed");
 
@@ -114,7 +113,8 @@ public class UserServerCommunicationTask implements Callable<String> {
 
         try {
             var op = new OrderPackage();
-            op.addOrder(new Order(BUY, username, stockName, amount, minAmountReq));
+            op.addOrder(new Order.OrderBuilder().buy().orderedBy(username).stock(stockName).quantity(amount).minQuantity(minAmountReq).build());
+
             orderPackages.put(op);
 
             System.out.println("USCom: Order placed...");

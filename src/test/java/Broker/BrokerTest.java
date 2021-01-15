@@ -3,6 +3,7 @@ package Broker;
 import broker.Broker;
 import broker.Order;
 import broker.OrderPackage;
+import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 import org.junit.jupiter.api.AfterEach;
@@ -22,11 +23,19 @@ class BrokerTest {
     RemoteSpace orders;
     RemoteSpace orderPkgs;
     RemoteSpace transactions;
+    RemoteSpace stocks;
     String brokerHostname = "localhost";
     int brokerPort = 9001;
     ExecutorService executor;
     int timeout = 4;
     TimeUnit timoutUnit = TimeUnit.SECONDS;
+    
+    static final String alice = "ALICE";
+    static final String bob = "BOB";
+    static final String charlie = "CHARLIE";
+    static final String apple = "AAPL";
+    static final String tesla = "TESLA";
+    static final String vestas = "VESTAS";
 
     Callable<Object[]> getDoneTask = () -> {
         Object[] res = transactions.get(new FormalField(List.class));
@@ -39,6 +48,7 @@ class BrokerTest {
         orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orders?keep");
         orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orderPackages?keep");
         transactions = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/transactions?keep");
+        stocks = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/stocks?keep");
         executor = Executors.newFixedThreadPool(1);
     }
 
@@ -52,55 +62,27 @@ class BrokerTest {
             System.out.println("An order package was completed by other orders.");
             return;
         }
-        System.out.println("An order package was completed with these transactions:  ");
+        System.out.println("An order package was completed with these transactions: ");
         for (Object t : transactions) {
             System.out.println(t.toString());
         }
     }
 
     @Test
-    void test1() throws InterruptedException, ExecutionException {
-        OrderPackage alice = new OrderPackage();
-        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
-        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
+    void test1() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
+        alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
 
-        OrderPackage bob = new OrderPackage();
-        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(apple).quantity(10).build());
 
-        OrderPackage charlie = new OrderPackage();
-        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
+        OrderPackage charliepkg = new OrderPackage();
+        charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(tesla).quantity(5).build());
 
-        orderPkgs.put(alice);
-        orderPkgs.put(charlie);
-        orderPkgs.put(bob);
-        //Bør give et resultat
-
-        ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
-        ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get()[0];
-        ArrayList res3 = (ArrayList) executor.submit(getDoneTask).get()[0];
-        //assertEquals(res.size(), 2);
-        printRes(res);
-        printRes(res2);
-        printRes(res3);
-    }
-
-    @Test
-    void test2() throws InterruptedException, ExecutionException {
-        OrderPackage alice = new OrderPackage();
-        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
-        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
-
-        OrderPackage bob = new OrderPackage();
-        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
-        bob.addOrder(new Order("SELL", "BOB", "VESTAS", 8, 5));
-
-        OrderPackage charlie = new OrderPackage();
-        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
-        charlie.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
-
-        orderPkgs.put(alice);
-        orderPkgs.put(charlie);
-        orderPkgs.put(bob);
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(charliepkg);
+        orderPkgs.put(bobpkg);
         //Bør give et resultat
 
         ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
@@ -112,23 +94,50 @@ class BrokerTest {
     }
 
     @Test
-    void test3() throws InterruptedException, ExecutionException {
-        OrderPackage alice = new OrderPackage();
-        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
-        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
+    void test2() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
+        alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
 
-        OrderPackage bob = new OrderPackage();
-        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
-        bob.addOrder(new Order("SELL", "BOB", "VESTAS", 8, 5));
-        bob.addOrder(new Order("BUY", "BOB", "DTU", 10, 10));
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(apple).quantity(10).build());
+        bobpkg.addOrder(new Order.OrderBuilder().sell().orderedBy(bob).stock(vestas).quantity(8).minQuantity(5).build());
 
-        OrderPackage charlie = new OrderPackage();
-        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
-        charlie.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
+        OrderPackage charliepkg = new OrderPackage();
+        charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(tesla).quantity(5).build());
+        charliepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(charlie).stock(vestas).quantity(5).build());
 
-        orderPkgs.put(alice);
-        orderPkgs.put(charlie);
-        orderPkgs.put(bob);
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(charliepkg);
+        orderPkgs.put(bobpkg);
+        //Bør give et resultat
+
+        ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get()[0];
+        ArrayList res3 = (ArrayList) executor.submit(getDoneTask).get()[0];
+        printRes(res);
+        printRes(res2);
+        printRes(res3);
+    }
+
+    @Test
+    void test3() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
+        alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
+
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(apple).quantity(10).build());
+        bobpkg.addOrder(new Order.OrderBuilder().sell().orderedBy(bob).stock(vestas).quantity(8).minQuantity(5).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock("DTU").quantity(10).build());
+
+        OrderPackage charliepkg = new OrderPackage();
+        charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(tesla).quantity(5).build());
+        charliepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(charlie).stock(vestas).quantity(5).build());
+
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(charliepkg);
+        orderPkgs.put(bobpkg);
         //Bør give et resultat
 
         ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
@@ -139,5 +148,88 @@ class BrokerTest {
         assertThrows(TimeoutException.class, () -> {
             ArrayList res3 = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[0];
         });
+    }
+
+    @Test
+    void test4() throws Exception {
+         OrderPackage alicepkg = new OrderPackage();
+         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
+
+         OrderPackage bobpkg = new OrderPackage();
+         bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).clientMatch(alice).build());
+
+         orderPkgs.put(alicepkg);
+         orderPkgs.put(bobpkg);
+
+         ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
+         printRes(res);
+    }
+
+    @Test
+    void test5() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
+
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).clientMatch(charlie).build());
+
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(bobpkg);
+
+        assertThrows(TimeoutException.class, () -> {
+            ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[0];
+        });
+    }
+
+    @Test
+    void test6() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
+
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).build());
+
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(bobpkg);
+
+        ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
+        printRes(res);
+    }
+
+    @Test
+    void test7() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).limit(150).build());
+
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).build());
+
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(bobpkg);
+
+        assertThrows(TimeoutException.class, () -> {
+            ArrayList res1 = (ArrayList) executor.submit(getDoneTask).get(4, TimeUnit.SECONDS)[0];
+            ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get(4, TimeUnit.SECONDS)[0];
+        });
+    }
+    @Test
+    void test8() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(tesla).limit(150).build());
+
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(tesla).build());
+
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(bobpkg);
+
+        Thread.sleep(2000);
+        stocks.get(new ActualField(tesla), new FormalField(Integer.class));
+        stocks.put(tesla, 160);
+
+        ArrayList res1 = (ArrayList) executor.submit(getDoneTask).get()[0];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get()[0];
+        printRes(res1);
+        printRes(res2);
     }
 }

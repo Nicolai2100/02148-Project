@@ -8,6 +8,7 @@ import java.util.concurrent.*;
 
 import static shared.Channels.*;
 import static shared.Requests.*;
+import Broker.Transaction;
 
 public class Broker {
 
@@ -34,6 +35,7 @@ public class Broker {
     static final String notifyChange = "CHANGE";
 
     ExecutorService executor = Executors.newCachedThreadPool();
+    ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
     static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
     static final TimeUnit timeoutUnit = TimeUnit.HOURS; //TODO: Just for now, for testing...
     boolean serviceRunning;
@@ -42,6 +44,7 @@ public class Broker {
         tradeRepo.add(ORDERS, orders);
         tradeRepo.add(ORDER_PACKAGES, newOrderPackages);
         tradeRepo.add("transactions", transactions);
+        tradeRepo.add("stocks", stocks); //TODO: Skal nok fjernes igen, pt. kun for testing.
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
 
         boolean connectedToBankServer = false;
@@ -70,9 +73,28 @@ public class Broker {
 
     private void startService() throws InterruptedException {
         serviceRunning = true;
-        stocks.put("AAPL", 110);
+        stocks.put("AAPL", 100); //Just for testing
+        stocks.put("TESLA", 100);
+        stocks.put("VESTAS", 100);
+        stocks.put("DTU", 100);
         orders.put(lock);
         executor.submit(new NewOrderPkgHandler());
+
+        //TODO: Dette skal måske fjernes igen.
+        scheduledExecutorService.scheduleAtFixedRate(new NotifyChangeTask(), 1, 1, TimeUnit.SECONDS);
+    }
+
+    //TODO: Skal måske fjernes igen på et tidspunkt. De meste virker uden denne.
+    //Den eneste grund til, den behøver være her, er så en limit ordre vågner op og tjekker, om prisen på en aktie har ændret sig.
+    class NotifyChangeTask implements Runnable {
+        @Override
+        public void run() {
+            try {
+                notifyListeners(orders);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     class NewOrderPkgHandler implements Runnable {
@@ -120,7 +142,9 @@ public class Broker {
                             order.getOrderType(),
                             order.getStock(),
                             order.getQuantity(),
-                            order.getMinQuantity()
+                            order.getMinQuantity(),
+                            order.getLimit(),
+                            order.getClientMatch()
                     );
                     //We notifiy any listeners, that the space has been changed.
                     notifyListeners(orders);
@@ -165,7 +189,6 @@ public class Broker {
     /**
      * Lets an order signal that it waits for a change in space.
      * The method then blocks until the corresponding signal of change has been received.
-     *
      * @param order The order that wants to signal that it is waiting.
      * @param space The space where the signal should be put in.
      * @throws InterruptedException
@@ -183,14 +206,12 @@ public class Broker {
      * Signals that a change has occured in the space. Does so by first retrieving
      * all current waiting signals, and for each of these puts a corresponding signal
      * back.
-     *
      * @param space
      * @throws InterruptedException
      */
     private void notifyListeners(Space space) throws InterruptedException {
         List<Object[]> listeners = space.getAll(
                 new FormalField(UUID.class),
-
                 new FormalField(String.class),
                 new FormalField(String.class),
                 new ActualField(waiting)
@@ -218,7 +239,9 @@ public class Broker {
                     new ActualField(order.getOrderType()),
                     new ActualField(order.getStock()),
                     new FormalField(Integer.class),
-                    new FormalField(Integer.class)
+                    new FormalField(Integer.class),
+                    new FormalField(Integer.class),
+                    new FormalField(String.class),
             };
             System.out.println("Broker: Received order: " + order);
 
@@ -228,7 +251,9 @@ public class Broker {
                     new ActualField(order.getMatchingOrderType()),
                     new ActualField(order.getStock()),
                     new FormalField(Integer.class),
-                    new FormalField(Integer.class)
+                    new FormalField(Integer.class),
+                    new FormalField(Integer.class),
+                    new FormalField(String.class)
             };
         }
 
@@ -244,27 +269,55 @@ public class Broker {
 
         private void findMatchingOrders(Space space) throws InterruptedException {
             while (true) {
-                //First we query all orders that match the matching template.
+                //First, we query all orders that match the matching template.
                 List<Object[]> res = space.queryAll(matchTemplate);
                 //Then we loop over them.
                 for (Object[] e : res) {
-                    Order match = new Order(e); //TODO - this needs a constructor
-                    //Break if the sender of both orders are the same client.
-                    if (match.getOrderedBy().equals(order.getOrderedBy())) break;
+                    Order match = new Order(e);
 
-                    //We only want to add the order to the final matches, if:
-                    //  1. It is not already added to the matches of this order.
-                    //  2. It is not already added to the matches of another order in the same order package.
-                    //  3. The current total amount of match quantities plus the minimum quantity of the new match does not exceed this orders max quantity.
-                    if (!containsOrder(
-                            matchingOrders, match) &&
-                            !containsOrder(orderPkg.getMatchOrders(), match)
-                            && (totalQfound + match.getMinQuantity() <= order.getQuantity())
-                    ) {
-                        matchingOrders.add(match);
-                        orderPkg.getMatchOrders().add(match);
-                        totalQfound += match.getQuantity();
+                    //First, we check if this is a limit order, and if the current price is over or under the limit.
+                    //If not, we break and wait for changes.
+                    if (order.getLimit() != -1 && !order.isOverOrUnderLimit(getCurrentPrice(order.getStock())))
+                        break;
+
+                    //If the sender of both orders are the same client, continue.
+                    if (match.getOrderedBy().equals(order.getOrderedBy()))
+                        continue;
+
+                    //If this order wants to sell/buy to/from a specific client, and the match doesn't match that client, continue.
+                    if (!order.getClientMatch().equals(Order.anyFlag)
+                            && !order.getClientMatch().equals(match.getOrderedBy())) {
+                        continue;
                     }
+
+                    //If the match wants to sell/buy to/from a specific client, and this doesn't match that client, continue.
+                    if (!match.getClientMatch().equals(Order.anyFlag)
+                            && !match.getClientMatch().equals(order.getOrderedBy())) {
+                        continue;
+                    }
+
+                    //If the match is a limit order, and the current price doesn't pass that limit, continue.
+                    if (match.getLimit() != -1 && !match.isOverOrUnderLimit(getCurrentPrice(order.getStock()))) {
+                        continue;
+                    }
+
+                    //If the match has already been added to the final matching orders, continue.
+                    if (containsOrder(matchingOrders, match))
+                        continue;
+
+                    //If the match has already been added any order in the order package, continue.
+                    if (containsOrder(orderPkg.getMatchOrders(), match))
+                        continue;
+
+                    //If the total quantity found plus the minimum quantity of the match exceeds this orders max quantity, continue.
+                    if (totalQfound + match.getMinQuantity() > order.getQuantity())
+                        continue;
+
+                    //Finally, all is good, and we add the match to the final list of matching orders.
+                    matchingOrders.add(match);
+                    orderPkg.getMatchOrders().add(match);
+                    totalQfound += match.getQuantity();
+
                     //If the total quantity found is greater or equal to the minimum quantity of this order, break.
                     if (totalQfound >= order.getMinQuantity()) break;
                 }
@@ -292,7 +345,6 @@ public class Broker {
          * Removes the order and all the final matching orders from the space.
          * Then it calls generateTransactions() to generate a list of transactions, which
          * it then returns.
-         *
          * @param space the space to remove tuples from.
          * @return A list of transactions.
          * @throws InterruptedException
@@ -313,7 +365,9 @@ public class Broker {
                         new FormalField(String.class),
                         new ActualField(o.getStock()),
                         new FormalField(Integer.class),
-                        new FormalField(Integer.class)
+                        new FormalField(Integer.class),
+                        new FormalField(Integer.class),
+                        new FormalField(String.class)
                 );
 
             }
@@ -326,11 +380,10 @@ public class Broker {
 
         /**
          * Generates a list of transactions from this orders matching orders.
-         *
          * @param matches
          * @return list of transactions.
          */
-        private List<Transaction> generateTransactions(List<Order> matches) {
+        private List<Transaction> generateTransactions(List<Order> matches) throws InterruptedException {
             List<Transaction> transactions = new ArrayList<>();
 
             //remainingQ is the remaining amount of shares that this order wants to trade. Starts at the max quantity.
@@ -345,9 +398,9 @@ public class Broker {
 
                 //Put a transaction in the list.
                 if (order.getOrderType().equals(sellOrderFlag)) {
-                    transactions.add(new Transaction(order.getOrderedBy(), match.getOrderedBy(), order.getStock(), 100, transactionQ));
+                    transactions.add(new Transaction(order.getOrderedBy(), match.getOrderedBy(), order.getStock(), getCurrentPrice(order.getStock()), transactionQ));
                 } else {
-                    transactions.add(new Transaction(match.getOrderedBy(), order.getOrderedBy(), order.getStock(), 100, transactionQ));
+                    transactions.add(new Transaction(match.getOrderedBy(), order.getOrderedBy(), order.getStock(), getCurrentPrice(order.getStock()), transactionQ));
                 }
                 //Update the remaining quantity.
                 remainingQ -= transactionQ;
@@ -366,6 +419,11 @@ public class Broker {
             orders.put(lock);
             return b;
         }
+    }
+
+    private int getCurrentPrice(String stock) throws InterruptedException {
+        int price = (Integer) stocks.query(new ActualField(stock), new FormalField(Integer.class))[1];
+        return price;
     }
 
     public void startTransaction(Transaction transaction) {
