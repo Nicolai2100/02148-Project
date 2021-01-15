@@ -123,23 +123,16 @@ class BrokerTest {
     @Test
     void test3() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
-        //alicepkg.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
-        //alicepkg.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
         alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
 
         OrderPackage bobpkg = new OrderPackage();
-        //bobpkg.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
         bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(apple).quantity(10).build());
-        //bobpkg.addOrder(new Order("SELL", "BOB", "VESTAS", 8, 5));
-        bobpkg.addOrder(new Order.OrderBuilder().sell().orderedBy(bob).stock(apple).quantity(8).minQuantity(5).build());
-        //bobpkg.addOrder(new Order("BUY", "BOB", "DTU", 10, 10));
+        bobpkg.addOrder(new Order.OrderBuilder().sell().orderedBy(bob).stock(vestas).quantity(8).minQuantity(5).build());
         bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock("DTU").quantity(10).build());
 
         OrderPackage charliepkg = new OrderPackage();
-        //charliepkg.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
         charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(tesla).quantity(5).build());
-        //charliepkg.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
         charliepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(charlie).stock(vestas).quantity(5).build());
 
         orderPkgs.put(alicepkg);
