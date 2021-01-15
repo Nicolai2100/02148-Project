@@ -26,6 +26,7 @@ public class Broker {
     static final String notifyChange = "CHANGE";
 
     ExecutorService executor = Executors.newCachedThreadPool();
+    ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
     static final int standardTimeout = 10; //TODO: Consider what this should be, or make it possible to set it per order.
     static final TimeUnit timeoutUnit = TimeUnit.HOURS; //TODO: Just for now, for testing...
     boolean serviceRunning;
@@ -44,9 +45,28 @@ public class Broker {
 
     private void startService() throws InterruptedException {
         serviceRunning = true;
-        stocks.put("AAPL", 110);
+        stocks.put("AAPL", (int)(Math.random()*200));
+        stocks.put("TESLA", (int)(Math.random()*200));
+        stocks.put("DTU", (int)(Math.random()*200));
         orders.put(lock);
         executor.submit(new NewOrderPkgHandler());
+        scheduledExecutorService.scheduleAtFixedRate(new TESTrandomChangeInStockRates(), 0, 500, TimeUnit.MILLISECONDS);
+    }
+
+    class TESTrandomChangeInStockRates implements Runnable {
+        @Override
+        public void run() {
+            try {
+                stocks.get(new ActualField("AAPL"), new FormalField(Integer.class));
+                stocks.get(new ActualField("TESLA"), new FormalField(Integer.class));
+                stocks.get(new ActualField("DTU"), new FormalField(Integer.class));
+                stocks.put("AAPL", (int)(Math.random()*200));
+                stocks.put("TESLA", (int)(Math.random()*200));
+                stocks.put("DTU", (int)(Math.random()*200));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     class NewOrderPkgHandler implements Runnable {
@@ -237,7 +257,7 @@ public class Broker {
                     }
 
                     //If the match is a limit order, and the current price doesn't pass that limit, continue.
-                    if (!match.isOverOrUnderLimit(getCurrentPrice(order.getStock()))) {
+                    if (match.getLimit() != -1 && !match.isOverOrUnderLimit(getCurrentPrice(order.getStock()))) {
                         continue;
                     }
 
@@ -323,7 +343,7 @@ public class Broker {
          * @param matches
          * @return list of transactions.
          */
-        private List<Transaction> generateTransactions(List<Order> matches) {
+        private List<Transaction> generateTransactions(List<Order> matches) throws InterruptedException {
             List<Transaction> transactions = new ArrayList<>();
 
             //remainingQ is the remaining amount of shares that this order wants to trade. Starts at the max quantity.
@@ -338,9 +358,9 @@ public class Broker {
 
                 //Put a transaction in the list.
                 if (order.getOrderType().equals(sellOrderFlag)) {
-                    transactions.add(new Transaction(order.getOrderedBy(), match.getOrderedBy(), order.getStock(), 100, transactionQ));
+                    transactions.add(new Transaction(order.getOrderedBy(), match.getOrderedBy(), order.getStock(), getCurrentPrice(order.getStock()), transactionQ));
                 } else {
-                    transactions.add(new Transaction(match.getOrderedBy(), order.getOrderedBy(), order.getStock(), 100, transactionQ));
+                    transactions.add(new Transaction(match.getOrderedBy(), order.getOrderedBy(), order.getStock(), getCurrentPrice(order.getStock()), transactionQ));
                 }
                 //Update the remaining quantity.
                 remainingQ -= transactionQ;
@@ -361,10 +381,9 @@ public class Broker {
         }
     }
 
-    private int getCurrentPrice(String stock) {
-        //int price = (Integer) stocks.queryp(new ActualField(stock), new FormalField(Integer.class))[0];
-        //TODO: FIX THIS later.
-        return 100;
+    private int getCurrentPrice(String stock) throws InterruptedException {
+        int price = (Integer) stocks.query(new ActualField(stock), new FormalField(Integer.class))[1];
+        return price;
     }
 
     public void startTransaction(Transaction transaction) {
