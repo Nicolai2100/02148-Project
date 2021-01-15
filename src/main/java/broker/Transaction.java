@@ -1,6 +1,4 @@
-package Broker;
-
-import broker.Order;
+package broker;
 
 import java.util.Date;
 
