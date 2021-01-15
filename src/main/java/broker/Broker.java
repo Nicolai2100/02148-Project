@@ -48,6 +48,7 @@ public class Broker {
         serviceRunning = true;
         stocks.put("AAPL", 100); //Just for testing
         stocks.put("TESLA", 100);
+        stocks.put("VESTAS", 100);
         stocks.put("DTU", 100);
         orders.put(lock);
         executor.submit(new NewOrderPkgHandler());
