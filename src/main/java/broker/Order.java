@@ -23,7 +23,7 @@ public class Order implements Serializable {
     //If clientMatch is ANY, sell/buy to/from any other client.
     //If clientMatch is something else, only sell/buy to/from that client.
     private String clientMatch;
-    static final String anyFlag = "ANY";
+    public static final String anyFlag = "ANY";
 
     public Order(String orderedBy, String stock, int quantity) {
         this.orderedBy = orderedBy;
@@ -57,7 +57,6 @@ public class Order implements Serializable {
             orderType = (String) arr[1];
             stock = (String) arr[2];
             quantity = (Integer) arr[3];
-            //allOrNothing = (Boolean) arr[4];
             minQuantity = (Integer) arr[4];
         }
         if (arr.length == 6) {
@@ -66,7 +65,6 @@ public class Order implements Serializable {
             orderType = (String) arr[2];
             stock = (String) arr[3];
             quantity = (Integer) arr[4];
-            //allOrNothing = (Boolean) arr[5];
             minQuantity = (Integer) arr[5];
         }
 
@@ -112,6 +110,10 @@ public class Order implements Serializable {
         return limit;
     }
 
+    public String getClientMatch() {
+        return clientMatch;
+    }
+
     @Override
     public String toString() {
         return "Order{" +
@@ -122,5 +124,13 @@ public class Order implements Serializable {
                 ", quantity=" + quantity +
                 ", minQuantity=" + minQuantity +
                 '}';
+    }
+
+    public boolean isOverOrUnderLimit(int price) {
+        if (orderType.equals(sellOrderFlag)) {
+            return price >= limit;
+        } else {
+            return price <= limit;
+        }
     }
 }

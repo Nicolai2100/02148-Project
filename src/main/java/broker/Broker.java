@@ -184,7 +184,9 @@ public class Broker {
                     new ActualField(order.getOrderType()),
                     new ActualField(order.getStock()),
                     new FormalField(Integer.class),
-                    new FormalField(Integer.class)
+                    new FormalField(Integer.class),
+                    new FormalField(Integer.class),
+                    new FormalField(String.class),
             };
             matchTemplate = new TemplateField[]{
                     new FormalField(UUID.class),
@@ -192,7 +194,9 @@ public class Broker {
                     new ActualField(order.getMatchingOrderType()),
                     new ActualField(order.getStock()),
                     new FormalField(Integer.class),
-                    new FormalField(Integer.class)
+                    new FormalField(Integer.class),
+                    new FormalField(Integer.class),
+                    new ActualField(String.class)
             };
         }
 
@@ -212,23 +216,46 @@ public class Broker {
                 List<Object[]> res = space.queryAll(matchTemplate);
                 //Then we loop over them.
                 for (Object[] e : res) {
-                    Order match = new Order(e); //TODO - this needs a constructor
-                    //Break if the sender of both orders are the same client.
-                    if (match.getOrderedBy().equals(order.getOrderedBy())) break;
+                    Order match = new Order(e);
 
-                    //We only want to add the order to the final matches, if:
-                    //  1. It is not already added to the matches of this order.
-                    //  2. It is not already added to the matches of another order in the same order package.
-                    //  3. The current total amount of match quantities plus the minimum quantity of the new match does not exceed this orders max quantity.
-                    if (!containsOrder(
-                            matchingOrders, match) &&
-                            !containsOrder(orderPkg.getMatchOrders(), match)
-                            && (totalQfound + match.getMinQuantity() <= order.getQuantity())
-                    ) {
-                        matchingOrders.add(match);
-                        orderPkg.getMatchOrders().add(match);
-                        totalQfound += match.getQuantity();
+                    //If the sender of both orders are the same client, continue.
+                    if (match.getOrderedBy().equals(order.getOrderedBy()))
+                        continue;
+
+                    //If this order wants to sell/buy to/from a specific client, and the match doesn't match that client, continue.
+                    if (!order.getClientMatch().equals(Order.anyFlag)
+                            && !order.getClientMatch().equals(match.getOrderedBy())) {
+                        continue;
                     }
+
+                    //If the match wants to sell/buy to/from a specific client, and this doesn't match that client, continue.
+                    if (!match.getClientMatch().equals(Order.anyFlag)
+                            && !match.getClientMatch().equals(order.getOrderedBy())) {
+                        continue;
+                    }
+
+                    //If the match is a limit order, and the current price doesn't pass that limit, continue.
+                    if (!match.isOverOrUnderLimit(getCurrentPrice(order.getStock()))) {
+                        continue;
+                    }
+
+                    //If the match has already been added to the final matching orders, continue.
+                    if (containsOrder(matchingOrders, match))
+                        continue;
+
+                    //If the match has already been added any order in the order package, continue.
+                    if (containsOrder(orderPkg.getMatchOrders(), match))
+                        continue;
+
+                    //If the total quantity found plus the minimum quantity of the match exceeds this orders max quantity, continue.
+                    if (totalQfound + match.getMinQuantity() > order.getQuantity())
+                        continue;
+
+                    //Finally, all is good, and we add the match to the final list of matching orders.
+                    matchingOrders.add(match);
+                    orderPkg.getMatchOrders().add(match);
+                    totalQfound += match.getQuantity();
+
                     //If the total quantity found is greater or equal to the minimum quantity of this order, break.
                     if (totalQfound >= order.getMinQuantity()) break;
                 }
