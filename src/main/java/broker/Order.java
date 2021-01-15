@@ -193,6 +193,8 @@ public class Order implements Serializable {
                 ", stock='" + stock + '\'' +
                 ", quantity=" + quantity +
                 ", minQuantity=" + minQuantity +
+                ", limit=" + limit +
+                ", clientMatch='" + clientMatch + '\'' +
                 '}';
     }
 

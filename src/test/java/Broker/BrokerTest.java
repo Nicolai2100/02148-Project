@@ -3,6 +3,7 @@ package Broker;
 import broker.Broker;
 import broker.Order;
 import broker.OrderPackage;
+import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 import org.junit.jupiter.api.AfterEach;
@@ -22,6 +23,7 @@ class BrokerTest {
     RemoteSpace orders;
     RemoteSpace orderPkgs;
     RemoteSpace transactions;
+    RemoteSpace stocks;
     String brokerHostname = "localhost";
     int brokerPort = 9001;
     ExecutorService executor;
@@ -46,6 +48,7 @@ class BrokerTest {
         orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orders?keep");
         orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orderPackages?keep");
         transactions = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/transactions?keep");
+        stocks = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/stocks?keep");
         executor = Executors.newFixedThreadPool(1);
     }
 
@@ -154,8 +157,8 @@ class BrokerTest {
 
     @Test
     void test4() throws Exception {
-        OrderPackage alicepkg = new OrderPackage();
-        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
+         OrderPackage alicepkg = new OrderPackage();
+         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
 
          OrderPackage bobpkg = new OrderPackage();
          bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).clientMatch(alice).build());
@@ -196,5 +199,40 @@ class BrokerTest {
 
         ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
         printRes(res);
+    }
+
+    @Test
+    void test7() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).limit(150).build());
+
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).build());
+
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(bobpkg);
+
+        assertThrows(TimeoutException.class, () -> {
+            ArrayList res1 = (ArrayList) executor.submit(getDoneTask).get(4, TimeUnit.SECONDS)[0];
+            ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get(4, TimeUnit.SECONDS)[0];
+        });
+
+        OrderPackage alicepkg2 = new OrderPackage();
+        alicepkg2.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(tesla).limit(150).build());
+
+        OrderPackage bobpkg2 = new OrderPackage();
+        bobpkg2.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(tesla).build());
+
+        orderPkgs.put(alicepkg2);
+        orderPkgs.put(bobpkg2);
+
+        Thread.sleep(2000);
+        stocks.get(new ActualField(tesla), new FormalField(Integer.class));
+        stocks.put(tesla, 160);
+
+        ArrayList res1 = (ArrayList) executor.submit(getDoneTask).get()[0];
+        ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get()[0];
+        printRes(res1);
+        printRes(res2);
     }
 }

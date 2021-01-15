@@ -35,6 +35,7 @@ public class Broker {
         tradeRepo.add("orders", orders);
         tradeRepo.add("orderPackages", newOrderPackages);
         tradeRepo.add("transactions", transactions);
+        tradeRepo.add("stocks", stocks); //TODO: Skal nok fjernes igen, pt. kun for testing.
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
     }
 
@@ -45,12 +46,24 @@ public class Broker {
 
     private void startService() throws InterruptedException {
         serviceRunning = true;
-        stocks.put("AAPL", (int)(Math.random()*200));
-        stocks.put("TESLA", (int)(Math.random()*200));
-        stocks.put("DTU", (int)(Math.random()*200));
+        stocks.put("AAPL", 100); //Just for testing
+        stocks.put("TESLA", 100);
+        stocks.put("DTU", 100);
         orders.put(lock);
         executor.submit(new NewOrderPkgHandler());
-        scheduledExecutorService.scheduleAtFixedRate(new TESTrandomChangeInStockRates(), 0, 500, TimeUnit.MILLISECONDS);
+        //scheduledExecutorService.scheduleAtFixedRate(new TESTrandomChangeInStockRates(), 0, 500, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(new NotifyChangeTask(), 1, 1, TimeUnit.SECONDS);
+    }
+
+    class NotifyChangeTask implements Runnable {
+        @Override
+        public void run() {
+            try {
+                notifyListeners(orders);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     class TESTrandomChangeInStockRates implements Runnable {
@@ -234,11 +247,16 @@ public class Broker {
 
         private void findMatchingOrders(Space space) throws InterruptedException {
             while (true) {
-                //First we query all orders that match the matching template.
+                //First, we query all orders that match the matching template.
                 List<Object[]> res = space.queryAll(matchTemplate);
                 //Then we loop over them.
                 for (Object[] e : res) {
                     Order match = new Order(e);
+
+                    //First, we check if this is a limit order, and if the current price is over or under the limit.
+                    //If not, we break and wait for changes.
+                    if (order.getLimit() != -1 && !order.isOverOrUnderLimit(getCurrentPrice(order.getStock())))
+                        break;
 
                     //If the sender of both orders are the same client, continue.
                     if (match.getOrderedBy().equals(order.getOrderedBy()))
