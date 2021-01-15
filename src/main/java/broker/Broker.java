@@ -330,6 +330,10 @@ public class Broker {
         }
     }
 
+    private int getCurrentPrice(String stock) {
+        return (Integer) stocks.queryp(new ActualField(stock), new FormalField(Integer.class))[0];
+    }
+
     public void startTransaction(Transaction transaction) {
         System.out.println("Broker: Starting transaction...");
         /*

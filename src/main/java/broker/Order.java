@@ -16,8 +16,14 @@ public class Order implements Serializable {
     private int quantity;
     private int minQuantity;
 
-    final static String allFlag = "ALL";
-    final static String mostFlag = "MOST";
+    //If the order is a SELL order, it should not sell for under this limit.
+    //If the order is a BUY order, it should not buy for over this limit.
+    private int limit;
+
+    //If clientMatch is ANY, sell/buy to/from any other client.
+    //If clientMatch is something else, only sell/buy to/from that client.
+    private String clientMatch;
+    static final String anyFlag = "ANY";
 
     public Order(String orderedBy, String stock, int quantity) {
         this.orderedBy = orderedBy;
@@ -25,12 +31,24 @@ public class Order implements Serializable {
         this.quantity = quantity;
     }
 
+    //TODO: Builder pattern?
     public Order(String orderType, String orderedBy, String stock, int quantity, int minQuantity) {
         this.orderType = orderType;
         this.orderedBy = orderedBy;
         this.stock = stock;
         this.quantity = quantity;
         this.minQuantity = minQuantity;
+        this.limit = -1;
+        this.clientMatch = anyFlag;
+    }
+
+    public Order(String orderType, String orderedBy, String stock, int quantity, int minQuantity, int limit) {
+        this.orderType = orderType;
+        this.orderedBy = orderedBy;
+        this.stock = stock;
+        this.quantity = quantity;
+        this.minQuantity = minQuantity;
+        this.limit = limit;
     }
 
     public Order(Object[] arr) {
@@ -88,6 +106,10 @@ public class Order implements Serializable {
 
     public int getMinQuantity() {
         return minQuantity;
+    }
+
+    public int getLimit() {
+        return limit;
     }
 
     @Override
