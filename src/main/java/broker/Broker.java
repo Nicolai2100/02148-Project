@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 
 public class Broker {
 
-    //ns hostname og port
+    //Brokerens hostname og port
     String hostName = "localhost";
     int port = 9001;
 
@@ -19,8 +19,6 @@ public class Broker {
 
     public static final String sellOrderFlag = "SELL";
     public static final String buyOrderFlag = "BUY";
-    static final String msgFlag = "MSG";
-    static final String totalFlag = "TOTAL";
     static final String lock = "lock";
     static final String waiting = "WAITING";
     static final String notifyChange = "CHANGE";
@@ -52,7 +50,10 @@ public class Broker {
         stocks.put("DTU", 100);
         orders.put(lock);
         executor.submit(new NewOrderPkgHandler());
+
         //scheduledExecutorService.scheduleAtFixedRate(new TESTrandomChangeInStockRates(), 0, 500, TimeUnit.MILLISECONDS);
+
+        //TODO: Dette skal måske fjernes igen.
         scheduledExecutorService.scheduleAtFixedRate(new NotifyChangeTask(), 1, 1, TimeUnit.SECONDS);
     }
 
