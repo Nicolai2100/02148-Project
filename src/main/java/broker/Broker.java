@@ -8,7 +8,7 @@ import java.util.concurrent.*;
 
 import static shared.Channels.*;
 import static shared.Requests.*;
-import Broker.Transaction;
+import broker.Transaction;
 
 public class Broker {
 
