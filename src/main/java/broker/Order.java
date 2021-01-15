@@ -26,13 +26,13 @@ public class Order implements Serializable {
         this.quantity = quantity;
     }
 
-    public Order(String orderType, String orderedBy, String stock, int quantity, int minQuantity) {
+    public Order(String orderType, String orderedBy, String stock, int quantity, int minQuantity, int lockNumber) {
         this.orderType = orderType;
         this.orderedBy = orderedBy;
         this.stock = stock;
         this.quantity = quantity;
         this.minQuantity = minQuantity;
-        this.lockNumber = 0;
+        this.lockNumber = lockNumber;
     }
 
     public Order(Object[] arr) {
@@ -43,7 +43,6 @@ public class Order implements Serializable {
             quantity = (Integer) arr[3];
             //allOrNothing = (Boolean) arr[4];
             minQuantity = (Integer) arr[4];
-            lockNumber = 0;
         }
         if (arr.length == 6) {
             id = (UUID) arr[0];
@@ -53,7 +52,6 @@ public class Order implements Serializable {
             quantity = (Integer) arr[4];
             //allOrNothing = (Boolean) arr[5];
             minQuantity = (Integer) arr[5];
-            lockNumber = 0;
         }
         if (arr.length == 7) {
             id = (UUID) arr[0];

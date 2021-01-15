@@ -61,14 +61,14 @@ class BrokerTest {
     @Test
     void test1() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
-        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
-        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
+        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10, 0));
+        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5, 0));
 
         OrderPackage bob = new OrderPackage();
-        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
+        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10, 0));
 
         OrderPackage charlie = new OrderPackage();
-        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
+        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5, 0));
 
         orderPkgs.put(alice);
         orderPkgs.put(charlie);
@@ -87,16 +87,16 @@ class BrokerTest {
     @Test
     void test2() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
-        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
-        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
+        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10, 0));
+        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5, 0));
 
         OrderPackage bob = new OrderPackage();
-        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
-        bob.addOrder(new Order("SELL", "BOB", "VESTAS", 8, 5));
+        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10, 0));
+        bob.addOrder(new Order("SELL", "BOB", "VESTAS", 8, 5, 0));
 
         OrderPackage charlie = new OrderPackage();
-        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
-        charlie.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
+        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5, 0));
+        charlie.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5, 0));
 
         orderPkgs.put(alice);
         orderPkgs.put(charlie);
@@ -114,17 +114,17 @@ class BrokerTest {
     @Test
     void test3() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
-        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10));
-        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5));
+        alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10, 0));
+        alice.addOrder(new Order("BUY", "ALICE", "TESLA", 5, 5, 0));
 
         OrderPackage bob = new OrderPackage();
-        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10));
-        bob.addOrder(new Order("SELL", "BOB", "VESTAS", 8, 5));
-        bob.addOrder(new Order("BUY", "BOB", "DTU", 10, 10));
+        bob.addOrder(new Order("BUY", "BOB", "AAPL", 10, 10, 0));
+        bob.addOrder(new Order("SELL", "BOB", "VESTAS", 8, 5, 0));
+        bob.addOrder(new Order("BUY", "BOB", "DTU", 10, 10, 0));
 
         OrderPackage charlie = new OrderPackage();
-        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5));
-        charlie.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5));
+        charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5, 0));
+        charlie.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5, 0));
 
         orderPkgs.put(alice);
         orderPkgs.put(charlie);
