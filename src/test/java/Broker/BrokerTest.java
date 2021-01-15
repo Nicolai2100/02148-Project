@@ -6,6 +6,7 @@ import broker.OrderPackage;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -84,7 +85,7 @@ class BrokerTest {
         printRes(res3);
     }
 
-    @Test
+    @RepeatedTest(20)
     void test2() throws InterruptedException, ExecutionException {
         OrderPackage alice = new OrderPackage();
         alice.addOrder(new Order("SELL", "ALICE", "AAPL", 10, 10, 0));
@@ -98,9 +99,11 @@ class BrokerTest {
         charlie.addOrder(new Order("SELL", "CHARLIE", "TESLA", 5, 5, 0));
         charlie.addOrder(new Order("BUY", "CHARLIE", "VESTAS", 5, 5, 0));
 
-        orderPkgs.put(alice);
-        orderPkgs.put(charlie);
         orderPkgs.put(bob);
+        Thread.sleep(100);
+        orderPkgs.put(charlie);
+        Thread.sleep(100);
+        orderPkgs.put(alice);
         //Bør give et resultat
 
         ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];

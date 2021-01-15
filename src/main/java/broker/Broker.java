@@ -240,7 +240,19 @@ public class Broker {
             keynums.add((int) response[1]);
             //First we query all orders that match the matching template.
             while (true) {
-                List<Object[]> res = orderRepository.get(stock).queryAll(matchTemplate); //TODO gustav this needs an additional integer for the lock identifier
+                List<Object[]> res = new ArrayList<>();
+                // We query all our keys because there might be new input for the earlier keys.
+                for (Integer keynum : keynums)
+                    res.addAll(orderRepository.get(stock).queryAll(
+                            new FormalField(UUID.class),
+                            new FormalField(String.class),
+                            new ActualField(order.getMatchingOrderType()),
+                            new ActualField(order.getStock()),
+                            new FormalField(Integer.class),
+                            new FormalField(Integer.class),
+                            new ActualField(keynum)));
+
+
                 //Then we loop over them.
                 for (Object[] e : res) {
                     Order match = new Order(e); //TODO - this needs a constructor
@@ -268,16 +280,17 @@ public class Broker {
                 } else {
                     if (!checkIfThisExists())
                         break;//TODO: Not sure if this is necessary
-
-                    // if (orderRepository.get(stock).queryp(new ActualField(lock), new FormalField(Integer.class)) == null) {
+                        // We check if more keys are available.
+                     if (orderRepository.get(stock).queryp(new ActualField(lock), new FormalField(Integer.class)) == null) {
                         System.out.println(counter + " going to sleep to wait for change");
                         waitForChange(order, waitingSpace);
                         System.out.println(counter + " Change happened!");
-//                    } else {
-//                        Object[] responseLock = orderRepository.get(stock).get(new ActualField(lock), new FormalField(Integer.class));
-//                        keynums.add((int) responseLock[1]);
-//                        orderRepository.get(stock).put(lock, responseLock[1], counter);
-//                    }
+                    } else {
+                        // If there is a key available we take it out and query the new fields.
+                         Object[] responseLock = orderRepository.get(stock).get(new ActualField(lock), new FormalField(Integer.class));
+                        keynums.add((int) responseLock[1]);
+                        orderRepository.get(stock).put(lock, responseLock[1], counter);
+                    }
                 }
             }
             System.out.println(counter + " found match for " + stock);
@@ -309,16 +322,13 @@ public class Broker {
 
             //We remove each of the matching orders from the space.
             for (Order o : matchingOrders) {
-                space.get(
-                        new ActualField(o.getId()),
+                orderRepository.get(o.getStock()).get(new ActualField(o.getId()),
                         new FormalField(String.class),
                         new FormalField(String.class),
                         new ActualField(o.getStock()),
                         new FormalField(Integer.class),
                         new FormalField(Integer.class),
-                        new FormalField(Integer.class)
-                );
-
+                        new FormalField(Integer.class));
             }
             //We notify listeners that a change has happened.
             notifyListeners(waitingSpace);
@@ -410,12 +420,12 @@ public class Broker {
         }
     }
 
-    public SequentialSpace getFromSellOrders(String stock, SpaceRepository sellOrders) {
-        if (sellOrders.get(stock) == null) {
-            sellOrders.add(stock, new SequentialSpace());
+    public SequentialSpace getFromSellOrders(String stock, Object[] template) {
+        if (orderRepository.get(stock) == null) {
+            orderRepository.add(stock, new SequentialSpace());
             return new SequentialSpace();
         } else {
-            return (SequentialSpace) sellOrders.get(stock);
+            return (SequentialSpace) orderRepository.get(stock);
         }
     }
 
