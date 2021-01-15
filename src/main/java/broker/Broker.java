@@ -51,8 +51,6 @@ public class Broker {
         orders.put(lock);
         executor.submit(new NewOrderPkgHandler());
 
-        //scheduledExecutorService.scheduleAtFixedRate(new TESTrandomChangeInStockRates(), 0, 500, TimeUnit.MILLISECONDS);
-
         //TODO: Dette skal måske fjernes igen.
         scheduledExecutorService.scheduleAtFixedRate(new NotifyChangeTask(), 1, 1, TimeUnit.SECONDS);
     }
