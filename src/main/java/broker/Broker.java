@@ -1,4 +1,5 @@
 package broker;
+
 import org.jspace.*;
 
 import java.io.IOException;
@@ -77,7 +78,7 @@ public class Broker {
     class NewOrderPkgHandler implements Runnable {
         @Override
         public void run() {
-            while(serviceRunning) {
+            while (serviceRunning) {
                 try {
                     OrderPackage orderPkg = (OrderPackage) newOrderPackages.get(new FormalField(OrderPackage.class))[0];
                     executor.submit(new ProcessPackageTask(orderPkg));
@@ -149,9 +150,11 @@ public class Broker {
                 orders.put(lock);
 
                 //We put the final transactions in the transactions space.
-                transactions.put(finalTransactions); //TODO: Kun for test
+                //transactions.put(finalTransactions); //TODO: Kun for test
 
-
+                for (Transaction transact : finalTransactions) {
+                    startTransaction(transact);
+                }
 
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
@@ -162,6 +165,7 @@ public class Broker {
     /**
      * Lets an order signal that it waits for a change in space.
      * The method then blocks until the corresponding signal of change has been received.
+     *
      * @param order The order that wants to signal that it is waiting.
      * @param space The space where the signal should be put in.
      * @throws InterruptedException
@@ -179,6 +183,7 @@ public class Broker {
      * Signals that a change has occured in the space. Does so by first retrieving
      * all current waiting signals, and for each of these puts a corresponding signal
      * back.
+     *
      * @param space
      * @throws InterruptedException
      */
@@ -287,6 +292,7 @@ public class Broker {
          * Removes the order and all the final matching orders from the space.
          * Then it calls generateTransactions() to generate a list of transactions, which
          * it then returns.
+         *
          * @param space the space to remove tuples from.
          * @return A list of transactions.
          * @throws InterruptedException
@@ -320,6 +326,7 @@ public class Broker {
 
         /**
          * Generates a list of transactions from this orders matching orders.
+         *
          * @param matches
          * @return list of transactions.
          */
@@ -364,12 +371,12 @@ public class Broker {
     public void startTransaction(Transaction transaction) {
         System.out.println("Broker: Starting transaction...");
         try {
-            brokerServer.put(
-                    transaction.getSeller(),
+            brokerServer.put(transaction.getSeller(),
                     transaction.getBuyer(),
                     transaction.getStockName(),
                     transaction.getPrice(),
                     transaction.getQuantity());
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

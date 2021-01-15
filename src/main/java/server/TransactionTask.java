@@ -36,7 +36,6 @@ public class TransactionTask implements Callable<String> {
         Server.serverAccountService.put(seller, buyer, stockName, pricePerStock, amount);
 
         var response = Server.accountServiceServer.get(new ActualField(seller), new FormalField(String.class));
-
         System.out.println("TransactionTask: Transaction status - " + response[1]);
     }
 }

@@ -222,7 +222,7 @@ public class NJLClientClass {
                 e.printStackTrace();
             }
 
-            Thread.sleep(1000); //Skal bruges for ellers går det for hurtigt ved test virker det ikke... ?
+            Thread.sleep(1000);
 
             Object[] serverResponse = serverUser.get(new FormalField(String.class));
 

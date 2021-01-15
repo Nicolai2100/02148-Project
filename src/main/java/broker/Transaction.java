@@ -10,7 +10,7 @@ public class Transaction {
     private String seller;
     private String buyer;
     private String stockName;
-    private int price;
+    private double price;
     private int quantity;
     private Date date;
 
@@ -38,7 +38,7 @@ public class Transaction {
         seller = (String) arr[0];
         buyer = (String) arr[1];
         stockName = (String) arr[2];
-        price = (Integer) arr[3];
+        price = (Double) arr[3];
         quantity = (Integer) arr[4];
         date = new Date();
     }
@@ -55,7 +55,7 @@ public class Transaction {
         return stockName;
     }
 
-    public int getPrice() {
+    public double getPrice() {
         return price;
     }
 

@@ -37,14 +37,8 @@ class NJLClientClassTest {
     }
 
     @Test
-    void queryMarket() {
-        String[] args = {"Alice", "password", "2"};
-        new NJLClientClass().startClient(args);
-    }
-
-    @Test
-    void queryStocks() {
-        String[] args = {"Alice", "password", "1"};
+    void sellStock() {
+        String[] args = {"Alice", "password", "4", TESLA, "1", "22.2", "1"};
         new NJLClientClass().startClient(args);
     }
 
@@ -55,8 +49,20 @@ class NJLClientClassTest {
     }
 
     @Test
-    void sellStock() {
-        String[] args = {"Alice", "password", "4", TESLA, "1", "22.2", "1"};
+    void sellAndBuyStock() throws InterruptedException {
+        String[] args = {"Alice", "password", "4", TESLA, "1", "22.2", "1", "3", TESLA, "1", "22.2", "1"};
+        new NJLClientClass().startClient(args);
+    }
+
+    @Test
+    void queryMarket() {
+        String[] args = {"Alice", "password", "2"};
+        new NJLClientClass().startClient(args);
+    }
+
+    @Test
+    void queryStocks() {
+        String[] args = {"Alice", "password", "1"};
         new NJLClientClass().startClient(args);
     }
 
