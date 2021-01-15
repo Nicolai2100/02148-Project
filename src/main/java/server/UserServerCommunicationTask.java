@@ -31,19 +31,6 @@ public class UserServerCommunicationTask implements Callable<String> {
         try {
             String brokerSpaceStr = String.format("tcp://%s:%d/%s?%s", BROKER_HOSTNAME, BROKER_PORT, MARKET_ORDERS, CONNECTION_TYPE);
             marketOrders = new RemoteSpace(brokerSpaceStr);
-            //marketOrders.put("Hello broker");
-            //var thing = marketOrders.get(new FormalField(String.class));
-            //System.out.println(thing[0].toString());
-
-           /* marketOrders.put(username, SELL, APPLE, 10);
-
-            Object[] res = this.marketOrders.get(
-                    new ActualField(username),
-                    new ActualField(MSG),
-                    new FormalField(String.class));
-            System.out.println(res[0].toString() + res[1].toString() + res[2].toString());*/
-
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -86,13 +73,19 @@ public class UserServerCommunicationTask implements Callable<String> {
     }
 
     private void sellStock() throws InterruptedException {
-        System.out.println("USCom: Place order...");
+        System.out.println("USCom: Processing order...");
 
-        var thing = userServer.get(new FormalField(String.class), new FormalField(Integer.class));
-        String stockName = thing[0].toString();
-        int amount = Integer.parseInt(thing[1].toString());
+        var responseObj = userServer.get(
+                new FormalField(String.class),
+                new FormalField(Integer.class),
+                new FormalField(Double.class));
+
+        String stockName = responseObj[0].toString();
+        int amount = Integer.parseInt(responseObj[1].toString());
+        double minPricePerStock = Double.parseDouble(responseObj[2].toString());
+
         try {
-            marketOrders.put(username, SELL, stockName, amount);
+            marketOrders.put(username, SELL, stockName, amount, minPricePerStock);
 
             serverUser.put("Order placed");
             /*Object[] res = this.marketOrders.get(
@@ -107,13 +100,20 @@ public class UserServerCommunicationTask implements Callable<String> {
     }
 
     private void buyStock() throws InterruptedException {
+        System.out.println("USCom: Processing order...");
 
-        System.out.println("USCom: Place order...");
 
-        marketOrders.put(username, BUY, APPLE, 10);
+        var responseObj = userServer.get(
+                new FormalField(String.class),
+                new FormalField(Integer.class),
+                new FormalField(Double.class));
 
-        //("ALICE", "SELL", "AAPL", 10)
+        String stockName = responseObj[0].toString();
+        int amount = Integer.parseInt(responseObj[1].toString());
+        double minPricePerStock = Double.parseDouble(responseObj[2].toString());
 
+        marketOrders.put(username, BUY, stockName, amount, minPricePerStock);
+        /*
         Object[] res = marketOrders.get(
                 new ActualField(username),
                 new ActualField(MSG),
@@ -123,10 +123,9 @@ public class UserServerCommunicationTask implements Callable<String> {
         System.out.println("Broker: ");
         System.out.println(res[0]);
         System.out.println(res[1]);
-        System.out.println(res[2]);
+        System.out.println(res[2]);*/
 
-
-        Thread.sleep(7000);
+        serverUser.put("Order placed.");
     }
 
     private void logOut() {

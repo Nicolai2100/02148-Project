@@ -65,11 +65,11 @@ public class NJLClientClass {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-
-                    requestLoop(s);
-                    s.close();
-                    System.exit(7);
                 }
+            } else {
+                requestLoop(s);
+                s.close();
+                System.exit(7);
             }
         }
         while (!loggedIn);
@@ -90,7 +90,7 @@ public class NJLClientClass {
     private void requestLoop(Scanner s) {
         String message;
         do {
-            System.out.println("\n1: Fetch account data \n2: Buy stocks \n3: Sell stocks \n0: Log out");
+            System.out.println("\n1: Fetch account data \n2: See current market orders \n3: Buy stocks \n4: Sell stocks \n0: Log out");
             message = s.nextLine();
             try {
                 sendRequest(message, s);
@@ -106,7 +106,7 @@ public class NJLClientClass {
         } else if (message.equalsIgnoreCase("2")) {
             queryMarket();
         } else if (message.equalsIgnoreCase("3")) {
-            buyStock();
+            buyStock(scanner);
         } else if (message.equalsIgnoreCase("4")) {
             sellStock(scanner);
         } else if (message.equalsIgnoreCase("0")) {
@@ -121,26 +121,60 @@ public class NJLClientClass {
 
     private void sellStock(Scanner scanner) throws InterruptedException {
 
-        /*System.out.println("Write name of stock to sell:");
-        String stockName = scanner.nextLine();
-        System.out.println("Write number of stocks to sell:");
-        int amount = scanner.nextInt();
-        userServer.put(SELL_STOCK);
-        userServer.put(stockName, amount);*/
+        if (!runningWithArgs) {
+            System.out.println("Write name of stock to sell:");
+            String stockName = scanner.nextLine();
+            if (stockName.length() < 2 || stockName.equalsIgnoreCase("exit")) {
+                return;
+            }
+            System.out.println("Write number of stocks to sell:");
+            int amount = scanner.nextInt();
+            if (amount < 1 || stockName.equalsIgnoreCase("exit")) {
+                return;
+            }
+            userServer.put(SELL_STOCK);
+            userServer.put(stockName, amount);
 
-        System.out.println("Write name of stock to sell:");
-        String stockName = argList.remove(0);
-        System.out.println("Write number of stocks to sell:");
-        int amount = Integer.parseInt(argList.remove(0));
-        userServer.put(SELL_STOCK);
-        userServer.put(stockName, amount);
+        } else {
+            String stockName = argList.remove(0);
+            int amount = Integer.parseInt(argList.remove(0));
+            double pricePerStock = Double.parseDouble(argList.remove(0));
 
-        var thing = serverUser.get(new FormalField(String.class));
-        System.out.println(thing[0]);
+            userServer.put(SELL_STOCK);
+            userServer.put(stockName, amount, pricePerStock);
+
+            var thing = serverUser.get(new FormalField(String.class));
+            System.out.println(thing[0]);
+        }
     }
 
-    private void buyStock() throws InterruptedException {
-        userServer.put(BUY_STOCK);
+    private void buyStock(Scanner scanner) throws InterruptedException {
+
+        if (!runningWithArgs) {
+            System.out.println("Write name of stock to buy:");
+            String stockName = scanner.nextLine();
+            if (stockName.length() < 2 || stockName.equalsIgnoreCase("exit")) {
+                return;
+            }
+            System.out.println("Write number of stocks to sell:");
+            int amount = scanner.nextInt();
+            if (amount < 1 || stockName.equalsIgnoreCase("exit")) {
+                return;
+            }
+            userServer.put(BUY_STOCK);
+            userServer.put(stockName, amount);
+
+        } else {
+            String stockName = argList.remove(0);
+            int amount = Integer.parseInt(argList.remove(0));
+            double maxPricePerStock = Double.parseDouble(argList.remove(0));
+
+            userServer.put(BUY_STOCK);
+            userServer.put(stockName, amount, maxPricePerStock);
+
+            var thing = serverUser.get(new FormalField(String.class));
+            System.out.println(thing[0]);
+        }
     }
 
     private void queryData() throws InterruptedException {

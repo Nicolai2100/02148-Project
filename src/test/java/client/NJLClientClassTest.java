@@ -7,10 +7,11 @@ import service.AccountServiceMain;
 import service.IdentityProvider;
 import bank.Program;
 
+import static shared.StockNames.TESLA;
+
 class NJLClientClassTest {
 
-    @BeforeEach
-        void setUp() {
+    void setUp() {
 
         Runnable r4 = () -> {
             try {
@@ -49,13 +50,13 @@ class NJLClientClassTest {
 
     @Test
     void buyStock() {
-        String[] args = {"Alice", "password", "3"};
+        String[] args = {"Bob", "password", "3", TESLA, "1", "22.2"};
         new NJLClientClass().startClient(args);
     }
 
     @Test
     void sellStock() {
-        String[] args = {"Alice", "password", "4", "Tesla", "2"};
+        String[] args = {"Alice", "password", "4", TESLA, "1", "22.2"};
         new NJLClientClass().startClient(args);
     }
 
