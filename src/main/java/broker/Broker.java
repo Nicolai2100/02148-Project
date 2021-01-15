@@ -57,27 +57,13 @@ public class Broker {
         scheduledExecutorService.scheduleAtFixedRate(new NotifyChangeTask(), 1, 1, TimeUnit.SECONDS);
     }
 
+    //TODO: Skal måske fjernes igen på et tidspunkt. De meste virker uden denne.
+    //Den eneste grund til, den behøver være her, er så en limit ordre vågner op og tjekker, om prisen på en aktie har ændret sig.
     class NotifyChangeTask implements Runnable {
         @Override
         public void run() {
             try {
                 notifyListeners(orders);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    class TESTrandomChangeInStockRates implements Runnable {
-        @Override
-        public void run() {
-            try {
-                stocks.get(new ActualField("AAPL"), new FormalField(Integer.class));
-                stocks.get(new ActualField("TESLA"), new FormalField(Integer.class));
-                stocks.get(new ActualField("DTU"), new FormalField(Integer.class));
-                stocks.put("AAPL", (int)(Math.random()*200));
-                stocks.put("TESLA", (int)(Math.random()*200));
-                stocks.put("DTU", (int)(Math.random()*200));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
