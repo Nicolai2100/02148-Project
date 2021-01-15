@@ -2,19 +2,21 @@ package shared;
 
 public class Requests {
     //Stocks
-    public static final String SELL = "sell";
-    public static final String BUY = "buy";
+    public static final String SELL = "SELL";
+    public static final String BUY = "BUY";
     public static final String MSG = "msg";
     public static final String LOCK = "lock";
 
     public static final String SELL_STOCK = "sell stocks";
     public static final String BUY_STOCK = "buy stocks";
     public static final String QUERY_STOCKS = "query";
-    public static final String QUERY_MARKETORDERS = "QUERY_MARKETORDERS";
-    public static final String INSERT_STOCKS = "insert";
-    public static final String DELETE_STOCKS = "delete";
-    public static final String GET_STOCKS = "get";
+    public static final String QUERY_MARKET_ORDERS = "QUERY_MARKETORDERS";
     public static final String TRANSACTION = "MAKE_TRANSACTION";
+
+    public static final String ORDERS = "ORDERS";
+    public static final String ORDER_PACKAGES = "ORDER_PACKAGES";
+
+
 
     public static final String LOGIN = "login";
     public static final String LOG_OUT = "bye";

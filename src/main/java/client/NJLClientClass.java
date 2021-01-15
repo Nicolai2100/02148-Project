@@ -116,70 +116,65 @@ public class NJLClientClass {
     }
 
     private void queryMarket() throws InterruptedException {
-        userServer.put(QUERY_MARKETORDERS);
+        userServer.put(QUERY_MARKET_ORDERS);
+    }
+
+    private void buyStock(Scanner scanner) throws InterruptedException {
+        stockTrade(scanner, BUY);
     }
 
     private void sellStock(Scanner scanner) throws InterruptedException {
+        stockTrade(scanner, SELL);
+    }
 
+    private void stockTrade(Scanner scanner, String trade) throws InterruptedException {
         if (!runningWithArgs) {
-            System.out.println("Write name of stock to sell:");
+            System.out.printf("Write name of stock to %s:\n", trade.toLowerCase());
             String stockName = scanner.nextLine();
             if (stockName.length() < 2 || stockName.equalsIgnoreCase("exit")) {
                 return;
             }
-            System.out.println("Write number of stocks to sell:");
+            System.out.printf("Write number of stocks to %s:\n", trade.toLowerCase());
             int amount = scanner.nextInt();
             if (amount < 1 || stockName.equalsIgnoreCase("exit")) {
                 return;
             }
-            userServer.put(SELL_STOCK);
-            userServer.put(stockName, amount);
+
+            int minAmountReq = 1;
+
+            if (amount > 1) {
+                System.out.printf("Write minimum number of stocks to %s:\n", trade.toLowerCase());
+                minAmountReq = scanner.nextInt();
+                if (minAmountReq < 1 || stockName.equalsIgnoreCase("exit")) {
+                    return;
+                }
+            }
+            double minPricePerStock = 0.0;
+            System.out.println("Write minimum price per stock:");
+            minPricePerStock = scanner.nextDouble();
+            if (stockName.equalsIgnoreCase("exit")) {
+                return;
+            }
+            userServer.put(trade);
+            userServer.put(stockName, amount, minPricePerStock, minAmountReq);
 
         } else {
             String stockName = argList.remove(0);
             int amount = Integer.parseInt(argList.remove(0));
             double pricePerStock = Double.parseDouble(argList.remove(0));
+            int minAmountReq = Integer.parseInt(argList.remove(0));
 
-            userServer.put(SELL_STOCK);
-            userServer.put(stockName, amount, pricePerStock);
-
-            var thing = serverUser.get(new FormalField(String.class));
-            System.out.println(thing[0]);
+            userServer.put(trade);
+            userServer.put(stockName, amount, pricePerStock, minAmountReq);
         }
-    }
 
-    private void buyStock(Scanner scanner) throws InterruptedException {
-
-        if (!runningWithArgs) {
-            System.out.println("Write name of stock to buy:");
-            String stockName = scanner.nextLine();
-            if (stockName.length() < 2 || stockName.equalsIgnoreCase("exit")) {
-                return;
-            }
-            System.out.println("Write number of stocks to sell:");
-            int amount = scanner.nextInt();
-            if (amount < 1 || stockName.equalsIgnoreCase("exit")) {
-                return;
-            }
-            userServer.put(BUY_STOCK);
-            userServer.put(stockName, amount);
-
-        } else {
-            String stockName = argList.remove(0);
-            int amount = Integer.parseInt(argList.remove(0));
-            double maxPricePerStock = Double.parseDouble(argList.remove(0));
-
-            userServer.put(BUY_STOCK);
-            userServer.put(stockName, amount, maxPricePerStock);
-
-            var thing = serverUser.get(new FormalField(String.class));
-            System.out.println(thing[0]);
-        }
+        var response = serverUser.get(new FormalField(String.class));
+        System.out.println(response[0] + "...");
     }
 
     private void queryData() throws InterruptedException {
         System.out.println("Requesting data...");
-        //todo use id
+
         userServer.put(QUERY_STOCKS);
 
         String responseStr = "";
@@ -256,5 +251,3 @@ public class NJLClientClass {
         System.out.println("Logging out...");
     }
 }
-
-

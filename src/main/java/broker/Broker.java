@@ -1,24 +1,31 @@
 package broker;
 import org.jspace.*;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static shared.Channels.*;
+import static shared.Requests.*;
 
 public class Broker {
 
     //ns hostname og port
-    String hostName = "localhost";
-    int port = 9001;
+    String hostName = BROKER_HOSTNAME;
+    int port = BROKER_PORT;
 
     SequentialSpace stocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
     SequentialSpace newOrderPackages = new SequentialSpace();
     SequentialSpace orders = new SequentialSpace();
     SequentialSpace transactions = new SequentialSpace();
 
+    RemoteSpace serverBroker;
+    RemoteSpace brokerServer;
+
     SpaceRepository tradeRepo = new SpaceRepository();
 
-    public static final String sellOrderFlag = "SELL";
-    public static final String buyOrderFlag = "BUY";
+    public static final String sellOrderFlag = SELL;
+    public static final String buyOrderFlag = BUY;
     static final String msgFlag = "MSG";
     static final String totalFlag = "TOTAL";
     static final String lock = "lock";
@@ -31,10 +38,28 @@ public class Broker {
     boolean serviceRunning;
 
     public Broker() {
-        tradeRepo.add("orders", orders);
-        tradeRepo.add("orderPackages", newOrderPackages);
+        tradeRepo.add(ORDERS, orders);
+        tradeRepo.add(ORDER_PACKAGES, newOrderPackages);
         tradeRepo.add("transactions", transactions);
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
+
+        boolean connectedToBankServer = false;
+
+        while (!connectedToBankServer) {
+            // connect to bank server
+            try {
+                String serverService = String.format("tcp://localhost:123/%s?%s", SERVER_BROKER, CONNECTION_TYPE);
+                String serviceServer = String.format("tcp://localhost:123/%s?%s", BROKER_SERVER, CONNECTION_TYPE);
+                serverBroker = new RemoteSpace(serverService);
+                brokerServer = new RemoteSpace(serviceServer);
+                connectedToBankServer = true;
+                System.out.println("Broker: Connection to bank server up...");
+
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -125,6 +150,9 @@ public class Broker {
 
                 //We put the final transactions in the transactions space.
                 transactions.put(finalTransactions); //TODO: Kun for test
+
+
+
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
@@ -157,6 +185,7 @@ public class Broker {
     private void notifyListeners(Space space) throws InterruptedException {
         List<Object[]> listeners = space.getAll(
                 new FormalField(UUID.class),
+
                 new FormalField(String.class),
                 new FormalField(String.class),
                 new ActualField(waiting)
@@ -186,6 +215,8 @@ public class Broker {
                     new FormalField(Integer.class),
                     new FormalField(Integer.class)
             };
+            System.out.println("Broker: Received order: " + order);
+
             matchTemplate = new TemplateField[]{
                     new FormalField(UUID.class),
                     new FormalField(String.class),
@@ -332,7 +363,6 @@ public class Broker {
 
     public void startTransaction(Transaction transaction) {
         System.out.println("Broker: Starting transaction...");
-        /*
         try {
             brokerServer.put(
                     transaction.getSeller(),
@@ -343,6 +373,5 @@ public class Broker {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        */
     }
 }

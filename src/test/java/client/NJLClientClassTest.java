@@ -50,13 +50,13 @@ class NJLClientClassTest {
 
     @Test
     void buyStock() {
-        String[] args = {"Bob", "password", "3", TESLA, "1", "22.2"};
+        String[] args = {"Bob", "password", "3", TESLA, "1", "22.2", "1"};
         new NJLClientClass().startClient(args);
     }
 
     @Test
     void sellStock() {
-        String[] args = {"Alice", "password", "4", TESLA, "1", "22.2"};
+        String[] args = {"Alice", "password", "4", TESLA, "1", "22.2", "1"};
         new NJLClientClass().startClient(args);
     }
 

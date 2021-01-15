@@ -1,5 +1,7 @@
 package server;
 
+import broker.Order;
+import broker.OrderPackage;
 import model.Stock;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
@@ -11,14 +13,13 @@ import java.util.concurrent.Callable;
 
 import static shared.Channels.*;
 import static shared.Requests.*;
-import static shared.StockNames.*;
 
 public class UserServerCommunicationTask implements Callable<String> {
     private final SequentialSpace userServer;
     private final SequentialSpace serverUser;
     private final String username;
 
-    private RemoteSpace marketOrders;
+    private RemoteSpace orderPackages;
 
     public UserServerCommunicationTask(SequentialSpace userServer,
                                        SequentialSpace serverUser,
@@ -29,8 +30,8 @@ public class UserServerCommunicationTask implements Callable<String> {
         System.out.println("USCom: Starting private channel for: " + username);
 
         try {
-            String brokerSpaceStr = String.format("tcp://%s:%d/%s?%s", BROKER_HOSTNAME, BROKER_PORT, MARKET_ORDERS, CONNECTION_TYPE);
-            marketOrders = new RemoteSpace(brokerSpaceStr);
+            String brokerSpaceStr = String.format("tcp://%s:%d/%s?%s", BROKER_HOSTNAME, BROKER_PORT, ORDER_PACKAGES, CONNECTION_TYPE);
+            orderPackages = new RemoteSpace(brokerSpaceStr);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -60,8 +61,8 @@ public class UserServerCommunicationTask implements Callable<String> {
         try {
             switch (request) {
                 case QUERY_STOCKS -> queryStocks();
-                case BUY_STOCK -> buyStock();
-                case SELL_STOCK -> sellStock();
+                case BUY -> buyStock();
+                case SELL -> sellStock();
                 case LOG_OUT -> logOut();
 
                 default -> System.out.println("USCom: ERROR IN SWITCH STMT");
@@ -78,54 +79,49 @@ public class UserServerCommunicationTask implements Callable<String> {
         var responseObj = userServer.get(
                 new FormalField(String.class),
                 new FormalField(Integer.class),
-                new FormalField(Double.class));
+                new FormalField(Double.class),
+                new FormalField(Integer.class));
 
         String stockName = responseObj[0].toString();
         int amount = Integer.parseInt(responseObj[1].toString());
         double minPricePerStock = Double.parseDouble(responseObj[2].toString());
+        int minAmountReq = Integer.parseInt(responseObj[3].toString());
 
         try {
-            marketOrders.put(username, SELL, stockName, amount, minPricePerStock);
+            var op = new OrderPackage();
+            op.addOrder(new Order(SELL, username, stockName, amount, minAmountReq));
+            orderPackages.put(op);
 
+            System.out.println("USCom: Order placed...");
             serverUser.put("Order placed");
-            /*Object[] res = this.marketOrders.get(
-                    new ActualField(username),
-                    new ActualField(MSG),
-                    new FormalField(String.class));
 
-            System.out.println(res[0].toString() + res[1].toString() + res[2].toString());*/
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     private void buyStock() throws InterruptedException {
-        System.out.println("USCom: Processing order...");
-
-
         var responseObj = userServer.get(
                 new FormalField(String.class),
                 new FormalField(Integer.class),
-                new FormalField(Double.class));
+                new FormalField(Double.class),
+                new FormalField(Integer.class));
 
         String stockName = responseObj[0].toString();
         int amount = Integer.parseInt(responseObj[1].toString());
         double minPricePerStock = Double.parseDouble(responseObj[2].toString());
+        int minAmountReq = Integer.parseInt(responseObj[3].toString());
 
-        marketOrders.put(username, BUY, stockName, amount, minPricePerStock);
-        /*
-        Object[] res = marketOrders.get(
-                new ActualField(username),
-                new ActualField(MSG),
-                new FormalField(String.class)
-        );
-        System.out.println(res);
-        System.out.println("Broker: ");
-        System.out.println(res[0]);
-        System.out.println(res[1]);
-        System.out.println(res[2]);*/
+        try {
+            var op = new OrderPackage();
+            op.addOrder(new Order(BUY, username, stockName, amount, minAmountReq));
+            orderPackages.put(op);
 
-        serverUser.put("Order placed.");
+            System.out.println("USCom: Order placed...");
+            serverUser.put("Order placed");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void logOut() {
