@@ -101,4 +101,8 @@ public class Account {
         else
             throw new StockException("Payment can't be negative!");
     }
+
+    public double makePayment(double price, int amount) {
+        return price * amount;
+    }
 }

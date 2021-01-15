@@ -21,7 +21,7 @@ public class TransactionTask implements Callable<String> {
                         new FormalField(Double.class),
                         new FormalField(Integer.class)));
 
-                System.out.println("TransactionTask: Received - " + t);
+                System.out.println("TransactionTask: " + t.getBuyer()  + " buys from " + t.getSeller());
                 makeTransaction(t.getBuyer(), t.getSeller(), t.getStockName(), t.getQuantity(), t.getPrice());
 
             } catch (InterruptedException e) {

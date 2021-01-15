@@ -25,8 +25,7 @@ public class NJLClientClass {
     ArrayList<String> argList = new ArrayList<>();
 
     public void startClient(String[] args) {
-        boolean loggedIn = false;
-
+        //For test...
         if (args.length > 1) {
             runningWithArgs = true;
             username = args[0];
@@ -41,7 +40,7 @@ public class NJLClientClass {
             }
         }
 
-        // connect to tuple space
+        //Connect to tuple space
         try {
             String serverService = String.format("tcp://localhost:123/%s?" + CONNECTION_TYPE, SERVER_CLIENT);
             String serviceServer = String.format("tcp://localhost:123/%s?" + CONNECTION_TYPE, CLIENT_SERVER);
@@ -55,36 +54,37 @@ public class NJLClientClass {
         Scanner s = new Scanner(System.in);
 
         do {
-            if (!loggedIn) {  // Slet - for test
-                loggedIn = logIn(s);
-
-                if (loggedIn) {
-                    if (runningWithArgs)
-                        try {
-                            testRequestLoop();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                }
+            if (runningWithArgs) {
+                testRequestLoop();
             } else {
-                requestLoop(s);
-                s.close();
-                System.exit(7);
+                getCredentials(s);
+                if (logIn(username, password)) {
+                    requestLoop(s);
+                    s.close();
+                    System.exit(7);
+                }
             }
         }
-        while (!loggedIn);
+        while (true);
     }
 
-    private void testRequestLoop() throws InterruptedException {
-        String message;
-        while (argList.size() > 0) {
-            System.out.println("\n1: Fetch account data \n2: Buy stocks \n3: Sell stocks \n0: Log out");
-            System.out.println("Processing request " + argList.get(0));
-            message = argList.remove(0);
-            sendRequest(message, new Scanner(System.in));
+    private void testRequestLoop() {
+        logIn(username, password);
+        connectToPrivateChannel(username);
+
+        try {
+            String message;
+            while (argList.size() > 0) {
+                System.out.println("Processing request " + argList.get(0));
+                message = argList.remove(0);
+                sendRequest(message, new Scanner(System.in));
+            }
+            System.out.println("Test client finished");
+            System.exit(2);
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        System.out.println("Test client finished");
-        System.exit(2);
     }
 
     private void requestLoop(Scanner s) {
@@ -196,31 +196,22 @@ public class NJLClientClass {
         } while (responseStr.equals(MORE_DATA));
     }
 
-    private boolean logIn(Scanner s) {
+    private void getCredentials(Scanner s) {
         System.out.println("Enter credentials to continue");
 
-        if (!runningWithArgs) {
-            System.out.println("Enter username: ");
-            username = s.nextLine().trim();
-            System.out.println("Enter password: ");
-            password = s.nextLine().trim();
-        } else {
-            System.out.println("Username: " + username);
-            System.out.println("Password: " + password);
-        }
+        System.out.println("Enter username: ");
+        username = s.nextLine().trim();
+        System.out.println("Enter password: ");
+        password = s.nextLine().trim();
+    }
+
+    private boolean logIn(String username, String password) {
 
         try {
             System.out.println("...sending credentials");
             clientServer.put(LOGIN, username, password);
 
-            try {
-                String serverUserStr = String.format("tcp://localhost:123/server%s?%s", username, CONNECTION_TYPE);
-                String userServerStr = String.format("tcp://localhost:123/%sserver?%s", username, CONNECTION_TYPE);
-                userServer = new RemoteSpace(userServerStr);
-                serverUser = new RemoteSpace(serverUserStr);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            connectToPrivateChannel(username);
 
             Thread.sleep(1000);
 
@@ -244,6 +235,17 @@ public class NJLClientClass {
             e.printStackTrace();
         }
         return false;
+    }
+
+    private void connectToPrivateChannel(String username) {
+        try {
+            String serverUserStr = String.format("tcp://localhost:123/server%s?%s", username, CONNECTION_TYPE);
+            String userServerStr = String.format("tcp://localhost:123/%sserver?%s", username, CONNECTION_TYPE);
+            userServer = new RemoteSpace(userServerStr);
+            serverUser = new RemoteSpace(serverUserStr);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void logOut() throws InterruptedException {

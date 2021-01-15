@@ -84,17 +84,30 @@ public class AccountService {
         }
     }
 
-    public void makeTransaction(String stockName, int amount, User sender, User receiver, double pricePerStock) {
+    public void requestDecider(String request, User user) throws Exception {
+        switch (request) {
+            case QUERY_STOCKS -> queryAccountRequest(user);
+            case TRANSACTION -> transactionRequest(user);
+            default -> {
+                System.out.println(AccountService.class.getName() + ": ERROR IN SWITCH STMT");
+                throw new Exception(AccountService.class.getName() + ": NOT IMPLEMENTED!");
+            }
+        }
+    }
+
+    public void makeTransaction(String stockName, int amount, User seller, User buyer, double pricePerStock) {
         Stock stock = null;
+
         try {
-            stock = sender.getAccount().withDrawStock(stockName, amount);
+            stock = seller.getAccount().withDrawStock(stockName, amount);
         } catch (Exception e) {
             e.printStackTrace();
         }
         if (stock != null) {
             try {
-                receiver.getAccount().insertStock(stock);
-                sender.getAccount().receivePayment(pricePerStock * amount);
+                buyer.getAccount().insertStock(stock);
+                double payment = buyer.getAccount().makePayment(pricePerStock, amount);
+                seller.getAccount().receivePayment(payment);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -125,17 +138,6 @@ public class AccountService {
                 seller,
                 buyer,
                 transaction.getPrice());
-    }
-
-    public void requestDecider(String request, User user) throws Exception {
-        switch (request) {
-            case QUERY_STOCKS -> queryAccountRequest(user);
-            case TRANSACTION -> transactionRequest(user);
-            default -> {
-                System.out.println(AccountService.class.getName() + ": ERROR IN SWITCH STMT");
-                throw new Exception(AccountService.class.getName() + ": NOT IMPLEMENTED!");
-            }
-        }
     }
 
     public void queryAccountRequest(User user) throws Exception {

@@ -132,10 +132,10 @@ public class UserServerCommunicationTask implements Callable<String> {
     public void queryStocks() throws InterruptedException {
         //Forward request to account service
         System.out.println("USCom: Sending request...");
-        Server.serverAccountService.put("Alice", QUERY_STOCKS);
+        Server.serverAccountService.put(username, QUERY_STOCKS);
 
         Object[] accountServiceResponse = Server.accountServiceServer.get(
-                new ActualField("Alice"),
+                new ActualField(username),
                 new FormalField(String.class));
         String responseStr = accountServiceResponse[1].toString();
 
