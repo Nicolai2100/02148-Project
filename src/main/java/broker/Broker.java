@@ -94,7 +94,9 @@ public class Broker {
                             order.getOrderType(),
                             order.getStock(),
                             order.getQuantity(),
-                            order.getMinQuantity()
+                            order.getMinQuantity(),
+                            order.getLimit(),
+                            order.getClientMatch()
                     );
                     //We notifiy any listeners, that the space has been changed.
                     notifyListeners(orders);
@@ -196,7 +198,7 @@ public class Broker {
                     new FormalField(Integer.class),
                     new FormalField(Integer.class),
                     new FormalField(Integer.class),
-                    new ActualField(String.class)
+                    new FormalField(String.class)
             };
         }
 
@@ -303,7 +305,9 @@ public class Broker {
                         new FormalField(String.class),
                         new ActualField(o.getStock()),
                         new FormalField(Integer.class),
-                        new FormalField(Integer.class)
+                        new FormalField(Integer.class),
+                        new FormalField(Integer.class),
+                        new FormalField(String.class)
                 );
 
             }
@@ -358,7 +362,9 @@ public class Broker {
     }
 
     private int getCurrentPrice(String stock) {
-        return (Integer) stocks.queryp(new ActualField(stock), new FormalField(Integer.class))[0];
+        //int price = (Integer) stocks.queryp(new ActualField(stock), new FormalField(Integer.class))[0];
+        //TODO: FIX THIS later.
+        return 100;
     }
 
     public void startTransaction(Transaction transaction) {
