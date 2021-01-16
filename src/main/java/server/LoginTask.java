@@ -14,8 +14,6 @@ import static shared.Requests.*;
  * This class is only used for processing logins
  */
 public class LoginTask implements Callable<String> {
-    private final SequentialSpace clientServer;
-    private final SequentialSpace serverClient;
     private final SequentialSpace serverIdProvider;
     private final SequentialSpace idProviderServer;
     private final String username;
@@ -23,15 +21,11 @@ public class LoginTask implements Callable<String> {
 
     private final ExecutorService executor;
 
-    public LoginTask(SequentialSpace clientServer,
-                     SequentialSpace serverClient,
-                     SequentialSpace idProviderServer,
+    public LoginTask(SequentialSpace idProviderServer,
                      SequentialSpace serverIdProvider,
                      String username,
                      String password,
                      ExecutorService executor) {
-        this.clientServer = clientServer;
-        this.serverClient = serverClient;
         this.idProviderServer = idProviderServer;
         this.serverIdProvider = serverIdProvider;
         this.username = username;
@@ -40,21 +34,19 @@ public class LoginTask implements Callable<String> {
     }
 
     @Override
-    public String call() throws Exception {
+    public String call() {
 
         System.out.println("Started login thread...");
         login(username);
         return "Finished login procedure for " + username;
     }
 
-    public void login(String username) throws InterruptedException {
+    public void login(String username) {
         try {
             System.out.println("Logging " + username + " in...");
             serverIdProvider.put(username, password);
             Object[] response = idProviderServer.get(new FormalField(String.class));
 
-            // todo navnet på kanal kan gøres tilfældig
-            //  eller være id i stedet for navn
             String userToServerName = username + "server";
             String serverToUserName = "server" + username;
 
@@ -77,8 +69,6 @@ public class LoginTask implements Callable<String> {
                 executor.submit(new UserServerCommunicationTask(userServer, serverUser, username));
             } else {
                 System.out.println("Error in credentials");
-
-                //todo - hjælp hvorfor virker det ikke her?
                 serverUser.put(KO);
                 Server.logout(username);
             }

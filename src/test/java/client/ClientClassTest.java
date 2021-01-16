@@ -1,7 +1,6 @@
 package client;
 
 import broker.Broker;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import service.AccountServiceMain;
 import service.IdentityProvider;
@@ -9,7 +8,7 @@ import bank.Program;
 
 import static shared.StockNames.TESLA;
 
-class NJLClientClassTest {
+class ClientClassTest {
 
     void setUp() {
 
@@ -37,56 +36,58 @@ class NJLClientClassTest {
     }
 
     @Test
+    void loginRealUser() {
+        String[] args = {"Alice", "password"};
+        new ClientClass().startClient(args);
+    }
+
+    @Test
     void sellStock() {
         String[] args = {"Alice", "password", "4", TESLA, "1", "0.0", "1"};
-        new NJLClientClass().startClient(args);
+        new ClientClass().startClient(args);
     }
 
     @Test
     void buyStock() {
         String[] args = {"Bob", "password", "3", TESLA, "1", "0.0", "1"};
-        new NJLClientClass().startClient(args);
+        new ClientClass().startClient(args);
     }
 
     @Test
     void buyStockAndQuery() {
         String[] args = {"Bob", "password", "1", "3", TESLA, "1", "0.0", "1", "1"};
-        new NJLClientClass().startClient(args);
+        new ClientClass().startClient(args);
     }
 
     @Test
     void sellAndBuyStock() throws InterruptedException {
         String[] args = {"Alice", "password", "4", TESLA, "1", "22.2", "1", "3", TESLA, "1", "22.2", "1"};
-        new NJLClientClass().startClient(args);
+        new ClientClass().startClient(args);
     }
 
     @Test
     void queryMarket() {
         String[] args = {"Alice", "password", "2"};
-        new NJLClientClass().startClient(args);
+        new ClientClass().startClient(args);
     }
 
     @Test
     void queryStocks() {
         String[] args = {"Alice", "password", "1"};
-        new NJLClientClass().startClient(args);
+        new ClientClass().startClient(args);
     }
 
-    @Test
-    void loginRealUser() {
-        String[] args = {"Alice", "password"};
-        new NJLClientClass().startClient(args);
-    }
+
 
     @Test
     void loginRealUserWrongPassword() {
         String[] args = {"Alice", "passwor"};
-        new NJLClientClass().startClient(args);
+        new ClientClass().startClient(args);
     }
 
     @Test
     void loginWrongUsernameAndPassword() {
         String[] args = {"Ali", "passwor"};
-        new NJLClientClass().startClient(args);
+        new ClientClass().startClient(args);
     }
 }

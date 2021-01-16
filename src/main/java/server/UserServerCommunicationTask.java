@@ -3,10 +3,7 @@ package server;
 import broker.Order;
 import broker.OrderPackage;
 import model.Stock;
-import org.jspace.ActualField;
-import org.jspace.FormalField;
-import org.jspace.RemoteSpace;
-import org.jspace.SequentialSpace;
+import org.jspace.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
@@ -88,8 +85,6 @@ public class UserServerCommunicationTask implements Callable<String> {
         minPricePerStock = minPricePerStock == 0.0 ? -1.0 : minPricePerStock;
         int minAmountReq = Integer.parseInt(responseObj[3].toString());
 
-        System.out.println(minPricePerStock);
-
         try {
             var op = new OrderPackage();
             op.addOrder(new Order.OrderBuilder()
@@ -120,8 +115,6 @@ public class UserServerCommunicationTask implements Callable<String> {
         double minPricePerStock = Double.parseDouble(responseObj[2].toString());
         minPricePerStock = minPricePerStock == 0.0 ? -1.0 : minPricePerStock;
         int minAmountReq = Integer.parseInt(responseObj[3].toString());
-
-        System.out.println(minPricePerStock);
 
         try {
             var op = new OrderPackage();

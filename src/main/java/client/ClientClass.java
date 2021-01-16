@@ -1,6 +1,7 @@
 package client;
 
 import model.Stock;
+import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 
@@ -13,7 +14,7 @@ import static shared.Channels.CONNECTION_TYPE;
 import static shared.Requests.*;
 import static shared.Requests.MORE_DATA;
 
-public class NJLClientClass {
+public class ClientClass {
 
     RemoteSpace serverClient = null;
     RemoteSpace clientServer = null;
@@ -23,6 +24,7 @@ public class NJLClientClass {
     String password;
     boolean runningWithArgs = false;
     ArrayList<String> argList = new ArrayList<>();
+    ArrayList<String> msgs = new ArrayList<>();;
 
     public void startClient(String[] args) {
         //For test...
@@ -68,18 +70,49 @@ public class NJLClientClass {
         while (true);
     }
 
+    private void requestLoop(Scanner s) {
+        String request;
+        do {
+            String msgOption = "";
+            boolean hasMsg = checkMsg();
+            if (hasMsg) {
+                msgOption = "\n6: Read messages from bank";
+            }
+            String options = String.format
+                    ("\n1: Fetch account data \n2: See current market orders \n3: Buy stocks \n4: Sell stocks %s \n0: Log out", msgOption);
+
+            System.out.println(options);
+            request = s.nextLine();
+            try {
+                sendRequest(request, s, hasMsg);
+            } catch (InterruptedException e) {
+                System.out.println(e.getMessage());
+            }
+        } while (!request.equalsIgnoreCase("exit"));
+    }
+
     private void testRequestLoop() {
         logIn(username, password);
         connectToPrivateChannel(username);
-
+        boolean hasMsg = false;
         try {
             String message;
-            while (argList.size() > 0) {
-                System.out.println("Processing request " + argList.get(0));
-                message = argList.remove(0);
-                sendRequest(message, new Scanner(System.in));
+            while (argList.size() > 0 || hasMsg) {
+                if (!hasMsg) {
+                    System.out.println("Processing request " + argList.get(0));
+                    message = argList.remove(0);
+                    sendRequest(message, new Scanner(System.in), true);
+                    hasMsg = checkMsg();
+
+                } else if (hasMsg) {
+                    //readMsgs();
+                    sendRequest("6", new Scanner(System.in), true);
+                    hasMsg = false;
+                }
             }
+
             System.out.println("Test client finished");
+            logOut();
             System.exit(2);
 
         } catch (InterruptedException e) {
@@ -87,20 +120,32 @@ public class NJLClientClass {
         }
     }
 
-    private void requestLoop(Scanner s) {
-        String message;
-        do {
-            System.out.println("\n1: Fetch account data \n2: See current market orders \n3: Buy stocks \n4: Sell stocks \n0: Log out");
-            message = s.nextLine();
-            try {
-                sendRequest(message, s);
-            } catch (InterruptedException e) {
-                System.out.println(e.getMessage());
+    private boolean checkMsg() {
+        try {
+            var response = serverClient.queryAll(
+                    new ActualField(username),
+                    new FormalField(String.class));
+
+            if (response.size() > 0) {
+                response = serverClient.getAll(
+                        new ActualField(username),
+                        new FormalField(String.class));
+
+                for (Object[] msg : response) {
+                    msgs.add(msg[1].toString());
+                }
+                return true;
+                //If unread msgs
+            } else if (msgs.size() > 0) {
+                return true;
             }
-        } while (!message.equalsIgnoreCase("exit"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
-    private void sendRequest(String message, Scanner scanner) throws InterruptedException {
+    private void sendRequest(String message, Scanner scanner, boolean hasMsg) throws InterruptedException {
         if (message.equalsIgnoreCase("1")) {
             queryData();
         } else if (message.equalsIgnoreCase("2")) {
@@ -109,10 +154,19 @@ public class NJLClientClass {
             buyStock(scanner);
         } else if (message.equalsIgnoreCase("4")) {
             sellStock(scanner);
+        } else if (hasMsg && message.equalsIgnoreCase("6")) {
+            readMsgs();
         } else if (message.equalsIgnoreCase("0")) {
             logOut();
             startClient(new String[]{""});
         }
+    }
+
+    private void readMsgs() {
+        for (String msg : msgs) {
+            System.out.println("Message :" + msg);
+        }
+        msgs = new ArrayList<>();
     }
 
     private void queryMarket() throws InterruptedException {

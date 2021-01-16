@@ -2,6 +2,7 @@ package server;
 
 import org.jspace.*;
 
+import java.lang.annotation.Target;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,7 +17,7 @@ public class Server {
     static SpaceRepository repository = new SpaceRepository();
 
     static SequentialSpace clientServer;
-    static SequentialSpace serverClient;
+    static RandomSpace serverClient;
     static SequentialSpace serverIdProvider;
     static SequentialSpace idProviderServer;
     static SequentialSpace accountServiceServer;
@@ -33,7 +34,7 @@ public class Server {
 
         // Create a local space for each channel
         clientServer = new QueueSpace();
-        serverClient = new QueueSpace();
+        serverClient = new RandomSpace();
         serverIdProvider = new QueueSpace();
         idProviderServer = new QueueSpace();
         accountServiceServer = new QueueSpace();
@@ -99,8 +100,6 @@ public class Server {
 
     public void login(String username, String password) throws InterruptedException {
         executor.submit(new LoginTask(
-                clientServer,
-                serverClient,
                 idProviderServer,
                 serverIdProvider,
                 username,

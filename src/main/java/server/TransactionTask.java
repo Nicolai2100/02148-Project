@@ -21,7 +21,7 @@ public class TransactionTask implements Callable<String> {
                         new FormalField(Double.class),
                         new FormalField(Integer.class)));
 
-                System.out.println("TransactionTask: " + t.getBuyer()  + " buys from " + t.getSeller());
+                System.out.println("TransactionTask: " + t.getBuyer() + " buys from " + t.getSeller());
                 makeTransaction(t.getBuyer(), t.getSeller(), t.getStockName(), t.getQuantity(), t.getPrice());
 
             } catch (InterruptedException e) {
@@ -37,5 +37,18 @@ public class TransactionTask implements Callable<String> {
 
         var response = Server.accountServiceServer.get(new ActualField(seller), new FormalField(String.class));
         System.out.println("TransactionTask: Transaction status - " + response[1]);
+
+        String msgToSeller = String.format("Hello %s. We are happy to inform you that %d of %s was sold successfully",
+                seller, amount, stockName);
+
+        String msgToBuyer = String.format("Hello %s. We are happy to inform you that %d of %s was bought successfully",
+                buyer, amount, stockName);
+
+        /*Server.serverClient.put("hej");
+        Server.serverClient.put(msgToSeller.toString());
+        Server.serverClient.put(msgToBuyer.toString());*/
+        Server.serverClient.put(seller, msgToSeller);
+        Server.serverClient.put(buyer, msgToBuyer);
+        System.out.println("sending msgs");
     }
 }
