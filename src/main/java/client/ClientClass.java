@@ -24,7 +24,8 @@ public class ClientClass {
     String password;
     boolean runningWithArgs = false;
     ArrayList<String> argList = new ArrayList<>();
-    ArrayList<String> msgs = new ArrayList<>();;
+    ArrayList<String> msgs = new ArrayList<>();
+    ;
 
     public void startClient(String[] args) {
         //For test...
@@ -105,7 +106,6 @@ public class ClientClass {
                     hasMsg = checkMsg();
 
                 } else if (hasMsg) {
-                    //readMsgs();
                     sendRequest("6", new Scanner(System.in), true);
                     hasMsg = false;
                 }
@@ -164,7 +164,7 @@ public class ClientClass {
 
     private void readMsgs() {
         for (String msg : msgs) {
-            System.out.println("Message :" + msg);
+            System.out.println("Message: " + msg);
         }
         msgs = new ArrayList<>();
     }
@@ -210,7 +210,6 @@ public class ClientClass {
             if (stockName.equalsIgnoreCase("exit")) {
                 return;
             }
-
             userServer.put(trade);
             userServer.put(stockName, amount, minPricePerStock, minAmountReq);
 

@@ -44,11 +44,7 @@ public class TransactionTask implements Callable<String> {
         String msgToBuyer = String.format("Hello %s. We are happy to inform you that %d of %s was bought successfully",
                 buyer, amount, stockName);
 
-        /*Server.serverClient.put("hej");
-        Server.serverClient.put(msgToSeller.toString());
-        Server.serverClient.put(msgToBuyer.toString());*/
         Server.serverClient.put(seller, msgToSeller);
         Server.serverClient.put(buyer, msgToBuyer);
-        System.out.println("sending msgs");
     }
 }
