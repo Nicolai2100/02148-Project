@@ -38,19 +38,19 @@ class NJLClientClassTest {
 
     @Test
     void sellStock() {
-        String[] args = {"Alice", "password", "4", TESLA, "1", "22.2", "1"};
+        String[] args = {"Alice", "password", "4", TESLA, "1", "0.0", "1"};
         new NJLClientClass().startClient(args);
     }
 
     @Test
     void buyStock() {
-        String[] args = {"Bob", "password", "3", TESLA, "1", "22.2", "1"};
+        String[] args = {"Bob", "password", "3", TESLA, "1", "0.0", "1"};
         new NJLClientClass().startClient(args);
     }
 
     @Test
     void buyStockAndQuery() {
-        String[] args = {"Bob", "password", "1", "3", TESLA, "1", "22.2", "1", "1"};
+        String[] args = {"Bob", "password", "1", "3", TESLA, "1", "0.0", "1", "1"};
         new NJLClientClass().startClient(args);
     }
 

@@ -7,8 +7,6 @@ public class Requests {
     public static final String MSG = "msg";
     public static final String LOCK = "lock";
 
-    public static final String SELL_STOCK = "sell stocks";
-    public static final String BUY_STOCK = "buy stocks";
     public static final String QUERY_STOCKS = "query";
     public static final String QUERY_MARKET_ORDERS = "QUERY_MARKETORDERS";
     public static final String TRANSACTION = "MAKE_TRANSACTION";

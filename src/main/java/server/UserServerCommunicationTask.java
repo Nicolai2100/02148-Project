@@ -85,11 +85,20 @@ public class UserServerCommunicationTask implements Callable<String> {
         String stockName = responseObj[0].toString();
         int amount = Integer.parseInt(responseObj[1].toString());
         double minPricePerStock = Double.parseDouble(responseObj[2].toString());
+        minPricePerStock = minPricePerStock == 0.0 ? -1.0 : minPricePerStock;
         int minAmountReq = Integer.parseInt(responseObj[3].toString());
+
+        System.out.println(minPricePerStock);
 
         try {
             var op = new OrderPackage();
-            op.addOrder(new Order.OrderBuilder().sell().orderedBy(username).stock(stockName).quantity(amount).minQuantity(minAmountReq).build());
+            op.addOrder(new Order.OrderBuilder()
+                    .sell().orderedBy(username)
+                    .stock(stockName)
+                    .quantity(amount)
+                    .minQuantity(minAmountReq)
+                    .limit((int) minPricePerStock)
+                    .build());
             orderPackages.put(op);
             System.out.println("USCom: Order placed...");
             serverUser.put("Order placed");
@@ -109,11 +118,22 @@ public class UserServerCommunicationTask implements Callable<String> {
         String stockName = responseObj[0].toString();
         int amount = Integer.parseInt(responseObj[1].toString());
         double minPricePerStock = Double.parseDouble(responseObj[2].toString());
+        minPricePerStock = minPricePerStock == 0.0 ? -1.0 : minPricePerStock;
         int minAmountReq = Integer.parseInt(responseObj[3].toString());
+
+        System.out.println(minPricePerStock);
 
         try {
             var op = new OrderPackage();
-            op.addOrder(new Order.OrderBuilder().buy().orderedBy(username).stock(stockName).quantity(amount).minQuantity(minAmountReq).build());
+            op.addOrder(new Order
+                    .OrderBuilder()
+                    .buy()
+                    .orderedBy(username)
+                    .stock(stockName)
+                    .quantity(amount)
+                    .minQuantity(minAmountReq)
+                    .limit((int) minPricePerStock)
+                    .build());
 
             orderPackages.put(op);
 

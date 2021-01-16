@@ -129,12 +129,12 @@ public class NJLClientClass {
 
     private void stockTrade(Scanner scanner, String trade) throws InterruptedException {
         if (!runningWithArgs) {
-            System.out.printf("Write name of stock to %s:\n", trade.toLowerCase());
+            System.out.printf("Enter name of stock to %s:\n", trade.toLowerCase());
             String stockName = scanner.nextLine();
             if (stockName.length() < 2 || stockName.equalsIgnoreCase("exit")) {
                 return;
             }
-            System.out.printf("Write number of stocks to %s:\n", trade.toLowerCase());
+            System.out.printf("Enter number of stocks to %s:\n", trade.toLowerCase());
             int amount = scanner.nextInt();
             if (amount < 1 || stockName.equalsIgnoreCase("exit")) {
                 return;
@@ -143,18 +143,20 @@ public class NJLClientClass {
             int minAmountReq = 1;
 
             if (amount > 1) {
-                System.out.printf("Write minimum number of stocks to %s:\n", trade.toLowerCase());
+                System.out.printf("Enter minimum number of stocks to %s:\n", trade.toLowerCase());
                 minAmountReq = scanner.nextInt();
                 if (minAmountReq < 1 || stockName.equalsIgnoreCase("exit")) {
                     return;
                 }
             }
             double minPricePerStock = 0.0;
-            System.out.println("Write minimum price per stock:");
+            String minOrMax = trade.equals(SELL) ? "minimum" : "maximum";
+            System.out.printf("Enter %s price per stock \n(Enter \"0\" for current market price) :", minOrMax);
             minPricePerStock = scanner.nextDouble();
             if (stockName.equalsIgnoreCase("exit")) {
                 return;
             }
+
             userServer.put(trade);
             userServer.put(stockName, amount, minPricePerStock, minAmountReq);
 
