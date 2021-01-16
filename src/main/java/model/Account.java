@@ -103,6 +103,7 @@ public class Account {
     }
 
     public double makePayment(double price, int amount) {
+        balance = balance - (price * amount);
         return price * amount;
     }
 }

@@ -8,6 +8,8 @@ import java.util.concurrent.*;
 
 import static shared.Channels.*;
 import static shared.Requests.*;
+import static shared.StockNames.TESLA;
+
 import broker.Transaction;
 
 public class Broker {
@@ -74,7 +76,7 @@ public class Broker {
     private void startService() throws InterruptedException {
         serviceRunning = true;
         stocks.put("AAPL", 100); //Just for testing
-        stocks.put("TESLA", 100);
+        stocks.put(TESLA, 100);
         stocks.put("VESTAS", 100);
         stocks.put("DTU", 100);
         orders.put(lock);
@@ -174,8 +176,6 @@ public class Broker {
                 orders.put(lock);
 
                 //We put the final transactions in the transactions space.
-                //transactions.put(finalTransactions); //TODO: Kun for test
-
                 for (Transaction transact : finalTransactions) {
                     startTransaction(transact);
                 }
@@ -429,7 +429,8 @@ public class Broker {
     public void startTransaction(Transaction transaction) {
         System.out.println("Broker: Starting transaction...");
         try {
-            brokerServer.put(transaction.getSeller(),
+            brokerServer.put(
+                    transaction.getSeller(),
                     transaction.getBuyer(),
                     transaction.getStockName(),
                     transaction.getPrice(),

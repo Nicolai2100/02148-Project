@@ -30,7 +30,7 @@ public class FakeUserDataAccessService implements UserDao {
 
         Account bobAccount = new Account(100);
         HashMap<String, Stock> bobStockMap = new HashMap<>();
-        bobStockMap.put(TESLA, new Stock(MICROSOFT, 20, 1));
+        bobStockMap.put(TESLA, new Stock(TESLA, 20, 1));
         bobStockMap.put(APPLE, new Stock(APPLE, 31, 2));
 
         bobAccount.setStocks(bobStockMap);
@@ -40,8 +40,8 @@ public class FakeUserDataAccessService implements UserDao {
 
         Account charlieAccount = new Account(100);
         HashMap<String, Stock> charlieStockMap = new HashMap<>();
-        charlieStockMap.put(TESLA, new Stock(GOOGLE, 20, 1));
-        charlieStockMap.put(APPLE, new Stock(MICROSOFT, 31, 3));
+        charlieStockMap.put(GOOGLE, new Stock(GOOGLE, 20, 1));
+        charlieStockMap.put(MICROSOFT, new Stock(MICROSOFT, 31, 3));
 
         charlieAccount.setStocks(charlieStockMap);
         User charlie = new User("Charlie", UUID.randomUUID(), SharedEncryption.encryptPassword(password), charlieAccount);
@@ -104,7 +104,9 @@ public class FakeUserDataAccessService implements UserDao {
                 .map(p -> {
                     int indexOfUserToUpdate = DB.indexOf(p);
                     if (indexOfUserToUpdate >= 0) {
-                        DB.set(indexOfUserToUpdate, new User(user.getName(), id));
+                        User newUser = new User(user.getName(), id, user.getPassword(), user.getAccount());
+                        //DB.set(indexOfUserToUpdate, new User(user.getName(), id));
+                        DB.set(indexOfUserToUpdate, newUser);
                         return 1;
                     }
                     return 0;

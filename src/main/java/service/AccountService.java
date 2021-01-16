@@ -97,7 +97,6 @@ public class AccountService {
 
     public void makeTransaction(String stockName, int amount, User seller, User buyer, double pricePerStock) {
         Stock stock = null;
-
         try {
             stock = seller.getAccount().withDrawStock(stockName, amount);
         } catch (Exception e) {
@@ -106,8 +105,12 @@ public class AccountService {
         if (stock != null) {
             try {
                 buyer.getAccount().insertStock(stock);
+                System.out.println(buyer.getAccount().getStocks().size());
                 double payment = buyer.getAccount().makePayment(pricePerStock, amount);
+                FakeUserDataAccessService.getInstance().update(buyer.getId(), buyer);
+
                 seller.getAccount().receivePayment(payment);
+                FakeUserDataAccessService.getInstance().update(seller.getId(), seller);
 
             } catch (Exception e) {
                 e.printStackTrace();

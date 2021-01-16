@@ -44,6 +44,12 @@ class NJLClientClassTest {
 
     @Test
     void buyStock() {
+        String[] args = {"Bob", "password", "3", TESLA, "1", "22.2", "1"};
+        new NJLClientClass().startClient(args);
+    }
+
+    @Test
+    void buyStockAndQuery() {
         String[] args = {"Bob", "password", "1", "3", TESLA, "1", "22.2", "1", "1"};
         new NJLClientClass().startClient(args);
     }
