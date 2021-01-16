@@ -24,8 +24,7 @@ public class ClientClass {
     String password;
     boolean runningWithArgs = false;
     ArrayList<String> argList = new ArrayList<>();
-    ArrayList<String> msgs = new ArrayList<>();
-    ;
+    static Scanner scanner = new Scanner(System.in);
 
     public void startClient(String[] args) {
         //For test...
@@ -54,16 +53,14 @@ public class ClientClass {
             System.out.println(e.getMessage());
         }
         System.out.println("Welcome to the Beast Bank!");
-        Scanner s = new Scanner(System.in);
 
         do {
             if (runningWithArgs) {
                 testRequestLoop();
             } else {
-                getCredentials(s);
+                getCredentials();
                 if (logIn(username, password)) {
-                    requestLoop(s);
-                    s.close();
+                    requestLoop();
                     System.exit(7);
                 }
             }
@@ -71,25 +68,50 @@ public class ClientClass {
         while (true);
     }
 
-    private void requestLoop(Scanner s) {
-        String request;
-        do {
+    private void requestLoop() {
+        String request = "";
+
+        while (!request.equalsIgnoreCase("exit")) {
+
             String msgOption = "";
             boolean hasMsg = checkMsg();
             if (hasMsg) {
                 msgOption = "\n6: Read messages from bank";
             }
             String options = String.format
-                    ("\n1: Fetch account data \n2: See current market orders \n3: Buy stocks \n4: Sell stocks %s \n0: Log out", msgOption);
-
+                    ("\n1: Fetch account data \n2: See current market orders \n3: Buy stocks \n4: Sell stocks %s \n0: Log out \nexit: Shut down", msgOption);
             System.out.println(options);
-            request = s.nextLine();
+
+            request = scanner.next();
             try {
-                sendRequest(request, s, hasMsg);
+                sendRequest(request, hasMsg);
             } catch (InterruptedException e) {
                 System.out.println(e.getMessage());
             }
-        } while (!request.equalsIgnoreCase("exit"));
+        }
+        try {
+            logOut();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.exit(1);
+    }
+
+    private void sendRequest(String message, boolean hasMsg) throws InterruptedException {
+        if (message.equalsIgnoreCase("1")) {
+            queryData();
+        } else if (message.equalsIgnoreCase("2")) {
+            queryMarket();
+        } else if (message.equalsIgnoreCase("3")) {
+            buyStock();
+        } else if (message.equalsIgnoreCase("4")) {
+            sellStock();
+        } else if (hasMsg && message.equalsIgnoreCase("6")) {
+            readMsgs();
+        } else if (message.equalsIgnoreCase("0")) {
+            logOut();
+            startClient(new String[]{""});
+        }
     }
 
     private void testRequestLoop() {
@@ -102,11 +124,11 @@ public class ClientClass {
                 if (!hasMsg) {
                     System.out.println("Processing request " + argList.get(0));
                     message = argList.remove(0);
-                    sendRequest(message, new Scanner(System.in), true);
+                    sendRequest(message, true);
                     hasMsg = checkMsg();
 
                 } else if (hasMsg) {
-                    sendRequest("6", new Scanner(System.in), true);
+                    sendRequest("6", true);
                     hasMsg = false;
                 }
             }
@@ -127,17 +149,8 @@ public class ClientClass {
                     new FormalField(String.class));
 
             if (response.size() > 0) {
-                response = serverClient.getAll(
-                        new ActualField(username),
-                        new FormalField(String.class));
-
-                for (Object[] msg : response) {
-                    msgs.add(msg[1].toString());
-                }
                 return true;
                 //If unread msgs
-            } else if (msgs.size() > 0) {
-                return true;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -145,46 +158,33 @@ public class ClientClass {
         return false;
     }
 
-    private void sendRequest(String message, Scanner scanner, boolean hasMsg) throws InterruptedException {
-        if (message.equalsIgnoreCase("1")) {
-            queryData();
-        } else if (message.equalsIgnoreCase("2")) {
-            queryMarket();
-        } else if (message.equalsIgnoreCase("3")) {
-            buyStock(scanner);
-        } else if (message.equalsIgnoreCase("4")) {
-            sellStock(scanner);
-        } else if (hasMsg && message.equalsIgnoreCase("6")) {
-            readMsgs();
-        } else if (message.equalsIgnoreCase("0")) {
-            logOut();
-            startClient(new String[]{""});
-        }
-    }
+    private void readMsgs() throws InterruptedException {
+        var response = serverClient.getAll(
+                new ActualField(username),
+                new FormalField(String.class));
 
-    private void readMsgs() {
-        for (String msg : msgs) {
-            System.out.println("Message: " + msg);
+
+        for (Object[] msg : response) {
+            System.out.println("Message: " + msg[1]);
         }
-        msgs = new ArrayList<>();
     }
 
     private void queryMarket() throws InterruptedException {
         userServer.put(QUERY_MARKET_ORDERS);
     }
 
-    private void buyStock(Scanner scanner) throws InterruptedException {
-        stockTrade(scanner, BUY);
+    private void buyStock() throws InterruptedException {
+        stockTrade(BUY);
     }
 
-    private void sellStock(Scanner scanner) throws InterruptedException {
-        stockTrade(scanner, SELL);
+    private void sellStock() throws InterruptedException {
+        stockTrade(SELL);
     }
 
-    private void stockTrade(Scanner scanner, String trade) throws InterruptedException {
+    private void stockTrade(String trade) throws InterruptedException {
         if (!runningWithArgs) {
             System.out.printf("Enter name of stock to %s:\n", trade.toLowerCase());
-            String stockName = scanner.nextLine();
+            String stockName = scanner.next();
             if (stockName.length() < 2 || stockName.equalsIgnoreCase("exit")) {
                 return;
             }
@@ -225,6 +225,7 @@ public class ClientClass {
 
         var response = serverUser.get(new FormalField(String.class));
         System.out.println(response[0] + "...");
+        Thread.sleep(1000);
     }
 
     private void queryData() throws InterruptedException {
@@ -251,13 +252,13 @@ public class ClientClass {
         } while (responseStr.equals(MORE_DATA));
     }
 
-    private void getCredentials(Scanner s) {
+    private void getCredentials() {
         System.out.println("Enter credentials to continue");
 
         System.out.println("Enter username: ");
-        username = s.nextLine().trim();
+        username = scanner.next().trim();
         System.out.println("Enter password: ");
-        password = s.nextLine().trim();
+        password = scanner.next().trim();
     }
 
     private boolean logIn(String username, String password) {

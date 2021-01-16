@@ -38,11 +38,11 @@ public class TransactionTask implements Callable<String> {
         var response = Server.accountServiceServer.get(new ActualField(seller), new FormalField(String.class));
         System.out.println("TransactionTask: Transaction status - " + response[1]);
 
-        String msgToSeller = String.format("Hello %s. We are happy to inform you that %d of %s was sold successfully",
-                seller, amount, stockName);
+        String msgToSeller = String.format("Hello %s. We are happy to inform you that %s stocks was sold successfully in the amount of %d.",
+                seller, stockName, amount);
 
-        String msgToBuyer = String.format("Hello %s. We are happy to inform you that %d of %s was bought successfully",
-                buyer, amount, stockName);
+        String msgToBuyer = String.format("Hello %s. We are happy to inform you that %s stocks was bought successfully in the amount of %d.",
+                buyer, stockName, amount);
 
         Server.serverClient.put(seller, msgToSeller);
         Server.serverClient.put(buyer, msgToBuyer);
