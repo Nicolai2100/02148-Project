@@ -105,7 +105,7 @@ public class AccountService {
         if (stock != null) {
             try {
                 buyer.getAccount().insertStock(stock);
-                System.out.println(buyer.getAccount().getStocks().size());
+
                 double payment = buyer.getAccount().makePayment(pricePerStock, amount);
                 FakeUserDataAccessService.getInstance().update(buyer.getId(), buyer);
 

@@ -1,7 +1,6 @@
 package model;
 
 import java.util.HashMap;
-import java.util.Optional;
 
 public class Account {
     //todo Kredit score - skal udregnes automatisk.
@@ -23,7 +22,7 @@ public class Account {
 
     public Stock withDrawStock(String stockName, int amount) {
         if (amount < 1) {
-            String throwStr = String.format("Amount is too low!");
+            String throwStr = "Amount is too low!";
             throw new StockException(throwStr);
         }
         if (this.stockMap.containsKey(stockName)) {
@@ -103,6 +102,10 @@ public class Account {
     }
 
     public double makePayment(double price, int amount) {
+        double toPay = price * amount;
+        if (toPay > balance) {
+            throw new StockException("Error: " + toPay + " is greater than current balance!");
+        }
         balance = balance - (price * amount);
         return price * amount;
     }
