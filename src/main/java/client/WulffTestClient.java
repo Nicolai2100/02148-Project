@@ -3,7 +3,7 @@ package client;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
-import shared.Channels;
+import BeastProject.shared.Channels;
 
 import java.io.IOException;
 import java.util.Scanner;

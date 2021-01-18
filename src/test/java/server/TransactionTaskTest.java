@@ -1,14 +1,14 @@
 package server;
 
-import broker.Transaction;
-import bank.Program;
-import broker.Broker;
+import BeastProject.broker.Transaction;
+import BeastProject.bank.Program;
+import BeastProject.broker.Broker;
 import org.junit.Before;
 import org.junit.Test;
-import service.AccountServiceMain;
-import service.IdentityProvider;
+import BeastProject.service.AccountServiceMain;
+import BeastProject.service.IdentityProvider;
 
-import static shared.StockNames.TESLA;
+import static BeastProject.shared.StockNames.TESLA;
 
 public class TransactionTaskTest {
 

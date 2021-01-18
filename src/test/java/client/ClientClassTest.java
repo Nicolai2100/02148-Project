@@ -1,12 +1,12 @@
 package client;
 
-import broker.Broker;
+import BeastProject.broker.Broker;
 import org.junit.jupiter.api.Test;
-import service.AccountServiceMain;
-import service.IdentityProvider;
-import bank.Program;
+import BeastProject.service.AccountServiceMain;
+import BeastProject.service.IdentityProvider;
+import BeastProject.bank.Program;
 
-import static shared.StockNames.TESLA;
+import static BeastProject.shared.StockNames.TESLA;
 
 class ClientClassTest {
 

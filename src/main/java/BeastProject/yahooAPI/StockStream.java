@@ -31,7 +31,7 @@ public class StockStream {
         nameSpace = new SequentialSpace();
 
         int numofservices = 3;
-        // One for each analyzing service.
+        // One for each analyzing BeastProject.service.
         for (int i = 0; i < numofservices; i++) {
             getNamesForAnalyzersRepository().add(String.valueOf(i), new SequentialSpace());
         }

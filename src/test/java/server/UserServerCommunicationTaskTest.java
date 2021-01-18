@@ -1,14 +1,14 @@
 package server;
 
-import bank.Program;
-import broker.Broker;
+import BeastProject.bank.Program;
+import BeastProject.broker.Broker;
 import org.jspace.SequentialSpace;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
-import service.AccountServiceMain;
-import service.IdentityProvider;
+import BeastProject.service.AccountServiceMain;
+import BeastProject.service.IdentityProvider;
 
-import static shared.Requests.*;
+import static BeastProject.shared.Requests.*;
 
 public class UserServerCommunicationTaskTest {
 

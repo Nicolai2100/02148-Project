@@ -2,12 +2,11 @@ package server;
 
 import org.jspace.*;
 
-import java.lang.annotation.Target;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static shared.Channels.*;
-import static shared.Requests.*;
+import static BeastProject.shared.Channels.*;
+import static BeastProject.shared.Requests.*;
 
 /**
  * The main responsibility of the Server-class is to provide a SpaceRepository

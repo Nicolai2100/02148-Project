@@ -1,15 +1,15 @@
 package server;
 
-import broker.Order;
-import broker.OrderPackage;
-import model.Stock;
+import BeastProject.broker.Order;
+import BeastProject.broker.OrderPackage;
+import BeastProject.model.Stock;
 import org.jspace.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
-import static shared.Channels.*;
-import static shared.Requests.*;
+import static BeastProject.shared.Channels.*;
+import static BeastProject.shared.Requests.*;
 
 public class UserServerCommunicationTask implements Callable<String> {
     private final SequentialSpace userServer;
@@ -143,7 +143,7 @@ public class UserServerCommunicationTask implements Callable<String> {
     }
 
     public void queryStocks() throws InterruptedException {
-        //Forward request to account service
+        //Forward request to account BeastProject.service
         System.out.println("USCom: Sending request...");
         Server.serverAccountService.put(username, QUERY_STOCKS);
 
@@ -167,7 +167,7 @@ public class UserServerCommunicationTask implements Callable<String> {
                 responseStr = accountServiceResponse[1].toString();
 
                 if (responseStr.equals(MORE_DATA)) {
-                    //Fetching data from service
+                    //Fetching data from BeastProject.service
 
                     Object[] dataResponse = Server.accountServiceServer.get(
                             new ActualField(username),

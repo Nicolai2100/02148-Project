@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
-import static shared.Requests.*;
+import static BeastProject.shared.Requests.*;
 
 /**
  * This class is only used for processing logins

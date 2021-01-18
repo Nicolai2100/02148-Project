@@ -1,12 +1,12 @@
 package server;
 
-import broker.Transaction;
+import BeastProject.broker.Transaction;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
 
 import java.util.concurrent.Callable;
 
-import static shared.Requests.TRANSACTION;
+import static BeastProject.shared.Requests.TRANSACTION;
 
 public class TransactionTask implements Callable<String> {
 

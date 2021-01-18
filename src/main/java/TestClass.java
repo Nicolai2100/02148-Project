@@ -1,7 +1,7 @@
-import bank.Program;
-import broker.Broker;
-import service.AccountServiceMain;
-import service.IdentityProvider;
+import BeastProject.bank.Program;
+import BeastProject.broker.Broker;
+import BeastProject.service.AccountServiceMain;
+import BeastProject.service.IdentityProvider;
 
 public class TestClass {
 

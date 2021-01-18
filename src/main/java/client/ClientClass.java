@@ -1,6 +1,6 @@
 package client;
 
-import model.Stock;
+import BeastProject.model.Stock;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
@@ -9,10 +9,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-import static shared.Channels.*;
-import static shared.Channels.CONNECTION_TYPE;
-import static shared.Requests.*;
-import static shared.Requests.MORE_DATA;
+import static BeastProject.shared.Channels.*;
+import static BeastProject.shared.Channels.CONNECTION_TYPE;
+import static BeastProject.shared.Requests.*;
+import static BeastProject.shared.Requests.MORE_DATA;
 
 public class ClientClass {
 
@@ -76,7 +76,7 @@ public class ClientClass {
             String msgOption = "";
             boolean hasMsg = checkMsg();
             if (hasMsg) {
-                msgOption = "\n6: Read messages from bank";
+                msgOption = "\n6: Read messages from BeastProject.bank";
             }
             String options = String.format
                     ("\n1: Fetch account data \n2: See current market orders \n3: Buy stocks \n4: Sell stocks %s \n0: Log out \nexit: Shut down", msgOption);
