@@ -3,6 +3,7 @@ package client;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
+import shared.Channels;
 
 import java.io.IOException;
 import java.util.Scanner;
@@ -11,8 +12,8 @@ import java.util.concurrent.Executors;
 
 public class WulffTestClient {
 
-    String brokerHostname = "localhost";
-    int brokerPort = 9001;
+    String brokerHostname = Channels.BROKER_HOSTNAME;
+    int brokerPort = Channels.BROKER_PORT;
     RemoteSpace marketOrders;
 
     String clientID;

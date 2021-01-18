@@ -17,11 +17,11 @@ public class Channels {
     public static final String CONNECTION_TYPE = "keep";
 
     //Server
-    public static final String SERVER_HOSTNAME = "localhost";
+    public static final String SERVER_HOSTNAME = "127.0.0.1";
     public static final int SERVER_PORT = 1234;
 
     //Broker
-    public static final String BROKER_HOSTNAME = "localhost";
+    public static final String BROKER_HOSTNAME = "127.0.0.1";
     public static final int BROKER_PORT = 9001;
     public static final String MARKET_ORDERS = "marketOrders";
 
