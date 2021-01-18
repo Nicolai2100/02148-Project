@@ -54,8 +54,8 @@ public class Broker {
         while (!connectedToBankServer) {
             // connect to bank server
             try {
-                String serverService = String.format("tcp://localhost:%d/%s?%s", SERVER_PORT, SERVER_BROKER, CONNECTION_TYPE);
-                String serviceServer = String.format("tcp://localhost:%d/%s?%s", SERVER_PORT, BROKER_SERVER, CONNECTION_TYPE);
+                String serverService = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, SERVER_BROKER, CONNECTION_TYPE);
+                String serviceServer = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, BROKER_SERVER, CONNECTION_TYPE);
                 serverBroker = new RemoteSpace(serverService);
                 brokerServer = new RemoteSpace(serviceServer);
                 connectedToBankServer = true;

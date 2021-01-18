@@ -44,8 +44,8 @@ public class ClientClass {
 
         //Connect to tuple space
         try {
-            String serverService = String.format("tcp://localhost:%d/%s?" + CONNECTION_TYPE, SERVER_PORT, SERVER_CLIENT);
-            String serviceServer = String.format("tcp://localhost:%d/%s?" + CONNECTION_TYPE, SERVER_PORT, CLIENT_SERVER);
+            String serverService = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, SERVER_CLIENT, CONNECTION_TYPE);
+            String serviceServer = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, CLIENT_SERVER, CONNECTION_TYPE);
             serverClient = new RemoteSpace(serverService);
             clientServer = new RemoteSpace(serviceServer);
 
@@ -295,8 +295,8 @@ public class ClientClass {
 
     private void connectToPrivateChannel(String username) {
         try {
-            String serverUserStr = String.format("tcp://localhost:%d/server%s?%s", SERVER_PORT, username, CONNECTION_TYPE);
-            String userServerStr = String.format("tcp://localhost:%d/%sserver?%s", SERVER_PORT, username, CONNECTION_TYPE);
+            String serverUserStr = String.format("tcp://%s:%d/server%s?%s", SERVER_HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
+            String userServerStr = String.format("tcp://%s:%d/%sserver?%s", SERVER_HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
             userServer = new RemoteSpace(userServerStr);
             serverUser = new RemoteSpace(serverUserStr);
         } catch (Exception e) {
