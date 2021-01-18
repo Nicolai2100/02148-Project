@@ -10,6 +10,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import shared.Channels;
+import shared.Requests;
 
 
 import java.io.IOException;
@@ -46,10 +47,10 @@ class BrokerTest {
     @BeforeEach
     void setup() throws InterruptedException, IOException {
         Broker.main(new String[]{});
-        orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orders?keep");
-        orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/orderPackages?keep");
-        transactions = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/transactions?keep");
-        stocks = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/stocks?keep");
+        orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/" + Requests.ORDERS + "?keep");
+        orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/" + Requests.ORDER_PACKAGES + "?keep");
+        transactions = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/" + Requests.TRANSACTIONS + "?keep");
+        stocks = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/" + Requests.STOCKS + "?keep");
         executor = Executors.newFixedThreadPool(1);
     }
 

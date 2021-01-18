@@ -13,6 +13,8 @@ public class Requests {
 
     public static final String ORDERS = "ORDERS";
     public static final String ORDER_PACKAGES = "ORDER_PACKAGES";
+    public static final String TRANSACTIONS = "TRANSACTIONS";
+    public static final String STOCKS = "STOCKS";
 
 
 

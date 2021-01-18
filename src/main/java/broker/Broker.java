@@ -45,8 +45,8 @@ public class Broker {
     public Broker() {
         tradeRepo.add(ORDERS, orders);
         tradeRepo.add(ORDER_PACKAGES, newOrderPackages);
-        tradeRepo.add("transactions", transactions);
-        tradeRepo.add("stocks", stocks); //TODO: Skal nok fjernes igen, pt. kun for testing.
+        tradeRepo.add(TRANSACTIONS, transactions);
+        tradeRepo.add(STOCKS, stocks); //TODO: Skal nok fjernes igen, pt. kun for testing.
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
 
         boolean connectedToBankServer = false;
