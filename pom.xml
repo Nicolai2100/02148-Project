@@ -8,11 +8,12 @@
         <version>2.4.1</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
+
     <groupId>com.jSpaceProject</groupId>
-    <artifactId>BeastProject</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>BeastProject</name>
-    <description>Amazing com.jSpaceProject.BeastProject.api that use org for coordination</description>
+    <artifactId>BeastBank</artifactId>
+    <version>0.1.0</version>
+    <name>BeastBank</name>
+    <description>Amazing com.jSpaceProject.BeastBank.api that use org for coordination</description>
 
     <properties>
         <java.version>11</java.version>
@@ -20,13 +21,20 @@
 
     <dependencies>
 
+        <!-- Nødvendigt for maven package
+        <dependency>
+            <groupId>io.github.pspaces.jspace</groupId>
+            <artifactId>common</artifactId>
+            <version>[0.0,)</version>
+        </dependency>
+        -->
+
         <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>0.3m</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.mashape.unirest/unirest-java -->
         <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>
@@ -50,35 +58,57 @@
             <scope>test</scope>
         </dependency>
 
-            <!-- De her er importeret fra jSpace biblioteket !-->
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>4.8</version>
-                <scope>test</scope>
-            </dependency>
+        <!-- De her er importeret fra jSpace biblioteket !-->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8</version>
+            <scope>test</scope>
+        </dependency>
 
-            <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
-                <version>2.8.0</version>
-            </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.0</version>
+        </dependency>
 
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-text</artifactId>
-                <version>1.1</version>
-            </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.1</version>
+        </dependency>
 
     </dependencies>
 
     <build>
         <plugins>
+
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.4.1</version>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>
+                                BeastBank.TestClass
+                            </mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id> <!-- this is used for inheritance merges -->
+                        <phase>package</phase> <!-- bind to the packaging phase -->
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

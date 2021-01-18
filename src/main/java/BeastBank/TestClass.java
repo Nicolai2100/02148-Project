@@ -1,21 +1,33 @@
-package server;
+package BeastBank;
 
 import BeastBank.bank.Program;
-import BeastBank.bank.UserServerCommunicationTask;
 import BeastBank.broker.Broker;
-import org.jspace.SequentialSpace;
-import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 import BeastBank.service.AccountServiceMain;
 import BeastBank.service.IdentityProvider;
 
-import static BeastBank.shared.Requests.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
-public class UserServerCommunicationTaskTest {
+import BeastBank.shared.Channels;
 
 
-    @BeforeEach
-    void setUp() throws InterruptedException {
+public class TestClass {
+
+    public static void main(String[] args) {
+
+        try {
+            String azureVMName = "Hoster";
+            String hostName = InetAddress.getLocalHost().getHostName();
+            String hostAddress = hostName.equals(azureVMName) ? "52.146.147.182" : "localhost";
+            Channels.SERVER_HOSTNAME = hostName;
+            System.out.printf("Listening on %s:%d\n", hostAddress, Channels.SERVER_PORT);
+
+
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+
         Runnable r4 = () -> {
             try {
                 Broker.main(null);
@@ -37,20 +49,5 @@ public class UserServerCommunicationTaskTest {
         Runnable r3 = () -> AccountServiceMain.main(null);
         Thread thread3 = new Thread(r3);
         thread3.start();
-    }
-
-
-    @Test
-    public void call() throws InterruptedException {
-        setUp();
-
-        UserServerCommunicationTask uscom = new UserServerCommunicationTask(
-                new SequentialSpace(),
-                new SequentialSpace(),
-                "Alice");
-        Thread.sleep(2000);
-        uscom.requestResolver(TRANSACTION);
-
-
     }
 }
