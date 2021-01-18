@@ -19,10 +19,8 @@ public class TestClass {
             String azureVMName = "Hoster";
             String hostName = InetAddress.getLocalHost().getHostName();
             String hostAddress = hostName.equals(azureVMName) ? "52.146.147.182" : "localhost";
-            Channels.SERVER_HOSTNAME = hostName;
+            Channels.SERVER_HOSTNAME = hostAddress;
             System.out.printf("Listening on %s:%d\n", hostAddress, Channels.SERVER_PORT);
-
-
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
