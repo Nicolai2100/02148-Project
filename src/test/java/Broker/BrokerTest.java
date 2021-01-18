@@ -9,6 +9,7 @@ import org.jspace.RemoteSpace;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import shared.Channels;
 
 
 import java.io.IOException;
@@ -24,8 +25,8 @@ class BrokerTest {
     RemoteSpace orderPkgs;
     RemoteSpace transactions;
     RemoteSpace stocks;
-    String brokerHostname = "localhost";
-    int brokerPort = 9001;
+    String brokerHostname = Channels.BROKER_HOSTNAME;
+    int brokerPort = Channels.BROKER_PORT;
     ExecutorService executor;
     int timeout = 4;
     TimeUnit timoutUnit = TimeUnit.SECONDS;

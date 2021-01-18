@@ -1,5 +1,7 @@
 package Broker;
 
+import broker.Order;
+
 import java.util.Date;
 
 public class Transaction {

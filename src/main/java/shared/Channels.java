@@ -18,7 +18,7 @@ public class Channels {
 
     //Server
     public static final String SERVER_HOSTNAME = "localhost";
-    public static final int SERVER_PORT = 123;
+    public static final int SERVER_PORT = 1234;
 
     //Broker
     public static final String BROKER_HOSTNAME = "localhost";

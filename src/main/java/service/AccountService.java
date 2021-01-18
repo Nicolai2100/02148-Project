@@ -38,8 +38,8 @@ public class AccountService {
                 // connect to tuple space
                 try {
                     System.out.println(AccountService.class.getName() + ": Trying to establish connection to remote spaces...");
-                    String serverService = String.format("tcp://localhost:123/%s?%s", SERVER_ACCOUNT_SERVICE, CONNECTION_TYPE);
-                    String serviceServer = String.format("tcp://localhost:123/%s?%s", ACCOUNT_SERVICE_SERVER, CONNECTION_TYPE);
+                    String serverService = String.format("tcp://localhost:%d/%s?%s", SERVER_PORT, SERVER_ACCOUNT_SERVICE, CONNECTION_TYPE);
+                    String serviceServer = String.format("tcp://localhost:%d/%s?%s", SERVER_PORT, ACCOUNT_SERVICE_SERVER, CONNECTION_TYPE);
                     serverAccountService = new RemoteSpace(serverService);
                     accountServiceServer = new RemoteSpace(serviceServer);
                     connectedToServer = true;

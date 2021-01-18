@@ -24,8 +24,8 @@ public class IdentityProvider {
                 try {
                     System.out.println(IdentityProvider.class.getName() + ": Trying to establish connection to remote spaces...");
 
-                    String serverService = String.format("tcp://localhost:123/%s?%s", SERVER_ID_PROVIDER, CONNECTION_TYPE);
-                    String serviceServer = String.format("tcp://localhost:123/%s?%s", ID_PROVIDER_SERVER, CONNECTION_TYPE);
+                    String serverService = String.format("tcp://localhost:%d/%s?%s", SERVER_PORT, SERVER_ID_PROVIDER, CONNECTION_TYPE);
+                    String serviceServer = String.format("tcp://localhost:%d/%s?%s", SERVER_PORT, ID_PROVIDER_SERVER, CONNECTION_TYPE);
                     serverIdProvider = new RemoteSpace(serverService);
                     idProviderServer = new RemoteSpace(serviceServer);
 
