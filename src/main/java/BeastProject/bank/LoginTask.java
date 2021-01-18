@@ -1,4 +1,4 @@
-package server;
+package BeastProject.bank;
 
 import org.jspace.FormalField;
 import org.jspace.QueueSpace;

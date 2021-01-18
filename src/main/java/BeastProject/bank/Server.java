@@ -1,4 +1,4 @@
-package server;
+package BeastProject.bank;
 
 import org.jspace.*;
 
@@ -84,12 +84,10 @@ public class Server {
         System.out.println("Client requested: " + request);
 
         try {
-            switch (request) {
-                case LOGIN -> {
-                    login(username, password);
-                }
-
-                default -> System.out.println("ERROR IN SWITCH STMT");
+            if (LOGIN.equals(request)) {
+                login(username, password);
+            } else {
+                System.out.println("ERROR IN SWITCH STMT");
             }
 
         } catch (InterruptedException e) {

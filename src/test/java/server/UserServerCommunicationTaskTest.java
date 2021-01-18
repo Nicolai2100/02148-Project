@@ -1,6 +1,7 @@
 package server;
 
 import BeastProject.bank.Program;
+import BeastProject.bank.UserServerCommunicationTask;
 import BeastProject.broker.Broker;
 import org.jspace.SequentialSpace;
 import org.junit.Test;

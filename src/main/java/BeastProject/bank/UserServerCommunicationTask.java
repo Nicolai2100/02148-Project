@@ -1,5 +1,6 @@
-package server;
+package BeastProject.bank;
 
+import BeastProject.bank.Server;
 import BeastProject.broker.Order;
 import BeastProject.broker.OrderPackage;
 import BeastProject.model.Stock;
@@ -57,12 +58,24 @@ public class UserServerCommunicationTask implements Callable<String> {
         System.out.println("USCom: User requested: " + request);
         try {
             switch (request) {
-                case QUERY_STOCKS -> queryStocks();
-                case BUY -> buyStock();
-                case SELL -> sellStock();
-                case LOG_OUT -> logOut();
+                case QUERY_STOCKS:
+                    queryStocks();
 
-                default -> System.out.println("USCom: ERROR IN SWITCH STMT");
+                    break;
+                case BUY:
+                    buyStock();
+                    break;
+
+                case SELL:
+                    sellStock();
+                    break;
+
+                case LOG_OUT:
+                    logOut();
+                    break;
+
+                default:
+                    System.out.println("USCom: ERROR IN SWITCH STMT");
             }
 
         } catch (Exception e) {

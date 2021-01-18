@@ -1,4 +1,4 @@
-package client;
+package BeastProject.bank;
 
 import BeastProject.model.Stock;
 import org.jspace.ActualField;

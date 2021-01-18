@@ -1,5 +1,6 @@
 package client;
 
+import BeastProject.bank.ClientClass;
 import BeastProject.broker.Broker;
 import org.junit.jupiter.api.Test;
 import BeastProject.service.AccountServiceMain;

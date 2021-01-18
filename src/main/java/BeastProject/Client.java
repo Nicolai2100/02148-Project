@@ -1,6 +1,6 @@
-package BeastProject.bank;
+package BeastProject;
 
-import client.ClientClass;
+import BeastProject.bank.ClientClass;
 
 public class Client {
     public static void main(String[] args) {

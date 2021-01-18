@@ -1,3 +1,5 @@
+package BeastProject;
+
 import BeastProject.bank.Program;
 import BeastProject.broker.Broker;
 import BeastProject.service.AccountServiceMain;
@@ -6,9 +8,6 @@ import BeastProject.service.IdentityProvider;
 public class TestClass {
 
     public static void main(String[] args) {
-
-    //hej g
-
 
         Runnable r4 = () -> {
             try {

@@ -1,5 +1,6 @@
-package server;
+package BeastProject.bank;
 
+import BeastProject.bank.Server;
 import BeastProject.broker.Transaction;
 import org.jspace.ActualField;
 import org.jspace.FormalField;

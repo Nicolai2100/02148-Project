@@ -86,9 +86,13 @@ public class AccountService {
 
     public void requestDecider(String request, User user) throws Exception {
         switch (request) {
-            case QUERY_STOCKS -> queryAccountRequest(user);
-            case TRANSACTION -> transactionRequest(user);
-            default -> {
+            case QUERY_STOCKS:
+                queryAccountRequest(user);
+                break;
+            case TRANSACTION:
+                transactionRequest(user);
+                break;
+            default: {
                 System.out.println(AccountService.class.getName() + ": ERROR IN SWITCH STMT");
                 throw new Exception(AccountService.class.getName() + ": NOT IMPLEMENTED!");
             }

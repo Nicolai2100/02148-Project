@@ -1,7 +1,5 @@
 package BeastProject.bank;
 
-import server.Server;
-
 public class Program {
 
     public static void main(String[] args) {
