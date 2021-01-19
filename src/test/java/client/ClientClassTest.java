@@ -51,6 +51,12 @@ class ClientClassTest {
     }
 
     @Test
+    void queryMarket() {
+        String[] args = {"Alice", "password", "2"};
+        new ClientClass().startClient(args);
+    }
+
+    @Test
     void sellStock() {
         String[] args = {"Alice", "password", "4", TESLA, "1", "0.0", "1"};
         new ClientClass().startClient(args);
@@ -71,12 +77,6 @@ class ClientClassTest {
     @Test
     void sellAndBuyStock() throws InterruptedException {
         String[] args = {"Alice", "password", "4", TESLA, "1", "22.2", "1", "3", TESLA, "1", "22.2", "1"};
-        new ClientClass().startClient(args);
-    }
-
-    @Test
-    void queryMarket() {
-        String[] args = {"Alice", "password", "2"};
         new ClientClass().startClient(args);
     }
 

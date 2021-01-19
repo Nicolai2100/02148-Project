@@ -128,7 +128,8 @@ public class AccountService {
                 new ActualField(user.getName()),
                 new FormalField(String.class),
                 new FormalField(String.class),
-                new FormalField(Double.class),
+                //new FormalField(Double.class),
+                new FormalField(Integer.class),
                 new FormalField(Integer.class)
         ));
 

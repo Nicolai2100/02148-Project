@@ -1,7 +1,9 @@
 package BeastBank.bank;
 
+import BeastBank.service.AccountService;
 import org.jspace.*;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -17,8 +19,10 @@ public class Server {
 
     static SequentialSpace clientServer;
     static RandomSpace serverClient;
-    static SequentialSpace serverIdProvider;
-    static SequentialSpace idProviderServer;
+
+    static RemoteSpace serverIdProvider;
+    static RemoteSpace idProviderServer;
+
     static SequentialSpace accountServiceServer;
     static SequentialSpace serverAccountService;
 
@@ -34,8 +38,7 @@ public class Server {
         // Create a local space for each channel
         clientServer = new QueueSpace();
         serverClient = new RandomSpace();
-        serverIdProvider = new QueueSpace();
-        idProviderServer = new QueueSpace();
+
         accountServiceServer = new QueueSpace();
         serverAccountService = new QueueSpace();
 
@@ -45,8 +48,7 @@ public class Server {
         //Add the spaces/channels to the repository
         repository.add(CLIENT_SERVER, clientServer);
         repository.add(SERVER_CLIENT, serverClient);
-        repository.add(SERVER_ID_PROVIDER, serverIdProvider);
-        repository.add(ID_PROVIDER_SERVER, idProviderServer);
+
         repository.add(ACCOUNT_SERVICE_SERVER, accountServiceServer);
         repository.add(SERVER_ACCOUNT_SERVICE, serverAccountService);
 
@@ -59,6 +61,25 @@ public class Server {
 
         // Keep reading chat messages and printing them
         System.out.println("Server: Started server on: " + uri);
+
+        boolean connectedToIdProvider = false;
+        while (!connectedToIdProvider) {
+            // connect to tuple space
+            try {
+                System.out.println("Server: Trying to establish connection to Identity Provider ...");
+                String serverService = String.format("tcp://%s:%d/%s?%s", ID_PROVIDER_HOSTNAME, ID_PROVIDER_PORT, SERVER_ID_PROVIDER, CONNECTION_TYPE);
+                String serviceServer = String.format("tcp://%s:%d/%s?%s", ID_PROVIDER_HOSTNAME, ID_PROVIDER_PORT, ID_PROVIDER_SERVER, CONNECTION_TYPE);
+                serverIdProvider = new RemoteSpace(serverService);
+                idProviderServer = new RemoteSpace(serviceServer);
+                connectedToIdProvider = true;
+
+                System.out.println(AccountService.class.getName() + ": Waiting for requests...");
+
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+                connectedToIdProvider = false;
+            }
+        }
 
         executor = Executors.newCachedThreadPool();
 
