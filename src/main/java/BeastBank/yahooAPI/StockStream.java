@@ -14,7 +14,7 @@ public class StockStream {
     // Spaces as analyser threads, they will then pull from this repository.
     private static SpaceRepository toBeEvaluatedSpaceRepository;
     // This space contains the final result
-    private RandomSpace evaluatedStockSpace;
+    private static RandomSpace evaluatedStockSpace;
     // this repository has to kinds of tuples. A tuple with only a string, which is the name to be analyzed, and
     // at max 1000 tuples with that name, this isn't very lean but this was needed because i cant nest repositorys. I needed to be able to
     // put a repository in a repository but that wasn't possible.
@@ -258,7 +258,7 @@ public class StockStream {
     }
 
     /**
-     * This checks if we would like to recommend a stock or not, if we don't know the stock we wont recommend it. 
+     * This checks if we would like to recommend a stock or not, if we don't know the stock we wont recommend it.
      * @param stock
      * @return
      */
