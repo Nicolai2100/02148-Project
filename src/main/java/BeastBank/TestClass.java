@@ -18,7 +18,7 @@ public class TestClass {
         try {
             String azureVMName = "Hoster";
             String hostName = InetAddress.getLocalHost().getHostName();
-            String hostAddress = hostName.equals(azureVMName) ? Channels.INNER_REMOTE_SERVER_HOSTNAME : "localhost";
+            String hostAddress = hostName.equals(azureVMName) ? Channels.INNER_REMOTE_SERVER_HOSTNAME : "127.0.0.1";
             Channels.SERVER_HOSTNAME = hostAddress;
             Channels.ID_PROVIDER_HOSTNAME = hostAddress;
             Channels.BROKER_HOSTNAME = hostAddress;

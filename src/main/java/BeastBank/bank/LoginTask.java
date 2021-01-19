@@ -2,6 +2,7 @@ package BeastBank.bank;
 
 import org.jspace.FormalField;
 import org.jspace.QueueSpace;
+import org.jspace.RemoteSpace;
 import org.jspace.SequentialSpace;
 
 import java.time.LocalDateTime;
@@ -14,15 +15,15 @@ import static BeastBank.shared.Requests.*;
  * This class is only used for processing logins
  */
 public class LoginTask implements Callable<String> {
-    private final SequentialSpace serverIdProvider;
-    private final SequentialSpace idProviderServer;
+    private final RemoteSpace serverIdProvider;
+    private final RemoteSpace idProviderServer;
     private final String username;
     private final String password;
 
     private final ExecutorService executor;
 
-    public LoginTask(SequentialSpace idProviderServer,
-                     SequentialSpace serverIdProvider,
+    public LoginTask(RemoteSpace idProviderServer,
+                     RemoteSpace serverIdProvider,
                      String username,
                      String password,
                      ExecutorService executor) {
@@ -59,13 +60,13 @@ public class LoginTask implements Callable<String> {
                 System.out.printf("Created private channels for %s...", username);
                 Server.numOfClientsConnected++;
                 System.out.println("Number of clients connected: " + Server.numOfClientsConnected);
+
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
 
             if (response[0].equals(OK)) {
                 System.out.println(username + " logged in at " + LocalDateTime.now());
-
                 executor.submit(new UserServerCommunicationTask(userServer, serverUser, username));
             } else {
                 System.out.println("Error in credentials");

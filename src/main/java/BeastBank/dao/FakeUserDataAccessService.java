@@ -17,10 +17,9 @@ public class FakeUserDataAccessService implements UserDao {
 
     private FakeUserDataAccessService() {
         DB = new ArrayList<>();
-        //todo udskift map med space
 
         String password = "password";
-        Account aliceAccount = new Account(100.0);
+        Account aliceAccount = new Account(1000.0);
         HashMap<String, Stock> aliceStockMap = new HashMap<>();
         aliceStockMap.put(TESLA, new Stock(TESLA, 20, 2));
         aliceStockMap.put(APPLE, new Stock(APPLE, 31, 1));
@@ -28,24 +27,20 @@ public class FakeUserDataAccessService implements UserDao {
         User alice = new User("Alice", UUID.randomUUID(), SharedEncryption.encryptPassword(password), aliceAccount);
         DB.add(alice);
 
-        Account bobAccount = new Account(100);
+        Account bobAccount = new Account(2000.0);
         HashMap<String, Stock> bobStockMap = new HashMap<>();
         bobStockMap.put(TESLA, new Stock(TESLA, 20, 1));
         bobStockMap.put(APPLE, new Stock(APPLE, 31, 2));
-
         bobAccount.setStocks(bobStockMap);
         User bob = new User("Bob", UUID.randomUUID(), SharedEncryption.encryptPassword(password), bobAccount);
-
         DB.add(bob);
 
-        Account charlieAccount = new Account(100);
+        Account charlieAccount = new Account(3000.0);
         HashMap<String, Stock> charlieStockMap = new HashMap<>();
         charlieStockMap.put(GOOGLE, new Stock(GOOGLE, 20, 1));
         charlieStockMap.put(MICROSOFT, new Stock(MICROSOFT, 31, 3));
-
         charlieAccount.setStocks(charlieStockMap);
         User charlie = new User("Charlie", UUID.randomUUID(), SharedEncryption.encryptPassword(password), charlieAccount);
-
         DB.add(charlie);
     }
 

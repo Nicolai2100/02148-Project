@@ -314,10 +314,10 @@ public class ClientClass {
             clientServer.put(LOGIN, username, password);
 
             connectToPrivateChannel(username);
-
             Thread.sleep(1000);
 
             Object[] serverResponse = serverUser.get(new FormalField(String.class));
+            System.out.println("er her");
 
             String responseStr = KO;
             try {
@@ -341,8 +341,8 @@ public class ClientClass {
 
     private void connectToPrivateChannel(String username) {
         try {
-            String serverUserStr = String.format("tcp://%s:%d/server%s?%s", HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
-            String userServerStr = String.format("tcp://%s:%d/%sserver?%s", HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
+            String serverUserStr = String.format("tcp://%s:%s/server%s?%s", HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
+            String userServerStr = String.format("tcp://%s:%s/%sserver?%s", HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
             userServer = new RemoteSpace(userServerStr);
             serverUser = new RemoteSpace(serverUserStr);
         } catch (Exception e) {

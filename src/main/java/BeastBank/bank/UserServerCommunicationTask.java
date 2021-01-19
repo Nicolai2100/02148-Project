@@ -60,6 +60,9 @@ public class UserServerCommunicationTask implements Callable<String> {
                 case QUERY_STOCKS:
                     queryStocks();
 
+                case QUERY_MARKET_ORDERS:
+                    queryMarket();
+
                     break;
                 case BUY:
                     buyStock();
@@ -79,6 +82,18 @@ public class UserServerCommunicationTask implements Callable<String> {
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
+        }
+    }
+
+    public void queryMarket() throws InterruptedException {
+        Server.serverBroker.put(username, QUERY_MARKET_ORDERS);
+
+        var response =
+                Server.brokerServer.queryAll(new ActualField(OrderPackage.class));
+
+        for (var order : response) {
+            System.out.println(order.toString());
+            System.out.println(order[0]);
         }
     }
 
