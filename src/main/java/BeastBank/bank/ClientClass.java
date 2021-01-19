@@ -16,26 +16,28 @@ import static BeastBank.shared.Requests.MORE_DATA;
 
 public class ClientClass {
 
-    RemoteSpace serverClient = null;
-    RemoteSpace clientServer = null;
-    RemoteSpace userServer = null;
-    RemoteSpace serverUser = null;
-    String username;
-    String password;
-    boolean runningWithArgs = false;
-    ArrayList<String> argList = new ArrayList<>();
-    static Scanner scanner = new Scanner(System.in);
+    private RemoteSpace serverClient = null;
+    private RemoteSpace clientServer = null;
+    private RemoteSpace userServer = null;
+    private RemoteSpace serverUser = null;
+
+    private ArrayList<String> argList = new ArrayList<>();
+    private boolean runningWithArgs = false;
+
+    private String username;
+    private String password;
+    private final Scanner scanner = new Scanner(System.in);
     private String HOSTNAME = "127.0.0.1";
 
-    private boolean remoteServer = true;
+    /** Toggle remoteServer true/false for connecting to localhost or remote server...*/
+    private final boolean remoteServer = false;
 
     public void startClient(String[] args) {
-
         if (remoteServer) {
             HOSTNAME = REMOTE_SERVER_HOSTNAME;
         }
 
-        //For test...
+        //The args is intended only to be used for test purposes...
         if (args.length > 1) {
             runningWithArgs = true;
             username = args[0];
@@ -54,7 +56,7 @@ public class ClientClass {
         boolean notConnectedServer = true;
         while (notConnectedServer)
             try {
-                System.out.println("trying to connect to " + HOSTNAME + SERVER_PORT);
+                System.out.println("trying to connect to: " + HOSTNAME + ":" + SERVER_PORT);
                 String serverService = String.format("tcp://%s:%d/%s?%s", HOSTNAME, SERVER_PORT, SERVER_CLIENT, CONNECTION_TYPE);
                 String serviceServer = String.format("tcp://%s:%d/%s?%s", HOSTNAME, SERVER_PORT, CLIENT_SERVER, CONNECTION_TYPE);
                 serverClient = new RemoteSpace(serverService);
@@ -91,7 +93,7 @@ public class ClientClass {
         while (!request.equalsIgnoreCase("exit")) {
 
             String msgOption = "";
-            boolean hasMsg = checkMsg();
+            boolean hasMsg = checkMsgFromBank();
             if (hasMsg) {
                 msgOption = "\n6: Read messages from BeastProject.bank";
             }
@@ -131,35 +133,7 @@ public class ClientClass {
         }
     }
 
-    private void testRequestLoop() {
-        logIn(username, password);
-        connectToPrivateChannel(username);
-        boolean hasMsg = false;
-        try {
-            String message;
-            while (argList.size() > 0 || hasMsg) {
-                if (!hasMsg) {
-                    System.out.println("Processing request " + argList.get(0));
-                    message = argList.remove(0);
-                    sendRequest(message, true);
-                    hasMsg = checkMsg();
-
-                } else if (hasMsg) {
-                    sendRequest("6", true);
-                    hasMsg = false;
-                }
-            }
-
-            System.out.println("Test client finished");
-            logOut();
-            System.exit(2);
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private boolean checkMsg() {
+    private boolean checkMsgFromBank() {
         try {
             var response = serverClient.queryAll(
                     new ActualField(username),
@@ -167,7 +141,6 @@ public class ClientClass {
 
             if (response.size() > 0) {
                 return true;
-                //If unread msgs
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -179,7 +152,6 @@ public class ClientClass {
         var response = serverClient.getAll(
                 new ActualField(username),
                 new FormalField(String.class));
-
 
         for (Object[] msg : response) {
             System.out.println("Message: " + msg[1]);
@@ -199,36 +171,42 @@ public class ClientClass {
     }
 
     private void stockTrade(String trade) throws InterruptedException {
+        String minOrMax = trade.equals(SELL) ? "minimum" : "maximum";
+
         if (!runningWithArgs) {
-            System.out.printf("Enter name of stock to %s:\n", trade.toLowerCase());
-            String stockName = scanner.next();
-            if (stockName.length() < 2 || stockName.equalsIgnoreCase("exit")) {
-                return;
-            }
-            System.out.printf("Enter number of stocks to %s:\n", trade.toLowerCase());
-            int amount = scanner.nextInt();
-            if (amount < 1 || stockName.equalsIgnoreCase("exit")) {
-                return;
-            }
+            try {
 
-            int minAmountReq = 1;
+                System.out.printf("Enter name of stock to %s:\n", trade.toLowerCase());
+                String stockName = checkInputForExitToAbort();
 
-            if (amount > 1) {
-                System.out.printf("Enter minimum number of stocks to %s:\n", trade.toLowerCase());
-                minAmountReq = scanner.nextInt();
-                if (minAmountReq < 1 || stockName.equalsIgnoreCase("exit")) {
-                    return;
+                System.out.printf("Enter number of stocks to %s:\n", trade.toLowerCase());
+                String errorMsg = String.format("You can't %s more than you own!", trade.toLowerCase());
+                int amount = checkInvalidResponse(1, 10, scanner.nextInt(), errorMsg);
+
+                int minAmountReq = 1;
+                if (amount > 1) {
+                    System.out.printf("Enter minimum number of stocks to %s:\n", trade.toLowerCase());
+                    minAmountReq = checkInvalidResponse(1, 10, scanner.nextInt(), errorMsg);
                 }
-            }
-            double minPricePerStock = 0.0;
-            String minOrMax = trade.equals(SELL) ? "minimum" : "maximum";
-            System.out.printf("Enter %s price per stock \n(Enter \"0\" for current market price) :", minOrMax);
-            minPricePerStock = scanner.nextDouble();
-            if (stockName.equalsIgnoreCase("exit")) {
+
+                double minPricePerStock = 0.0;
+                System.out.printf("Enter %s price per stock \n(Enter \"0\" for current market price) :", minOrMax);
+                String errorMsg2 = String.format("You can't %s more than you own!", trade.toLowerCase());
+                minPricePerStock = checkInvalidResponse(0.0, 10.0, scanner.nextDouble(), errorMsg2);
+
+
+                String price = minPricePerStock == 0.0 ? "market price" : Double.toString(minPricePerStock);
+                System.out.printf("Are you sure you want to %s %s for %s each? \n", amount, stockName, price);
+                System.out.println("1 - Yes\n0 - No");
+                if (checkInputForExitToAbort().equalsIgnoreCase("1")) {
+                    userServer.put(trade);
+                    userServer.put(stockName, amount, minPricePerStock, minAmountReq);
+                } else return;
+
+            } catch (ClientInputException e) {
+                System.out.println(e.getMessage());
                 return;
             }
-            userServer.put(trade);
-            userServer.put(stockName, amount, minPricePerStock, minAmountReq);
 
         } else {
             String stockName = argList.remove(0);
@@ -239,7 +217,6 @@ public class ClientClass {
             userServer.put(trade);
             userServer.put(stockName, amount, pricePerStock, minAmountReq);
         }
-
         var response = serverUser.get(new FormalField(String.class));
         System.out.println(response[0] + "...");
         Thread.sleep(1000);
@@ -273,9 +250,61 @@ public class ClientClass {
         System.out.println("Enter credentials to continue");
 
         System.out.println("Enter username: ");
-        username = scanner.next().trim();
+        username = checkExitToLogOut(scanner.next().trim());
         System.out.println("Enter password: ");
-        password = scanner.next().trim();
+        password = checkExitToLogOut(scanner.next().trim());
+    }
+
+    private String checkInputForExitToAbort() {
+        String msg = scanner.next();
+        if (msg.equalsIgnoreCase("exit")) {
+            requestLoop();
+        }
+        return msg;
+    }
+
+    public <T> T checkInvalidResponse(T lowerLimit, T upperLimit, T userInput, String errorMsg) {
+        String typen = "";
+        if (userInput instanceof String) {
+            typen = "string";
+        } else if (userInput instanceof Integer) {
+            typen = "integer";
+        } else if (userInput instanceof Double) {
+            typen = "double";
+        }
+
+        if (typen.equals("integer")) {
+            if (lowerLimit != null && upperLimit != null) {
+                if ((Integer) userInput >= (Integer) lowerLimit && (Integer) userInput <= (Integer) upperLimit) {
+                    return userInput;
+                }
+            }
+        }
+        if (typen.equals("double")) {
+            if (lowerLimit != null && upperLimit != null) {
+                if ((Double) userInput >= (Double) lowerLimit && (Double) userInput <= (Double) upperLimit) {
+                    return userInput;
+                }
+            }
+        }
+        throw new ClientInputException(errorMsg);
+    }
+
+    private String checkExitToLogOut(String msg) {
+        if (msg.equalsIgnoreCase("exit")) {
+            try {
+                shutDown();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return msg;
+    }
+
+    private void shutDown() throws InterruptedException {
+        logOut();
+        System.out.println("Bye");
+        System.exit(2);
     }
 
     private boolean logIn(String username, String password) {
@@ -322,7 +351,39 @@ public class ClientClass {
     }
 
     private void logOut() throws InterruptedException {
-        userServer.put(LOG_OUT);
-        System.out.println("Logging out...");
+        try {
+            userServer.put(LOG_OUT);
+            System.out.println("Logging out...");
+        } catch (NullPointerException e) {
+            //System.out.println("User not logged in.");
+        }
+    }
+
+    private void testRequestLoop() {
+        logIn(username, password);
+        connectToPrivateChannel(username);
+        boolean hasMsg = false;
+        try {
+            String message;
+            while (argList.size() > 0 || hasMsg) {
+                if (!hasMsg) {
+                    System.out.println("Processing request " + argList.get(0));
+                    message = argList.remove(0);
+                    sendRequest(message, true);
+                    hasMsg = checkMsgFromBank();
+
+                } else if (hasMsg) {
+                    sendRequest("6", true);
+                    hasMsg = false;
+                }
+            }
+
+            System.out.println("Test client finished");
+            logOut();
+            System.exit(2);
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

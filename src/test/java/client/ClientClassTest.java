@@ -37,6 +37,14 @@ class ClientClassTest {
     }
 
     @Test
+    void linRealUser() {
+//        public <T> T checkInvalidResponse(T type, T lowerLimit, T upperLimit, T userInput, String errorMsg) {
+
+        ClientClass c = new ClientClass();
+        c.checkInvalidResponse(-2.0, 1.0, -1.0, "error" );
+    }
+
+    @Test
     void loginRealUser() {
         String[] args = {"Alice", "password"};
         new ClientClass().startClient(args);
@@ -77,7 +85,6 @@ class ClientClassTest {
         String[] args = {"Alice", "password", "1"};
         new ClientClass().startClient(args);
     }
-
 
 
     @Test
