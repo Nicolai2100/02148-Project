@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutorService;
 import static BeastBank.shared.Requests.*;
 
 /**
- * This class is only used for processing logins
+ * This class is used for processing logins
  */
 public class LoginTask implements Callable<String> {
     private final RemoteSpace serverIdProvider;
@@ -60,7 +60,6 @@ public class LoginTask implements Callable<String> {
                 System.out.printf("Created private channels for %s...", username);
                 Server.numOfClientsConnected++;
                 System.out.println("Number of clients connected: " + Server.numOfClientsConnected);
-
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
