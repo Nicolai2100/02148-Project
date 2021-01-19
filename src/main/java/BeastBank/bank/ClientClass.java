@@ -29,26 +29,20 @@ public class ClientClass {
     private final Scanner scanner = new Scanner(System.in);
     private String HOSTNAME = "127.0.0.1";
 
-    /** Toggle remoteServer true/false for connecting to localhost or remote BeastBank.server...*/
-    private final boolean remoteServer = false;
-
     public void startClient(String[] args) {
-        if (remoteServer) {
+        if (args[0].equalsIgnoreCase("true")) {
             HOSTNAME = REMOTE_SERVER_HOSTNAME;
         }
 
         //The args is intended only to be used for test purposes...
-        if (args.length > 1) {
+        if (args.length > 2) {
+            username = args[1];
+            password = args[2];
             runningWithArgs = true;
-            username = args[0];
-            password = args[1];
 
-            for (int i = 0; i < args.length; i++) {
-                if (i > 1) {
-                    argList.add(args[i]);
-                    System.out.printf("Client arg number: %s is \"%s\"", i, args[i]);
-                    System.out.println();
-                }
+            for (int i = 3; i < args.length; i++) {
+                argList.add(args[i]);
+                System.out.printf("Client arg number: %s is \"%s\"\n", i, args[i]);
             }
         }
 
@@ -159,7 +153,31 @@ public class ClientClass {
     }
 
     private void queryMarket() throws InterruptedException {
+        System.out.println("Requesting data...");
         userServer.put(QUERY_MARKET_ORDERS);
+
+        String responseStr = "";
+        Object[] response;
+
+        do {
+            response = serverUser.get(new FormalField(String.class));
+            responseStr = response[0].toString();
+
+            if (responseStr.equals(MORE_DATA)) {
+                response = serverUser.get(
+                        new FormalField(Integer.class),
+                        new FormalField(Integer.class),
+                        new FormalField(String.class),
+                        new FormalField(String.class),
+                        new FormalField(Integer.class),
+                        new FormalField(Integer.class),
+                        new FormalField(String.class)
+                );
+
+                System.out.printf("Order no. %s of %s:\n%s - %s, quantity: %s, price: %s, by: %s\n",
+                        response[0], response[1], response[2], response[3], response[4], response[5], response[6]);
+            }
+        } while (responseStr.equals(MORE_DATA));
     }
 
     private void buyStock() throws InterruptedException {
@@ -181,22 +199,21 @@ public class ClientClass {
 
                 System.out.printf("Enter number of stocks to %s:\n", trade.toLowerCase());
                 String errorMsg = String.format("You can't %s more than you own!", trade.toLowerCase());
-                int amount = checkInvalidResponse(1, 10, scanner.nextInt(), errorMsg);
+                int amount = validateResponse(1, 10, scanner.nextInt(), errorMsg);
 
                 int minAmountReq = 1;
                 if (amount > 1) {
                     System.out.printf("Enter minimum number of stocks to %s:\n", trade.toLowerCase());
-                    minAmountReq = checkInvalidResponse(1, 10, scanner.nextInt(), errorMsg);
+                    minAmountReq = validateResponse(1, 10, scanner.nextInt(), errorMsg);
                 }
 
-                double minPricePerStock = 0.0;
+                double minPricePerStock;
                 System.out.printf("Enter %s price per stock \n(Enter \"0\" for current market price) :", minOrMax);
                 String errorMsg2 = String.format("You can't %s more than you own!", trade.toLowerCase());
-                minPricePerStock = checkInvalidResponse(0.0, 10.0, scanner.nextDouble(), errorMsg2);
+                minPricePerStock = validateResponse(0.0, 10.0, scanner.nextDouble(), errorMsg2);
 
-
-                String price = minPricePerStock == 0.0 ? "market price" : Double.toString(minPricePerStock);
-                System.out.printf("Are you sure you want to %s %s for %s each? \n", amount, stockName, price);
+                String priceStr = minPricePerStock == 0.0 ? "market price" : Double.toString(minPricePerStock);
+                System.out.printf("Are you sure you want to %s %s for %s each? \n", amount, stockName, priceStr);
                 System.out.println("1 - Yes\n0 - No");
                 if (checkInputForExitToAbort().equalsIgnoreCase("1")) {
                     userServer.put(trade);
@@ -263,7 +280,7 @@ public class ClientClass {
         return msg;
     }
 
-    public <T> T checkInvalidResponse(T lowerLimit, T upperLimit, T userInput, String errorMsg) {
+    public <T> T validateResponse(T lowerLimit, T upperLimit, T userInput, String errorMsg) {
         String typen = "";
         if (userInput instanceof String) {
             typen = "string";
