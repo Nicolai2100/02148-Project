@@ -378,7 +378,7 @@ public class ClientClass {
                 }
             }
 
-            System.out.println("Test BeastBank.client finished");
+            System.out.println("Test client finished");
             logOut();
             System.exit(2);
 

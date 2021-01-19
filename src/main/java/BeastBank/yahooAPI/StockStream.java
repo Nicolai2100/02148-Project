@@ -14,7 +14,7 @@ public class StockStream {
     // Spaces as analyser threads, they will then pull from this repository.
     private static SpaceRepository toBeEvaluatedSpaceRepository;
     // This space contains the final result
-    private static RandomSpace finishedEvaluatedStockSpace;
+    private RandomSpace evaluatedStockSpace;
     // this repository has to kinds of tuples. A tuple with only a string, which is the name to be analyzed, and
     // at max 1000 tuples with that name, this isn't very lean but this was needed because i cant nest repositorys. I needed to be able to
     // put a repository in a repository but that wasn't possible.
@@ -23,10 +23,10 @@ public class StockStream {
     // a repository without knowing the name of the space.
     private static SequentialSpace nameSpace;
 
-    public static void main(String[] args) {
+    public void startStream() {
         //Creating a File object for directory
         toBeEvaluatedSpaceRepository = new SpaceRepository();
-        finishedEvaluatedStockSpace = new RandomSpace();
+        evaluatedStockSpace = new RandomSpace();
         namesForAnalyzersRepository = new SpaceRepository();
         nameSpace = new SequentialSpace();
 
@@ -40,7 +40,6 @@ public class StockStream {
             try {
                 StockStream stockStream = new StockStream();
                 stockStream.generateFileRepository(numofservices);
-                System.out.println("All files added, ending thread");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -54,7 +53,6 @@ public class StockStream {
                     e.printStackTrace();
                 }
             }
-            System.out.println("Analyzer 0 was killed");
         });
         Thread analyseStockTrend2 = new Thread(() -> {
             StockStream stockStream = new StockStream();
@@ -65,7 +63,6 @@ public class StockStream {
                     e.printStackTrace();
                 }
             }
-            System.out.println("Analyzer 1 was killed");
         });
         Thread analyseStockTrend3 = new Thread(() -> {
             StockStream stockStream = new StockStream();
@@ -76,14 +73,13 @@ public class StockStream {
                     e.printStackTrace();
                 }
             }
-            System.out.println("Analyzer 2 was killed");
         });
         Thread recommendstocks = new Thread(() -> {
             StockStream stockStream = new StockStream();
             while (true) {
                     if (!stockStream.calculaterecommandations(3)) break;
             }
-            System.out.println("The evaluator was killed");
+            System.out.println("Stockstream finished evaluating");
         });
         generateFiles.start();
         analyseStockTrend1.start();
@@ -129,7 +125,6 @@ public class StockStream {
                     e.printStackTrace();
                 }
             }
-            System.out.println("Stock added: " + file.getName());
             toBeEvaluatedSpaceRepository.add(file.getName(), new SequentialSpace());
             try {
                 nameSpace.put(file.getName());
@@ -186,7 +181,6 @@ public class StockStream {
             for (Object[] object : objects) {
                 // Analysis of the stock is done here.
             }
-            System.out.println(threadIdentifier + " finished analyzing stock: " + stockname);
             recommend = Math.random() > 0.5;
             try {
                 getToBeEvaluatedSpaceRepository().get(stockname).put(recommend);
@@ -233,8 +227,7 @@ public class StockStream {
                         }
                     }
                     boolean recommended = i / numOfServices > 0.5;
-                    System.out.println("The stock: " + stockrecommandation + " was evaluated as " + recommended);
-                    finishedEvaluatedStockSpace.put(stockrecommandation, recommended);
+                    evaluatedStockSpace.put(stockrecommandation, recommended);
                     toBeEvaluatedSpaceRepository.remove(stockrecommandation);
                 }
             }
@@ -250,6 +243,31 @@ public class StockStream {
 
     public static SpaceRepository getToBeEvaluatedSpaceRepository() {
         return toBeEvaluatedSpaceRepository;
+    }
+
+    /**
+     * Call this method if you want a random recommandation for a client.
+     * @return
+     */
+    public String getRandomStockRecommandation() {
+        Object[] response = evaluatedStockSpace.queryp(new FormalField(String.class), new ActualField(true));
+        if (response == null)
+            return "NA";
+        else
+            return (String)  response[0];
+    }
+
+    /**
+     * This checks if we would like to recommend a stock or not, if we don't know the stock we wont recommend it. 
+     * @param stock
+     * @return
+     */
+    public boolean isStockRecommended(String stock) {
+        Object[] response = evaluatedStockSpace.queryp(new ActualField(stock), new FormalField(boolean.class));
+        if (response != null)
+            return (boolean) response[1];
+        else
+            return false;
     }
 }
 

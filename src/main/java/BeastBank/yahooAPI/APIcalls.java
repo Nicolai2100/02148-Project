@@ -130,12 +130,10 @@ public class APIcalls {
      * @return
      */
     public StockModel findLatestStockInfo(SequentialSpace sequentialSpace) {
-        try {
-            Object[] stockModel = sequentialSpace.query(new FormalField(StockModel.class));
+            Object[] stockModel = sequentialSpace.queryp(new FormalField(StockModel.class));
+            if (stockModel != null)
             return (StockModel) stockModel[0];
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
         Date date = new Date();
         return new StockModel(date, 0, 0, 0, 0, 0, 0);
     }
