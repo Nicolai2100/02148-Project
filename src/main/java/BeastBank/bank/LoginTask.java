@@ -1,9 +1,6 @@
 package BeastBank.bank;
 
-import org.jspace.FormalField;
-import org.jspace.QueueSpace;
-import org.jspace.RemoteSpace;
-import org.jspace.SequentialSpace;
+import org.jspace.*;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.Callable;
@@ -36,7 +33,6 @@ public class LoginTask implements Callable<String> {
 
     @Override
     public String call() {
-
         System.out.println("Started login thread...");
         login(username);
         return "Finished login procedure for " + username;
@@ -46,7 +42,7 @@ public class LoginTask implements Callable<String> {
         try {
             System.out.println("Logging " + username + " in...");
             serverIdProvider.put(username, password);
-            Object[] response = idProviderServer.get(new FormalField(String.class));
+            Object[] response = idProviderServer.get(new ActualField(username), new FormalField(String.class));
 
             String userToServerName = username + "server";
             String serverToUserName = "server" + username;
@@ -64,7 +60,7 @@ public class LoginTask implements Callable<String> {
                 System.out.println(e.getMessage());
             }
 
-            if (response[0].equals(OK)) {
+            if (response[1].equals(OK)) {
                 System.out.println(username + " logged in at " + LocalDateTime.now());
                 executor.submit(new UserServerCommunicationTask(userServer, serverUser, username));
             } else {
