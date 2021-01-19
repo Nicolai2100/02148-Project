@@ -30,7 +30,7 @@ public class ClientClass {
     private String HOSTNAME = "127.0.0.1";
 
     /** Toggle remoteServer true/false for connecting to localhost or remote server...*/
-    private final boolean remoteServer = false;
+    private final boolean remoteServer = true;
 
     public void startClient(String[] args) {
         if (remoteServer) {

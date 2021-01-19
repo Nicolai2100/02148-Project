@@ -1,5 +1,6 @@
 package BeastBank.broker;
 
+import BeastBank.yahooAPI.StockStream;
 import org.jspace.*;
 
 import java.io.IOException;
@@ -40,13 +41,15 @@ public class Broker {
     static final TimeUnit timeoutUnit = TimeUnit.HOURS; //TODO: Just for now, for testing...
     boolean serviceRunning;
 
+    public static StockStream stockStream;
+
     public Broker() {
         tradeRepo.add(ORDERS, orders);
         tradeRepo.add(ORDER_PACKAGES, newOrderPackages);
         tradeRepo.add(TRANSACTIONS, transactions);
         tradeRepo.add(STOCKS, stocks); //TODO: Skal nok fjernes igen, pt. kun for testing.
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
-
+        this.stockStream = new StockStream();
         boolean connectedToBankServer = false;
 
         while (!connectedToBankServer) {
@@ -68,6 +71,7 @@ public class Broker {
 
     public static void main(String[] args) throws InterruptedException {
         Broker broker = new Broker();
+        stockStream.startStream();
         broker.startService();
     }
 
@@ -129,6 +133,7 @@ public class Broker {
             List<ProcessOrderTask> tasks = new ArrayList<>();
             List<List<Order>> finalOrders = new ArrayList<>();
             List<Transaction> finalTransactions = new ArrayList<>();
+
 
             try {
                 //First we give each order of the package a unique ID
