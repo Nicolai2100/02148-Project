@@ -23,7 +23,6 @@ public class IdentityProvider {
                 // connect to tuple space
                 try {
                     System.out.println(IdentityProvider.class.getName() + ": Trying to establish connection to remote spaces...");
-
                     String serverService = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, SERVER_ID_PROVIDER, CONNECTION_TYPE);
                     String serviceServer = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, ID_PROVIDER_SERVER, CONNECTION_TYPE);
                     serverIdProvider = new RemoteSpace(serverService);

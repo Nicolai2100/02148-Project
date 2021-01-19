@@ -25,8 +25,16 @@ public class ClientClass {
     boolean runningWithArgs = false;
     ArrayList<String> argList = new ArrayList<>();
     static Scanner scanner = new Scanner(System.in);
+    private String HOSTNAME = "127.0.0.1";
+
+    private boolean remoteServer = true;
 
     public void startClient(String[] args) {
+
+        if (remoteServer) {
+            HOSTNAME = REMOTE_SERVER_HOSTNAME;
+        }
+
         //For test...
         if (args.length > 1) {
             runningWithArgs = true;
@@ -43,15 +51,24 @@ public class ClientClass {
         }
 
         //Connect to tuple space
-        try {
-            String serverService = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, SERVER_CLIENT, CONNECTION_TYPE);
-            String serviceServer = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, CLIENT_SERVER, CONNECTION_TYPE);
-            serverClient = new RemoteSpace(serverService);
-            clientServer = new RemoteSpace(serviceServer);
+        boolean notConnectedServer = true;
+        while (notConnectedServer)
+            try {
+                System.out.println("trying to connect to " + HOSTNAME + SERVER_PORT);
+                String serverService = String.format("tcp://%s:%d/%s?%s", HOSTNAME, SERVER_PORT, SERVER_CLIENT, CONNECTION_TYPE);
+                String serviceServer = String.format("tcp://%s:%d/%s?%s", HOSTNAME, SERVER_PORT, CLIENT_SERVER, CONNECTION_TYPE);
+                serverClient = new RemoteSpace(serverService);
+                clientServer = new RemoteSpace(serviceServer);
 
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
+                System.out.println("Connecting to " + serverClient.getUri());
+                System.out.println("Connecting to " + clientServer.getUri());
+                notConnectedServer = false;
+
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+            }
+
         System.out.println("Welcome to the Beast Bank!");
 
         do {
@@ -295,8 +312,8 @@ public class ClientClass {
 
     private void connectToPrivateChannel(String username) {
         try {
-            String serverUserStr = String.format("tcp://%s:%d/server%s?%s", SERVER_HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
-            String userServerStr = String.format("tcp://%s:%d/%sserver?%s", SERVER_HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
+            String serverUserStr = String.format("tcp://%s:%d/server%s?%s", HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
+            String userServerStr = String.format("tcp://%s:%d/%sserver?%s", HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
             userServer = new RemoteSpace(userServerStr);
             serverUser = new RemoteSpace(serverUserStr);
         } catch (Exception e) {
