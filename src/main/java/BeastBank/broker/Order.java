@@ -20,8 +20,8 @@ public class Order implements Serializable {
     //If the order is a BUY order, it should not buy for over this limit.
     private int limit;
 
-    //If clientMatch is ANY, sell/buy to/from any other client.
-    //If clientMatch is something else, only sell/buy to/from that client.
+    //If clientMatch is ANY, sell/buy to/from any other BeastBank.client.
+    //If clientMatch is something else, only sell/buy to/from that BeastBank.client.
     private String clientMatch;
     public static final String anyFlag = "ANY";
 

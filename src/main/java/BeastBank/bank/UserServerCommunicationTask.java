@@ -203,7 +203,7 @@ public class UserServerCommunicationTask implements Callable<String> {
                     ArrayList<Stock> stocks = new ArrayList<>();
                     stocks.add((Stock) dataResponse[1]);
 
-                    //Sending data to client
+                    //Sending data to BeastBank.client
                     System.out.println("USCom: Sending data");
                     serverUser.put(MORE_DATA);
                     serverUser.put((Stock) dataResponse[1]);

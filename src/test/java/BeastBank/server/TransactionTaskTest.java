@@ -1,4 +1,4 @@
-package server;
+package BeastBank.server;
 
 import BeastBank.bank.TransactionTask;
 import BeastBank.broker.Transaction;

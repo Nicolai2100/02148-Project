@@ -50,14 +50,14 @@ public class Broker {
         boolean connectedToBankServer = false;
 
         while (!connectedToBankServer) {
-            // connect to BeastProject.bank server
+            // connect to BeastProject.bank BeastBank.server
             try {
                 String serverService = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, SERVER_BROKER, CONNECTION_TYPE);
                 String serviceServer = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, BROKER_SERVER, CONNECTION_TYPE);
                 serverBroker = new RemoteSpace(serverService);
                 brokerServer = new RemoteSpace(serviceServer);
                 connectedToBankServer = true;
-                System.out.println("Broker: Connection to BeastProject.bank server up...");
+                System.out.println("Broker: Connection to BeastProject.bank BeastBank.server up...");
 
             } catch (IOException e) {
                 System.out.println(e.getMessage());
@@ -277,17 +277,17 @@ public class Broker {
                     if (order.getLimit() != -1 && !order.isOverOrUnderLimit(getCurrentPrice(order.getStock())))
                         break;
 
-                    //If the sender of both orders are the same client, continue.
+                    //If the sender of both orders are the same BeastBank.client, continue.
                     if (match.getOrderedBy().equals(order.getOrderedBy()))
                         continue;
 
-                    //If this order wants to sell/buy to/from a specific client, and the match doesn't match that client, continue.
+                    //If this order wants to sell/buy to/from a specific BeastBank.client, and the match doesn't match that BeastBank.client, continue.
                     if (!order.getClientMatch().equals(Order.anyFlag)
                             && !order.getClientMatch().equals(match.getOrderedBy())) {
                         continue;
                     }
 
-                    //If the match wants to sell/buy to/from a specific client, and this doesn't match that client, continue.
+                    //If the match wants to sell/buy to/from a specific BeastBank.client, and this doesn't match that BeastBank.client, continue.
                     if (!match.getClientMatch().equals(Order.anyFlag)
                             && !match.getClientMatch().equals(order.getOrderedBy())) {
                         continue;

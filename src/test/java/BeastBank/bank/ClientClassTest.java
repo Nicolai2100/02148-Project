@@ -1,18 +1,18 @@
-package client;
+package BeastBank.bank;
 
-import BeastBank.bank.ClientClass;
 import BeastBank.broker.Broker;
-import org.junit.jupiter.api.Test;
 import BeastBank.service.AccountServiceMain;
 import BeastBank.service.IdentityProvider;
-import BeastBank.bank.Program;
+import org.junit.Before;
+import org.junit.Test;
 
 import static BeastBank.shared.StockNames.TESLA;
+import static org.junit.Assert.*;
 
-class ClientClassTest {
+public class ClientClassTest {
 
-    void setUp() {
-
+    //@Before
+    public void setUp() {
         Runnable r4 = () -> {
             try {
                 Broker.main(null);
@@ -37,64 +37,61 @@ class ClientClassTest {
     }
 
     @Test
-    void linRealUser() {
-//        public <T> T checkInvalidResponse(T type, T lowerLimit, T upperLimit, T userInput, String errorMsg) {
-
+    public void someMethodTest() {
         ClientClass c = new ClientClass();
-        c.checkInvalidResponse(-2.0, 1.0, -1.0, "error" );
+        c.checkInvalidResponse(-2.0, 1.0, -1.0, "error");
     }
 
     @Test
-    void loginRealUser() {
+    public void loginRealUser() {
         String[] args = {"Alice", "password"};
         new ClientClass().startClient(args);
     }
 
     @Test
-    void queryMarket() {
+    public void queryMarket() {
         String[] args = {"Alice", "password", "2"};
         new ClientClass().startClient(args);
     }
 
     @Test
-    void sellStock() {
+    public void sellStock() {
         String[] args = {"Alice", "password", "4", TESLA, "1", "0.0", "1"};
         new ClientClass().startClient(args);
     }
 
     @Test
-    void buyStock() {
+    public void buyStock() {
         String[] args = {"Bob", "password", "3", TESLA, "1", "0.0", "1"};
         new ClientClass().startClient(args);
     }
 
     @Test
-    void buyStockAndQuery() {
+    public void buyStockAndQuery() {
         String[] args = {"Bob", "password", "1", "3", TESLA, "1", "0.0", "1", "1"};
         new ClientClass().startClient(args);
     }
 
     @Test
-    void sellAndBuyStock() throws InterruptedException {
+    public void sellAndBuyStock() throws InterruptedException {
         String[] args = {"Alice", "password", "4", TESLA, "1", "22.2", "1", "3", TESLA, "1", "22.2", "1"};
         new ClientClass().startClient(args);
     }
 
     @Test
-    void queryStocks() {
+    public void queryStocks() {
         String[] args = {"Alice", "password", "1"};
         new ClientClass().startClient(args);
     }
 
-
     @Test
-    void loginRealUserWrongPassword() {
+    public void loginRealUserWrongPassword() {
         String[] args = {"Alice", "passwor"};
         new ClientClass().startClient(args);
     }
 
     @Test
-    void loginWrongUsernameAndPassword() {
+    public void loginWrongUsernameAndPassword() {
         String[] args = {"Ali", "passwor"};
         new ClientClass().startClient(args);
     }

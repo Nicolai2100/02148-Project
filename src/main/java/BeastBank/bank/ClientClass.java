@@ -29,7 +29,7 @@ public class ClientClass {
     private final Scanner scanner = new Scanner(System.in);
     private String HOSTNAME = "127.0.0.1";
 
-    /** Toggle remoteServer true/false for connecting to localhost or remote server...*/
+    /** Toggle remoteServer true/false for connecting to localhost or remote BeastBank.server...*/
     private final boolean remoteServer = false;
 
     public void startClient(String[] args) {
@@ -317,7 +317,6 @@ public class ClientClass {
             Thread.sleep(1000);
 
             Object[] serverResponse = serverUser.get(new FormalField(String.class));
-            System.out.println("er her");
 
             String responseStr = KO;
             try {
@@ -345,6 +344,7 @@ public class ClientClass {
             String userServerStr = String.format("tcp://%s:%s/%sserver?%s", HOSTNAME, SERVER_PORT, username, CONNECTION_TYPE);
             userServer = new RemoteSpace(userServerStr);
             serverUser = new RemoteSpace(serverUserStr);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -378,7 +378,7 @@ public class ClientClass {
                 }
             }
 
-            System.out.println("Test client finished");
+            System.out.println("Test BeastBank.client finished");
             logOut();
             System.exit(2);
 

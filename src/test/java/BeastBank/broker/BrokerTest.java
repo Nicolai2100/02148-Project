@@ -1,13 +1,12 @@
 package BeastBank.broker;
 
+import BeastBank.bank.ClientInputException;
 import org.jspace.ActualField;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 import BeastBank.shared.Channels;
 import BeastBank.shared.Requests;
+import org.junit.Test;
 
 
 import java.io.IOException;
@@ -15,7 +14,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import BeastBank.broker.Broker;
+import BeastBank.service.AccountServiceMain;
+import BeastBank.service.IdentityProvider;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 class BrokerTest {
 
@@ -28,7 +34,7 @@ class BrokerTest {
     ExecutorService executor;
     int timeout = 4;
     TimeUnit timoutUnit = TimeUnit.SECONDS;
-    
+
     static final String alice = "ALICE";
     static final String bob = "BOB";
     static final String charlie = "CHARLIE";
@@ -41,8 +47,8 @@ class BrokerTest {
         return res;
     };
 
-    @BeforeEach
-    void setup() throws InterruptedException, IOException {
+    @Before
+    public void setup() throws InterruptedException, IOException {
         Broker.main(new String[]{});
         orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/" + Requests.ORDERS + "?keep");
         orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/" + Requests.ORDER_PACKAGES + "?keep");
@@ -51,8 +57,8 @@ class BrokerTest {
         executor = Executors.newFixedThreadPool(1);
     }
 
-    @AfterEach
-    void finish() throws InterruptedException {
+    @After
+    public void finish() throws InterruptedException {
         //orders.get(new ActualField("DONE!"));
     }
 
@@ -68,7 +74,7 @@ class BrokerTest {
     }
 
     @Test
-    void test1() throws Exception {
+    public void test1() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
         alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
@@ -93,7 +99,7 @@ class BrokerTest {
     }
 
     @Test
-    void test2() throws Exception {
+    public void test2() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
         alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
@@ -120,7 +126,7 @@ class BrokerTest {
     }
 
     @Test
-    void test3() throws Exception {
+    public void test3() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
         alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
@@ -144,28 +150,30 @@ class BrokerTest {
         printRes(res);
         printRes(res2);
 
-        assertThrows(TimeoutException.class, () -> {
+        throw new ClientInputException("UDKOMMENTERET!");
+
+        /* assertThrows(TimeoutException.class, () -> {
             ArrayList res3 = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[0];
-        });
+        });*/
     }
 
     @Test
-    void test4() throws Exception {
-         OrderPackage alicepkg = new OrderPackage();
-         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
+    public void test4() throws Exception {
+        OrderPackage alicepkg = new OrderPackage();
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
 
-         OrderPackage bobpkg = new OrderPackage();
-         bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).clientMatch(alice).build());
+        OrderPackage bobpkg = new OrderPackage();
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).clientMatch(alice).build());
 
-         orderPkgs.put(alicepkg);
-         orderPkgs.put(bobpkg);
+        orderPkgs.put(alicepkg);
+        orderPkgs.put(bobpkg);
 
-         ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
-         printRes(res);
+        ArrayList res = (ArrayList) executor.submit(getDoneTask).get()[0];
+        printRes(res);
     }
 
     @Test
-    void test5() throws Exception {
+    public void test5() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
 
@@ -175,13 +183,15 @@ class BrokerTest {
         orderPkgs.put(alicepkg);
         orderPkgs.put(bobpkg);
 
-        assertThrows(TimeoutException.class, () -> {
+        throw new ClientInputException("UDKOMMENTERET!");
+
+      /*  assertThrows(TimeoutException.class, () -> {
             ArrayList res = (ArrayList) executor.submit(getDoneTask).get(timeout, timoutUnit)[0];
-        });
+        });*/
     }
 
     @Test
-    void test6() throws Exception {
+    public void test6() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
 
@@ -196,7 +206,7 @@ class BrokerTest {
     }
 
     @Test
-    void test7() throws Exception {
+    public void test7() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).limit(150).build());
 
@@ -206,13 +216,16 @@ class BrokerTest {
         orderPkgs.put(alicepkg);
         orderPkgs.put(bobpkg);
 
-        assertThrows(TimeoutException.class, () -> {
+        throw new ClientInputException("UDKOMMENTERET!");
+
+       /* assertThrows(TimeoutException.class, () -> {
             ArrayList res1 = (ArrayList) executor.submit(getDoneTask).get(4, TimeUnit.SECONDS)[0];
             ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get(4, TimeUnit.SECONDS)[0];
-        });
+        });*/
     }
+
     @Test
-    void test8() throws Exception {
+    public void test8() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
         alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(tesla).limit(150).build());
 

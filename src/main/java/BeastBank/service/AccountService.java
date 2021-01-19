@@ -151,7 +151,7 @@ public class AccountService {
     public void queryAccountRequest(User user) throws Exception {
         System.out.println(AccountService.class.getName() + ": Retrieving stocks for user: " + user.getName() + "...");
         ArrayList<Stock> stocks = returnListOfUserStocks(user);
-        System.out.println(AccountService.class.getName() + ": Sending stocks to server...");
+        System.out.println(AccountService.class.getName() + ": Sending stocks to BeastBank.server...");
 
         accountServiceServer.put(user.getName(), user.getAccount().getBalance());
 

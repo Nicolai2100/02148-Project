@@ -4,5 +4,5 @@ det space oprettes først når der laves en market ordre, og så får det så lo
 så en lock, så vi kan styre hvor vidt denne aktie handels eller ej. Det undgår at tråde måske sælger den samme aktie,
 og det bidrager til concurrency problemerne med hvis der f.eks skal handles flere aktier i et atomicitet princip.
 
-Er det forstået rigtigt at en client ikke kan query et bestemt Space i en et remotespace, men kun får det seneste
+Er det forstået rigtigt at en BeastBank.client ikke kan query et bestemt Space i en et remotespace, men kun får det seneste
 space, fra et remote repository?

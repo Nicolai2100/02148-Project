@@ -1,11 +1,12 @@
-package server;
+package BeastBank.server;
 
 import BeastBank.bank.Program;
 import BeastBank.bank.UserServerCommunicationTask;
 import BeastBank.broker.Broker;
 import org.jspace.SequentialSpace;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
+
 import BeastBank.service.AccountServiceMain;
 import BeastBank.service.IdentityProvider;
 
@@ -14,8 +15,8 @@ import static BeastBank.shared.Requests.*;
 public class UserServerCommunicationTaskTest {
 
 
-    @BeforeEach
-    void setUp() throws InterruptedException {
+    @Before
+    public  void setUp() throws InterruptedException {
         Runnable r4 = () -> {
             try {
                 Broker.main(null);

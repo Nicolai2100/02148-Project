@@ -12,7 +12,7 @@ import static BeastBank.shared.Requests.*;
 
 /**
  * The main responsibility of the Server-class is to provide a SpaceRepository
- * and channels which connect the client to the services
+ * and channels which connect the BeastBank.client to the services
  **/
 public class Server {
     static SpaceRepository repository = new SpaceRepository();
@@ -60,7 +60,7 @@ public class Server {
         repository.addGate(uri);
 
         // Keep reading chat messages and printing them
-        System.out.println("Server: Started server on: " + uri);
+        System.out.println("Server: Started BeastBank.server on: " + uri);
 
         boolean connectedToIdProvider = false;
         while (!connectedToIdProvider) {
@@ -86,7 +86,7 @@ public class Server {
         //Start TransactionTask
         executor.submit(new TransactionTask());
 
-        //Main loop where client requests are resolved
+        //Main loop where BeastBank.client requests are resolved
         while (true) {
             Object[] requestT = clientServer.get(
                     new FormalField(String.class),

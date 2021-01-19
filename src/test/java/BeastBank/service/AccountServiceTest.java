@@ -3,16 +3,16 @@ package BeastBank.service;
 import BeastBank.bank.Program;
 import BeastBank.dao.FakeUserDataAccessService;
 import BeastBank.model.User;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 
 import static org.junit.Assert.*;
 import static BeastBank.shared.StockNames.TESLA;
 
 public class AccountServiceTest {
 
-    @BeforeEach
-    void setUp() throws InterruptedException {
+    @Before
+    public void setUp() throws InterruptedException {
     /*    Runnable r4 = () -> {
             try {
                 Broker.main(null);
@@ -48,9 +48,6 @@ public class AccountServiceTest {
 
         assertEquals(alice.getAccount().getStocks().get(TESLA).getAmount(), 1);
         assertEquals(bob.getAccount().getStocks().get(TESLA).getAmount(), 2);
-
-
-
     }
 
     @Test
@@ -64,11 +61,9 @@ public class AccountServiceTest {
         //He have 1 to begin with
         assertEquals(bob.getAccount().getStocks().get(TESLA).getAmount(), 1);
 
-        accountService.makeTransaction(TESLA, - 1, alice, bob, 22.2);
+        accountService.makeTransaction(TESLA, -1, alice, bob, 22.2);
 
         assertEquals(alice.getAccount().getStocks().get(TESLA).getAmount(), 1);
         assertEquals(bob.getAccount().getStocks().get(TESLA).getAmount(), 2);
     }
-
-
 }
