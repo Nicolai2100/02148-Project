@@ -42,6 +42,7 @@ public class Broker {
     boolean serviceRunning;
 
     public static StockStream stockStream;
+    private static RandomSpace stockPrices;
 
     public Broker() {
         tradeRepo.add(ORDERS, orders);
@@ -439,6 +440,22 @@ public class Broker {
 
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    public double findLatestStockPrice(String stock) throws InterruptedException {
+        Object[] response = stockPrices.getp(new ActualField(stock), new FormalField(Double.class));
+        if (response == null) {
+            stockPrices.put(stock, 10);
+            return 10;
+        } else {
+            if (Math.random() > 0.5) {
+                stockPrices.put(response[0], (double) response[1] + 0.01);
+                return ((double) response[1] + 0.01);
+            } else {
+                stockPrices.put(response[0], (double) response[1] - 0.01);
+                return ((double) response[1] - 0.01);
+            }
         }
     }
 }
