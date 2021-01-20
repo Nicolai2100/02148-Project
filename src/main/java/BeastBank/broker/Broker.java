@@ -66,7 +66,6 @@ public class Broker {
                 System.out.println(e.getMessage());
             }
         }
-
     }
 
     public static void main(String[] args) throws InterruptedException {
