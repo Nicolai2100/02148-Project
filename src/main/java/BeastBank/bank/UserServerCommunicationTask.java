@@ -13,20 +13,21 @@ import static BeastBank.shared.Channels.*;
 import static BeastBank.shared.Requests.*;
 
 public class UserServerCommunicationTask implements Callable<String> {
-    private final SequentialSpace userServer;
-    private final SequentialSpace serverUser;
+    private final Space userServer;
+    private final Space serverUser;
     private final String username;
 
     private RemoteSpace orderPackages;
     private RemoteSpace orders;
+    private String serverStr = UserServerCommunicationTask.class.getName() + ": ";
 
-    public UserServerCommunicationTask(SequentialSpace userServer,
-                                       SequentialSpace serverUser,
+    public UserServerCommunicationTask(Space userServer,
+                                       Space serverUser,
                                        String username) {
         this.userServer = userServer;
         this.serverUser = serverUser;
         this.username = username;
-        System.out.println("USCom: Starting private channel for: " + username);
+        System.out.println(UserServerCommunicationTask.class.getName() + ": Starting private channel for: " + username);
 
         try {
             String brokerSpaceStr = String.format("tcp://%s:%d/%s?%s", BROKER_HOSTNAME, BROKER_PORT, ORDER_PACKAGES, CONNECTION_TYPE);
@@ -34,13 +35,6 @@ public class UserServerCommunicationTask implements Callable<String> {
 
             String brokerSpaceOrdersStr = String.format("tcp://%s:%d/%s?%s", BROKER_HOSTNAME, BROKER_PORT, ORDERS, CONNECTION_TYPE);
             orders = new RemoteSpace(brokerSpaceOrdersStr);
-
-
-             /*
-        tradeRepo.add(ORDERS, orders);
-        tradeRepo.add(ORDER_PACKAGES, newOrderPackages);
-        tradeRepo.add(TRANSACTIONS, transactions);*/
-
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -63,11 +57,11 @@ public class UserServerCommunicationTask implements Callable<String> {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return "USCom: Handler for User Server comm stopped!";
+        return UserServerCommunicationTask.class.getName() + ": Handler for User Server comm stopped!";
     }
 
     public void requestResolver(String request) {
-        System.out.println("USCom: User requested: " + request);
+        System.out.println(UserServerCommunicationTask.class.getName() + ": User requested: " + request);
         try {
             switch (request) {
                 case QUERY_STOCKS:
@@ -90,7 +84,7 @@ public class UserServerCommunicationTask implements Callable<String> {
                     break;
 
                 default:
-                    System.out.println("USCom: ERROR IN SWITCH STMT");
+                    System.out.println(UserServerCommunicationTask.class.getName() + ": USCom: ERROR IN SWITCH STMT");
             }
 
         } catch (Exception e) {
@@ -110,28 +104,33 @@ public class UserServerCommunicationTask implements Callable<String> {
                 new FormalField(String.class));
 
         int numOfOrders = response.size();
-        for (var order : response) {
-            int numOfOrder = response.indexOf(order) + 1;
-            System.out.println(order[1]);
-            System.out.println(order[2]);
-            System.out.println(order[3]);
-            System.out.println(order[4]);
-            System.out.println(order[5]);
-            System.out.println(order[6]);
-            System.out.println(order[7]);
 
-            //Sending data to BeastBank.client
-            System.out.println("USCom: Sending data");
-            serverUser.put(MORE_DATA);
-            serverUser.put(numOfOrder, numOfOrders, order[2], order[3], order[4], order[5], order[1]);
+        if (numOfOrders < 1) {
+            serverUser.put(NO_MORE_DATA);
+        } else {
+            for (var order : response) {
+                int numOfOrder = response.indexOf(order) + 1;
+                System.out.println(order[1]);
+                System.out.println(order[2]);
+                System.out.println(order[3]);
+                System.out.println(order[4]);
+                System.out.println(order[5]);
+                System.out.println(order[6]);
+                System.out.println(order[7]);
+
+                //Sending data to BeastBank.client
+                System.out.println(UserServerCommunicationTask.class.getName() + ": USCom: Sending data");
+
+                serverUser.put(MORE_DATA);
+                serverUser.put(numOfOrder, numOfOrders, order[2], order[3], order[4], order[5], order[1]);
+            }
+            serverUser.put(NO_MORE_DATA);
         }
-
-        serverUser.put(NO_MORE_DATA);
     }
 
 
     private void sellStock() throws InterruptedException {
-        System.out.println("USCom: Processing order...");
+        System.out.println(UserServerCommunicationTask.class.getName() + ": Processing order...");
 
         var responseObj = userServer.get(
                 new FormalField(String.class),
@@ -155,7 +154,7 @@ public class UserServerCommunicationTask implements Callable<String> {
                     .limit((int) minPricePerStock)
                     .build());
             orderPackages.put(op);
-            System.out.println("USCom: Order placed...");
+            System.out.println(UserServerCommunicationTask.class.getName() + ": Order placed...");
             serverUser.put("Order placed");
 
         } catch (Exception e) {
@@ -190,7 +189,7 @@ public class UserServerCommunicationTask implements Callable<String> {
 
             orderPackages.put(op);
 
-            System.out.println("USCom: Order placed...");
+            System.out.println(serverStr + "Order placed...");
             serverUser.put("Order placed");
         } catch (Exception e) {
             e.printStackTrace();
@@ -198,13 +197,13 @@ public class UserServerCommunicationTask implements Callable<String> {
     }
 
     private void logOut() {
-        System.out.printf("USCom: Logging %s out...\n", username);
+        System.out.printf(UserServerCommunicationTask.class.getName() + ": Logging %s out...\n", username);
         Server.logout(username);
     }
 
     public void queryStocks() throws InterruptedException {
         //Forward request to account BeastProject.service
-        System.out.println("USCom: Sending request...");
+        System.out.println(serverStr + "Sending request...");
         Server.serverAccountService.put(username, QUERY_STOCKS);
 
         Object[] accountServiceResponse = Server.accountServiceServer.get(
@@ -213,7 +212,7 @@ public class UserServerCommunicationTask implements Callable<String> {
         String responseStr = accountServiceResponse[1].toString();
 
         if (responseStr.equals(OK)) {
-            System.out.println("USCom: Fetching data...");
+            System.out.println(serverStr + "Fetching data...");
             accountServiceResponse = Server.accountServiceServer.get(
                     new ActualField(username),
                     new FormalField(Double.class));
@@ -237,7 +236,7 @@ public class UserServerCommunicationTask implements Callable<String> {
                     stocks.add((Stock) dataResponse[1]);
 
                     //Sending data to BeastBank.client
-                    System.out.println("USCom: Sending data");
+                    System.out.println(serverStr + "Sending data");
                     serverUser.put(MORE_DATA);
                     serverUser.put((Stock) dataResponse[1]);
                 } else if (responseStr.equals(NO_MORE_DATA)) {
@@ -247,7 +246,7 @@ public class UserServerCommunicationTask implements Callable<String> {
             } while (responseStr.equals(MORE_DATA));
 
         } else if (responseStr.equals(KO)) {
-            System.out.println("USCom: No such user in the system");
+            System.out.println(serverStr + "No such user in the system");
         }
     }
 }

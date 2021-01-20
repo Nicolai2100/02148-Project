@@ -50,6 +50,13 @@ public class ClientClassTest {
     }
 
     @Test
+    public void queryStocks() {
+        String[] args = {"Alice", "password", "1"};
+        //new ClientClass().startClient(args);
+        Client.main(args);
+    }
+
+    @Test
     public void sellAndQueryStock() {
         String[] args = {"Alice", "password", "4", TESLA, "1", "0.0", "1", "4", APPLE, "1", "0.0", "1", "2"};
         //new ClientClass().startClient(args);
@@ -98,12 +105,6 @@ public class ClientClassTest {
         Client.main(args);
     }
 
-    @Test
-    public void queryStocks() {
-        String[] args = {"Alice", "password", "1"};
-        //new ClientClass().startClient(args);
-        Client.main(args);
-    }
 
     @Test
     public void loginRealUserWrongPassword() {

@@ -156,14 +156,17 @@ public class ClientClass {
         System.out.println("Requesting data...");
         userServer.put(QUERY_MARKET_ORDERS);
 
-        String responseStr = "";
+        String responseStr;
         Object[] response;
 
         do {
             response = serverUser.get(new FormalField(String.class));
             responseStr = response[0].toString();
 
-            if (responseStr.equals(MORE_DATA)) {
+            if (responseStr.equals(NO_MORE_DATA)) {
+                System.out.println("No orders at the moment...");
+            } else if (responseStr.equals(MORE_DATA)) {
+
                 response = serverUser.get(
                         new FormalField(Integer.class),
                         new FormalField(Integer.class),
@@ -257,8 +260,6 @@ public class ClientClass {
                 response = serverUser.get(new FormalField(Stock.class));
                 System.out.println(response[0].toString());
 
-            } else if (responseStr.equals(NO_MORE_DATA)) {
-                continue;
             }
         } while (responseStr.equals(MORE_DATA));
     }
