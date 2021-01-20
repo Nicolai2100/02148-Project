@@ -21,6 +21,8 @@ public class ClientClass {
     private RemoteSpace userServer = null;
     private RemoteSpace serverUser = null;
 
+    private RemoteSpace serverClientMsgs = null;
+
     private ArrayList<String> argList = new ArrayList<>();
     private boolean runningWithArgs = false;
 
@@ -51,10 +53,15 @@ public class ClientClass {
         while (notConnectedServer)
             try {
                 System.out.println("trying to connect to: " + HOSTNAME + ":" + SERVER_PORT);
+
                 String serverService = String.format("tcp://%s:%d/%s?%s", HOSTNAME, SERVER_PORT, SERVER_CLIENT, CONNECTION_TYPE);
-                String serviceServer = String.format("tcp://%s:%d/%s?%s", HOSTNAME, SERVER_PORT, CLIENT_SERVER, CONNECTION_TYPE);
                 serverClient = new RemoteSpace(serverService);
+
+                String serviceServer = String.format("tcp://%s:%d/%s?%s", HOSTNAME, SERVER_PORT, CLIENT_SERVER, CONNECTION_TYPE);
                 clientServer = new RemoteSpace(serviceServer);
+
+                String serverClientMsgsStr = String.format("tcp://%s:%d/%s?%s", HOSTNAME, SERVER_PORT, SERVER_CLIENT_MSG, CONNECTION_TYPE);
+                serverClientMsgs = new RemoteSpace(serverClientMsgsStr);
 
                 System.out.println("Connecting to " + serverClient.getUri());
                 System.out.println("Connecting to " + clientServer.getUri());
@@ -89,7 +96,7 @@ public class ClientClass {
             String msgOption = "";
             boolean hasMsg = checkMsgFromBank();
             if (hasMsg) {
-                msgOption = "\n6: Read messages from BeastProject.bank";
+                msgOption = "\n6: Read messages from bank";
             }
             String options = String.format
                     ("\n1: Fetch account data \n2: See current market orders \n3: Buy stocks \n4: Sell stocks %s \n0: Log out \nexit: Shut down", msgOption);
@@ -129,7 +136,7 @@ public class ClientClass {
 
     private boolean checkMsgFromBank() {
         try {
-            var response = serverClient.queryAll(
+            var response = serverClientMsgs.queryAll(
                     new ActualField(username),
                     new FormalField(String.class));
 
@@ -143,7 +150,7 @@ public class ClientClass {
     }
 
     private void readMsgs() throws InterruptedException {
-        var response = serverClient.getAll(
+        var response = serverClientMsgs.getAll(
                 new ActualField(username),
                 new FormalField(String.class));
 

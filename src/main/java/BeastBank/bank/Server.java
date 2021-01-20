@@ -18,7 +18,9 @@ public class Server {
     static SpaceRepository repository = new SpaceRepository();
 
     static SequentialSpace clientServer;
-    static RandomSpace serverClient;
+    static SequentialSpace serverClient;
+
+    static RandomSpace serverClientMessages;
 
     static RemoteSpace serverIdProvider;
     static RemoteSpace idProviderServer;
@@ -37,7 +39,9 @@ public class Server {
 
         // Create a local space for each channel
         clientServer = new QueueSpace();
-        serverClient = new RandomSpace();
+        serverClient = new QueueSpace();
+
+        serverClientMessages = new RandomSpace();
 
         accountServiceServer = new QueueSpace();
         serverAccountService = new QueueSpace();
@@ -54,6 +58,8 @@ public class Server {
 
         repository.add(SERVER_BROKER, serverBroker);
         repository.add(BROKER_SERVER, brokerServer);
+
+        repository.add(SERVER_CLIENT_MSG, serverClientMessages);
 
         // Open a gate
         String uri = String.format("tcp://%s:%d/?%s", SERVER_HOSTNAME, SERVER_PORT, CONNECTION_TYPE);

@@ -1,6 +1,8 @@
 package BeastBank.shared;
 
 public class Channels {
+    public static final String SERVER_CLIENT_MSG = "SERVER_CLIENT_MSG";
+
     public static final String SERVER_CLIENT = "serverClient";
     public static final String CLIENT_SERVER = "clientServer";
 
