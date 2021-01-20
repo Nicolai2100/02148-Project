@@ -48,7 +48,11 @@ public class StockStream {
         Thread generateFiles = new Thread(() -> {
             try {
                 StockStream stockStream = new StockStream();
-                stockStream.generateFileRepository(numofservices);
+                final File jarFile = new File(StockStream.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+                if (jarFile.isFile())
+                    stockStream.generateFileRepositoryJar(numofservices);
+                else
+                    stockStream.generateFileRepositoryNotJar(numofservices);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -111,7 +115,6 @@ public class StockStream {
         final File jarFile = new File(StockStream.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         ArrayList<String> names = new ArrayList();
 
-        if (jarFile.isFile()) {  // Run with JAR file
             final JarFile jar = new JarFile(jarFile);
             final Enumeration<JarEntry> entries = jar.entries(); //gives ALL entries in jar
             while (entries.hasMoreElements()) {
@@ -119,29 +122,13 @@ public class StockStream {
                 if (name.startsWith(path)) { //filter according to the path
                     names.add(name);
                 }
-            }
             jar.close();
-            return names;
-        } else { // Run with IDE
-            final URL url = StockStream.class.getResource("/" + path);
-            if (url != null) {
-                try {
-                    final File apps = new File(url.toURI());
-                    for (File app : apps.listFiles()) {
-                        String[] split = app.getName().split("/");
-                        names.add(split[split.length-1]);
-                        System.out.println(split[split.length-1]);
-                    }
-                } catch (URISyntaxException ex) {
-                    // never happens
-                }
-            }
-            return names;
         }
+        return names;
     }
 
 
-    public void generateFileRepository(int numOfServices) throws IOException {
+    public void generateFileRepositoryJar(int numOfServices) throws IOException {
        // File directoryPath = new File("./txtStockFiles");
 
         ArrayList<String> names = getResources("txtStockFiles");
@@ -153,11 +140,13 @@ public class StockStream {
         names.remove(0);
         for (String name : names) {
             // When the file is too long this just gives up and dies
+            BufferedReader reader;
             String[] split = name.split("/");
 
-            // input stream
-            InputStream is = StockStream.class.getResourceAsStream("/" + name);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                // input stream
+                InputStream is = StockStream.class.getResourceAsStream("/" + name);
+                reader = new BufferedReader(new InputStreamReader(is));
+
 
             reader.readLine();
             String line;
@@ -206,7 +195,70 @@ public class StockStream {
         }
         try {
             nameSpace.put("kill");
-            System.out.println("issuing the kill commands for the evaluator thread.");
+            System.out.println("issuing the kill command for the evaluator thread.");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void generateFileRepositoryNotJar(int numOfServices) throws IOException {
+        File directoryPath = new File("src/main/resources/txtStockFiles");
+        //List of all files and directories
+        File filesList[] = directoryPath.listFiles();
+        // Intialize the repository containing a space for each of the threads running
+        // Loop over the files
+        for (File file : filesList) {
+            // When the file is too long this just gives up and dies
+            BufferedReader reader;
+            reader = new BufferedReader(new FileReader(file.getAbsolutePath()));
+            reader.readLine();
+            String line;
+            int linesread = 0;
+            while ((line = reader.readLine()) != null && linesread < 1000) {
+                linesread++;
+                String[] commasperated = line.split(",");
+                try {
+                    // Tuple = Dato, start value, number of stocks, might also have to include name;
+                    Object[] object = new Object[4];
+                    object[0] = file.getName();
+                    object[1] = commasperated[0];
+                    object[2] = Double.valueOf(commasperated[1]);
+                    object[3] = Integer.valueOf(commasperated[5]);
+                    // Now we add a copy to each space.
+                    for (int i = 0; i < numOfServices; i++) {
+                        namesForAnalyzersRepository.get(String.valueOf(i)).put(object);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            toBeEvaluatedSpaceRepository.add(file.getName(), new SequentialSpace());
+            try {
+                nameSpace.put(file.getName());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            // The files are added to each of the repository when all the tuples are uploaded, else it might happen that the thread only collects some of the tuples.
+            for (int i = 0; i < numOfServices; i++) {
+                try {
+                    namesForAnalyzersRepository.get(String.valueOf(i)).put(file.getName());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        System.out.println("issuing the kill commands for the analyzer thread.");
+        for (int i = 0; i < numOfServices; i++) {
+            try {
+                namesForAnalyzersRepository.get(String.valueOf(i)).put("kill");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            System.out.println("issuing the kill command for the evaluator thread.");
+            nameSpace.put("kill");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
