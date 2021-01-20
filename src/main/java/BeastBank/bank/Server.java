@@ -95,20 +95,18 @@ public class Server {
             String request = requestT[0].toString();
             String username = requestT[1].toString();
             String password = requestT[2].toString();
-            System.out.println(username + " " + request);
-
             requestResolver(request, username, password);
         }
     }
 
     public void requestResolver(String request, String username, String password) {
-        System.out.println("Client requested: " + request);
+        System.out.println("Server: Client requested: " + request);
 
         try {
             if (LOGIN.equals(request)) {
                 login(username, password);
             } else {
-                System.out.println("ERROR IN SWITCH STMT");
+                System.out.println("Server: ERROR IN SWITCH STMT");
             }
 
         } catch (InterruptedException e) {
@@ -117,18 +115,16 @@ public class Server {
     }
 
     public void login(String username, String password) throws InterruptedException {
-        executor.submit(new LoginTask(
-                idProviderServer,
-                serverIdProvider,
-                username,
-                password,
-                executor));
+        LoginTask loginTask = new LoginTask(idProviderServer,
+                serverIdProvider, username, password);
+
+        executor.submit(loginTask);
     }
 
     public static void logout(String username) {
         repository.remove(username + "server");
         repository.remove("server" + username);
         numOfClientsConnected--;
-        System.out.println("Number of clients connected: " + numOfClientsConnected);
+        System.out.println("Server: Number of clients connected: " + numOfClientsConnected);
     }
 }

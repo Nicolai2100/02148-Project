@@ -9,6 +9,7 @@ public class OrderPackage implements Serializable {
     private UUID packageID;
     private List<Order> orders = new ArrayList<>(); //TODO: Skal nok laves om, så den tager fx en supertype Order, som både kan være MarketOrder eller LimitOrder
     private List<Order> matchOrders = new ArrayList<>();
+    private Calendar timeOfExpiration;
 
     public UUID getClientID() {
         return clientID;
@@ -36,5 +37,13 @@ public class OrderPackage implements Serializable {
 
     public void addOrder(Order order) {
         orders.add(order);
+    }
+
+    public Calendar getTimeOfExpiration() {
+        return timeOfExpiration;
+    }
+
+    public void setTimeOfExpiration(Calendar timeOfExpiration) {
+        this.timeOfExpiration = timeOfExpiration;
     }
 }

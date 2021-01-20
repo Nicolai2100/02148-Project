@@ -1,11 +1,11 @@
 package BeastBank.broker;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import static BeastBank.broker.Broker.buyOrderFlag;
 import static BeastBank.broker.Broker.sellOrderFlag;
-
 
 public class Order implements Serializable {
 
@@ -15,13 +15,14 @@ public class Order implements Serializable {
     private String stock; //Stock kan måske være en class for sig selv?
     private int quantity;
     private int minQuantity;
+    private ArrayList<Order> matches = new ArrayList<>();
 
     //If the order is a SELL order, it should not sell for under this limit.
     //If the order is a BUY order, it should not buy for over this limit.
     private int limit;
 
-    //If clientMatch is ANY, sell/buy to/from any other BeastBank.client.
-    //If clientMatch is something else, only sell/buy to/from that BeastBank.client.
+    //If clientMatch is ANY, sell/buy to/from any other client.
+    //If clientMatch is something else, only sell/buy to/from that client.
     private String clientMatch;
     public static final String anyFlag = "ANY";
 
@@ -205,5 +206,9 @@ public class Order implements Serializable {
         } else {
             return price <= limit;
         }
+    }
+
+    public ArrayList<Order> getMatches() {
+        return matches;
     }
 }

@@ -4,8 +4,8 @@ import org.jspace.*;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 
+import static BeastBank.bank.Server.repository;
 import static BeastBank.shared.Requests.*;
 
 /**
@@ -16,59 +16,65 @@ public class LoginTask implements Callable<String> {
     private final RemoteSpace idProviderServer;
     private final String username;
     private final String password;
-
-    private final ExecutorService executor;
+    private final String loginStr = LoginTask.class.getName() + ": ";
 
     public LoginTask(RemoteSpace idProviderServer,
                      RemoteSpace serverIdProvider,
                      String username,
-                     String password,
-                     ExecutorService executor) {
+                     String password) {
         this.idProviderServer = idProviderServer;
         this.serverIdProvider = serverIdProvider;
         this.username = username;
         this.password = password;
-        this.executor = executor;
     }
 
     @Override
     public String call() {
-        System.out.println("Started login thread...");
+        System.out.println(loginStr + "Started login thread...");
         login(username);
-        return "Finished login procedure for " + username;
+        return loginStr + "Finished login procedure for " + username;
     }
 
     public void login(String username) {
         try {
-            System.out.println("Logging " + username + " in...");
+            System.out.println(loginStr + "Logging " + username + " in...");
             serverIdProvider.put(username, password);
             Object[] response = idProviderServer.get(new ActualField(username), new FormalField(String.class));
+            boolean credentialsVerified = response[1].equals(OK);
+
+            boolean userAlreadyLoggedIn = false;
+
+            if (repository.get(username + "server") != null) {
+                userAlreadyLoggedIn = true;
+            }
 
             String userToServerName = username + "server";
             String serverToUserName = "server" + username;
 
-            SequentialSpace userServer = new QueueSpace();
-            SequentialSpace serverUser = new QueueSpace();
-            Server.repository.add(serverToUserName, serverUser);
-            Server.repository.add(userToServerName, userServer);
-
-            try {
-                System.out.printf("Created private channels for %s...", username);
-                Server.numOfClientsConnected++;
-                System.out.println("Number of clients connected: " + Server.numOfClientsConnected);
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
+            if (userAlreadyLoggedIn) {
+                repository.remove(userToServerName);
+                repository.remove(serverToUserName);
             }
+            Space userServer = new QueueSpace();
+            Space serverUser = new QueueSpace();
+            repository.add(serverToUserName, serverUser);
+            repository.add(userToServerName, userServer);
 
-            if (response[1].equals(OK)) {
-                System.out.println(username + " logged in at " + LocalDateTime.now());
-                executor.submit(new UserServerCommunicationTask(userServer, serverUser, username));
+            System.out.printf(loginStr + "Created private channels for %s...", username);
+
+            if (!userAlreadyLoggedIn) Server.numOfClientsConnected++;
+            System.out.println(loginStr + "Number of clients connected: " + Server.numOfClientsConnected);
+
+            if (credentialsVerified) {
+                System.out.println(loginStr + username + " logged in at " + LocalDateTime.now());
+                Server.executor.submit(new UserServerCommunicationTask(userServer, serverUser, username));
             } else {
-                System.out.println("Error in credentials");
+                System.out.println(loginStr + "Error in credentials");
                 serverUser.put(KO);
                 Server.logout(username);
             }
-        } catch (InterruptedException e) {
+        } catch (
+                InterruptedException e) {
             e.printStackTrace();
         }
     }
