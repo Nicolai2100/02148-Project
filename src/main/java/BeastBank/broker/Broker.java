@@ -12,7 +12,7 @@ import static BeastBank.shared.Requests.*;
 
 public class Broker {
 
-    //ns hostname og port
+    //Brokerens hostname og port
     String hostName = BROKER_HOSTNAME;
     int port = BROKER_PORT;
 
