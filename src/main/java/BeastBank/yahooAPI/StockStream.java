@@ -33,6 +33,7 @@ public class StockStream {
     }
 
     public void startStream() {
+        System.out.println("Stock stream started evaluation, will notify when done");
         //Creating a File object for directory
         toBeEvaluatedSpaceRepository = new SpaceRepository();
         evaluatedStockSpace = new RandomSpace();
@@ -66,7 +67,6 @@ public class StockStream {
                     e.printStackTrace();
                 }
             }
-            System.out.println("1 got killed");
         });
         Thread analyseStockTrend2 = new Thread(() -> {
             StockStream stockStream = new StockStream();
@@ -77,7 +77,6 @@ public class StockStream {
                     e.printStackTrace();
                 }
             }
-            System.out.println("2 got killed");
         });
         Thread analyseStockTrend3 = new Thread(() -> {
             StockStream stockStream = new StockStream();
@@ -88,15 +87,13 @@ public class StockStream {
                     e.printStackTrace();
                 }
             }
-            System.out.println("3 got killed");
         });
         Thread recommendstocks = new Thread(() -> {
             StockStream stockStream = new StockStream();
             while (true) {
                     if (!stockStream.calculaterecommandations(3)) break;
             }
-            System.out.println(stockStream.getRandomStockRecommandation() + " was recommended, a grand total of " + evaluatedStockSpace.size() + " was evaluated.");
-            System.out.println("Stockstream finished evaluating");
+            System.out.println("Stockstream finished evaluating, a grand total of " + evaluatedStockSpace.size() + " was evaluated.");
         });
         generateFiles.start();
         analyseStockTrend1.start();
@@ -115,15 +112,16 @@ public class StockStream {
         final File jarFile = new File(StockStream.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         ArrayList<String> names = new ArrayList();
 
-            final JarFile jar = new JarFile(jarFile);
-            final Enumeration<JarEntry> entries = jar.entries(); //gives ALL entries in jar
-            while (entries.hasMoreElements()) {
-                final String name = entries.nextElement().getName();
-                if (name.startsWith(path)) { //filter according to the path
-                    names.add(name);
-                }
-            jar.close();
+
+        final JarFile jar = new JarFile(jarFile);
+        final Enumeration<JarEntry> entries = jar.entries(); //gives ALL entries in jar
+        while (entries.hasMoreElements()) {
+            final String name = entries.nextElement().getName();
+            if (name.startsWith(path)) { //filter according to the path
+                names.add(name);
+            }
         }
+        jar.close();
         return names;
     }
 
@@ -188,14 +186,12 @@ public class StockStream {
         for (int i = 0; i < numOfServices; i++) {
             try {
                 namesForAnalyzersRepository.get(String.valueOf(i)).put("kill");
-                System.out.println("issuing the kill commands for the analyser threads.");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
         try {
             nameSpace.put("kill");
-            System.out.println("issuing the kill command for the evaluator thread.");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -248,7 +244,6 @@ public class StockStream {
                 }
             }
         }
-        System.out.println("issuing the kill commands for the analyzer thread.");
         for (int i = 0; i < numOfServices; i++) {
             try {
                 namesForAnalyzersRepository.get(String.valueOf(i)).put("kill");
@@ -257,7 +252,6 @@ public class StockStream {
             }
         }
         try {
-            System.out.println("issuing the kill command for the evaluator thread.");
             nameSpace.put("kill");
         } catch (InterruptedException e) {
             e.printStackTrace();
