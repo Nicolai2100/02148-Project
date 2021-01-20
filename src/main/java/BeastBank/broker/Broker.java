@@ -32,7 +32,6 @@ public class Broker {
     public static final String buyOrderFlag = BUY;
     static final String lock = "lock";
     static final String waiting = "WAITING";
-    static final String notifyChange = "CHANGE";
 
     ExecutorService executor = Executors.newCachedThreadPool();
     ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
@@ -103,8 +102,8 @@ public class Broker {
                             getOrdersFromSpace(order, orders);
                         List<Transaction> finalTransactions = generateTransactions(orderPkg.getOrders());
                         transactions.put(finalTransactions); //TODO: Kun for testing
-                        /*for (Transaction transaction : finalTransactions)
-                            startTransaction(transaction);*/
+                        for (Transaction transaction : finalTransactions)
+                            startTransaction(transaction);
                     } else {
                         signalWaiting(orderPkg);
                     }
@@ -405,7 +404,6 @@ public class Broker {
                     transaction.getStockName(),
                     transaction.getPrice(),
                     transaction.getQuantity());
-
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
