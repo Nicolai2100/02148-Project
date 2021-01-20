@@ -3,7 +3,11 @@ package BeastBank.yahooAPI;
 import org.jspace.*;
 
 import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  * This class reads a lot of stocks from the .txtStockFiles folder, and then has multiple threads to evaluate it, and then
@@ -23,7 +27,13 @@ public class StockStream {
     // a repository without knowing the name of the space.
     private static SequentialSpace nameSpace;
 
+    public static void main (String[] args) {
+        StockStream stockStream = new StockStream();
+        stockStream.startStream();
+    }
+
     public void startStream() {
+        System.out.println("Stock stream started evaluation, will notify when done");
         //Creating a File object for directory
         toBeEvaluatedSpaceRepository = new SpaceRepository();
         evaluatedStockSpace = new RandomSpace();
@@ -39,7 +49,11 @@ public class StockStream {
         Thread generateFiles = new Thread(() -> {
             try {
                 StockStream stockStream = new StockStream();
-                stockStream.generateFileRepository(numofservices);
+                final File jarFile = new File(StockStream.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+                if (jarFile.isFile())
+                    stockStream.generateFileRepositoryJar(numofservices);
+                else
+                    stockStream.generateFileRepositoryNotJar(numofservices);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -79,7 +93,7 @@ public class StockStream {
             while (true) {
                     if (!stockStream.calculaterecommandations(3)) break;
             }
-            System.out.println("Stockstream finished evaluating");
+            System.out.println("Stockstream finished evaluating, a grand total of " + evaluatedStockSpace.size() + " was evaluated.");
         });
         generateFiles.start();
         analyseStockTrend1.start();
@@ -90,12 +104,101 @@ public class StockStream {
 
     /**
      * This reads the files and puts the information into the right spaces.
-     * @param numOfServices this chooses how many times the data is duplicated into sequential spaces.
      * @throws IOException
+     * @return
      */
 
-    public void generateFileRepository(int numOfServices) throws IOException {
-        File directoryPath = new File("txtStockFiles");
+    public static ArrayList<String> getResources(final String path) throws IOException {
+        final File jarFile = new File(StockStream.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+        ArrayList<String> names = new ArrayList();
+
+
+        final JarFile jar = new JarFile(jarFile);
+        final Enumeration<JarEntry> entries = jar.entries(); //gives ALL entries in jar
+        while (entries.hasMoreElements()) {
+            final String name = entries.nextElement().getName();
+            if (name.startsWith(path)) { //filter according to the path
+                names.add(name);
+            }
+        }
+        jar.close();
+        return names;
+    }
+
+
+    public void generateFileRepositoryJar(int numOfServices) throws IOException {
+       // File directoryPath = new File("./txtStockFiles");
+
+        ArrayList<String> names = getResources("txtStockFiles");
+
+        //List of all files and directories
+        //File filesList[] = directoryPath.listFiles();
+        // Intialize the repository containing a space for each of the threads running
+        // Loop over the files
+        names.remove(0);
+        for (String name : names) {
+            // When the file is too long this just gives up and dies
+            BufferedReader reader;
+            String[] split = name.split("/");
+
+                // input stream
+                InputStream is = StockStream.class.getResourceAsStream("/" + name);
+                reader = new BufferedReader(new InputStreamReader(is));
+
+
+            reader.readLine();
+            String line;
+            int linesread = 0;
+            while ((line = reader.readLine()) != null && linesread < 1000) {
+                linesread++;
+                String[] commasperated = line.split(",");
+                try {
+                    // Tuple = Dato, start value, number of stocks, might also have to include name;
+                    Object[] object = new Object[4];
+                    object[0] = split[1];
+                    object[1] = commasperated[0];
+                    object[2] = Double.valueOf(commasperated[1]);
+                    object[3] = Integer.valueOf(commasperated[5]);
+                    // Now we add a copy to each space.
+                    for (int i = 0; i < numOfServices; i++) {
+                        namesForAnalyzersRepository.get(String.valueOf(i)).put(object);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            //System.out.println("toBeEvaluatedSpaceRepository got a new entry: " + split[1]);
+            toBeEvaluatedSpaceRepository.add(split[1], new SequentialSpace());
+            try {
+                nameSpace.put(split[1]);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            // The files are added to each of the repository when all the tuples are uploaded, else it might happen that the thread only collects some of the tuples.
+            for (int i = 0; i < numOfServices; i++) {
+                try {
+                    namesForAnalyzersRepository.get(String.valueOf(i)).put(split[1]);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        for (int i = 0; i < numOfServices; i++) {
+            try {
+                namesForAnalyzersRepository.get(String.valueOf(i)).put("kill");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            nameSpace.put("kill");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void generateFileRepositoryNotJar(int numOfServices) throws IOException {
+        File directoryPath = new File("src/main/resources/txtStockFiles");
         //List of all files and directories
         File filesList[] = directoryPath.listFiles();
         // Intialize the repository containing a space for each of the threads running
@@ -125,6 +228,7 @@ public class StockStream {
                     e.printStackTrace();
                 }
             }
+
             toBeEvaluatedSpaceRepository.add(file.getName(), new SequentialSpace());
             try {
                 nameSpace.put(file.getName());
@@ -163,10 +267,9 @@ public class StockStream {
     public boolean analyzeStockTrend(int threadIdentifier) throws InterruptedException {
         boolean recommend;
         // First we do the query to find the space.
-        SequentialSpace sequentialSpace = (SequentialSpace) getNamesForAnalyzersRepository().get(String.valueOf(threadIdentifier));
+        SequentialSpace sequentialSpace = (SequentialSpace) namesForAnalyzersRepository.get(String.valueOf(threadIdentifier));
 
-        Object[] response = sequentialSpace.getp(new FormalField(String.class));
-        if (response != null) {
+        Object[] response = sequentialSpace.get(new FormalField(String.class));
             if ((response[0]).equals("kill")) {
                 return false;
             }
@@ -175,19 +278,20 @@ public class StockStream {
                     new FormalField(String.class),
                     new FormalField(Double.class),
                     new FormalField(Integer.class));
-            double averagechange = 0;
-            double max_diff = 0;
-            double dailyincrease = 0;
+
             for (Object[] object : objects) {
                 // Analysis of the stock is done here.
             }
             recommend = Math.random() > 0.5;
             try {
-                getToBeEvaluatedSpaceRepository().get(stockname).put(recommend);
+                if (toBeEvaluatedSpaceRepository.get(stockname) == null) {
+                    return true;
+                } else {
+                    toBeEvaluatedSpaceRepository.get(stockname).put(recommend);
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
         return true;
     }
 
@@ -216,7 +320,7 @@ public class StockStream {
                 //Thread.sleep(100);
 
                 List<Object[]> recommandations = toBeEvaluatedSpaceRepository.get(stockrecommandation).queryAll(new FormalField(Boolean.class));
-
+                //System.out.println(stockrecommandation + " had the length of " + recommandations.size());
                 if (recommandations.size() == numOfServices) {
                     //recommendStockRepository.get((String) stockrecommandation).getAll(new FormalField(Boolean.class));
                     nameSpace.get(new ActualField(stockrecommandation));
