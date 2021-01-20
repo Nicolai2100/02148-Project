@@ -36,25 +36,36 @@ public class IdentityProvider {
 
                 String username = credentials[0].toString();
                 String password = credentials[1].toString();
+
                 System.out.println(IdentityProvider.class.getName() + ": Credentials received: " + username + " " + password);
 
-                var optionalUser = FakeUserDataAccessService.getInstance().selectUserByUsername(username);
+                boolean userValid = validateCredentials(username, password);
 
-                if (optionalUser.isPresent()) {
-                    if (SharedEncryption.validatePassword(optionalUser.get().getPassword(), password)) {
-                        System.out.println(IdentityProvider.class.getName() + ": Credentials verified at: " + LocalDateTime.now());
-                        idProviderServer.put(OK);
-                    } else {
-                        System.out.println(IdentityProvider.class.getName() + ": User submitted wrong password!");
-                        idProviderServer.put(KO);
-                    }
+                if (userValid) {
+                    idProviderServer.put(username, OK);
                 } else {
-                    System.out.println(IdentityProvider.class.getName() + ": No such user exists");
-                    idProviderServer.put(KO);
+                    idProviderServer.put(username, KO);
                 }
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    static boolean validateCredentials(String username, String password) {
+        var optionalUser = FakeUserDataAccessService.getInstance().selectUserByUsername(username);
+
+        if (optionalUser.isPresent()) {
+            if (SharedEncryption.validatePassword(optionalUser.get().getPassword(), password)) {
+                System.out.println(IdentityProvider.class.getName() + ": Credentials verified at: " + LocalDateTime.now());
+                return true;
+            } else {
+                System.out.println(IdentityProvider.class.getName() + ": User submitted wrong password!");
+            }
+        } else {
+            System.out.println(IdentityProvider.class.getName() + ": No such user exists");
+        }
+        return false;
     }
 }

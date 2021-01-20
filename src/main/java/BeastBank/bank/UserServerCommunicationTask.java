@@ -6,6 +6,7 @@ import BeastBank.model.Stock;
 import org.jspace.*;
 
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import static BeastBank.shared.Channels.*;
@@ -17,6 +18,7 @@ public class UserServerCommunicationTask implements Callable<String> {
     private final String username;
 
     private RemoteSpace orderPackages;
+    private RemoteSpace orders;
 
     public UserServerCommunicationTask(SequentialSpace userServer,
                                        SequentialSpace serverUser,
@@ -29,6 +31,17 @@ public class UserServerCommunicationTask implements Callable<String> {
         try {
             String brokerSpaceStr = String.format("tcp://%s:%d/%s?%s", BROKER_HOSTNAME, BROKER_PORT, ORDER_PACKAGES, CONNECTION_TYPE);
             orderPackages = new RemoteSpace(brokerSpaceStr);
+
+            String brokerSpaceOrdersStr = String.format("tcp://%s:%d/%s?%s", BROKER_HOSTNAME, BROKER_PORT, ORDERS, CONNECTION_TYPE);
+            orders = new RemoteSpace(brokerSpaceOrdersStr);
+
+
+             /*
+        tradeRepo.add(ORDERS, orders);
+        tradeRepo.add(ORDER_PACKAGES, newOrderPackages);
+        tradeRepo.add(TRANSACTIONS, transactions);*/
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -86,16 +99,36 @@ public class UserServerCommunicationTask implements Callable<String> {
     }
 
     public void queryMarket() throws InterruptedException {
-        Server.serverBroker.put(username, QUERY_MARKET_ORDERS);
+        var response = orders.queryAll(
+                new FormalField(UUID.class),
+                new FormalField(String.class),
+                new FormalField(String.class),
+                new FormalField(String.class),
+                new FormalField(Integer.class),
+                new FormalField(Integer.class),
+                new FormalField(Integer.class),
+                new FormalField(String.class));
 
-        var response =
-                Server.brokerServer.queryAll(new ActualField(OrderPackage.class));
-
+        int numOfOrders = response.size();
         for (var order : response) {
-            System.out.println(order.toString());
-            System.out.println(order[0]);
+            int numOfOrder = response.indexOf(order) + 1;
+            System.out.println(order[1]);
+            System.out.println(order[2]);
+            System.out.println(order[3]);
+            System.out.println(order[4]);
+            System.out.println(order[5]);
+            System.out.println(order[6]);
+            System.out.println(order[7]);
+
+            //Sending data to BeastBank.client
+            System.out.println("USCom: Sending data");
+            serverUser.put(MORE_DATA);
+            serverUser.put(numOfOrder, numOfOrders, order[2], order[3], order[4], order[5], order[1]);
         }
+
+        serverUser.put(NO_MORE_DATA);
     }
+
 
     private void sellStock() throws InterruptedException {
         System.out.println("USCom: Processing order...");
