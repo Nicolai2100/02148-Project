@@ -1,5 +1,6 @@
 package BeastBank.broker;
 
+import BeastBank.TestClass;
 import org.jspace.FormalField;
 import org.jspace.RemoteSpace;
 import BeastBank.shared.Channels;
@@ -46,7 +47,7 @@ class BrokerTest {
         broker.startService();
         orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/ORDERS?keep");
         orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/ORDER_PACKAGES?keep");
-        transactions = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/transactions?keep");
+        transactions = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/TRANSACTIONS?keep");
         stocks = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/remoteStocks?keep");
         executor = Executors.newFixedThreadPool(1);
     }

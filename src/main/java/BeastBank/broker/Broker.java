@@ -45,6 +45,7 @@ public class Broker {
         tradeRepo.add(ORDER_PACKAGES, orderPackageQueue);
         tradeRepo.add(TRANSACTIONS, transactions);
         tradeRepo.add(STOCKS, cachedStocks); //TODO: Skal nok fjernes igen, pt. kun for testing.
+        tradeRepo.add("remoteStocks", remoteStocks); //TODO: Skal nok fjernes igen, pt. kun for testing.
         tradeRepo.addGate("tcp://" + hostName + ":" + port + "/?keep");
         this.stockStream = new StockStream();
         boolean connectedToBankServer = false;

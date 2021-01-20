@@ -28,6 +28,7 @@ public class TestClass {
             e.printStackTrace();
         }
 
+        /*
         Runnable r4 = () -> {
             try {
                 Broker.main(null);
@@ -37,6 +38,7 @@ public class TestClass {
         };
         Thread thread4 = new Thread(r4);
         thread4.start();
+         */
 
         Runnable r1 = () -> Program.main(null);
         Thread thread1 = new Thread(r1);
