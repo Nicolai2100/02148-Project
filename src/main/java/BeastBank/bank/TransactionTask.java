@@ -18,7 +18,6 @@ public class TransactionTask implements Callable<String> {
                         new FormalField(String.class),
                         new FormalField(String.class),
                         new FormalField(String.class),
-                        // new FormalField(Double.class),
                         new FormalField(Integer.class),
                         new FormalField(Integer.class)));
 

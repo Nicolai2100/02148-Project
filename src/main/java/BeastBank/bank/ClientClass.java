@@ -210,12 +210,12 @@ public class ClientClass {
                     minAmountReq = validateResponse(1, 10, scanner.nextInt(), errorMsg);
                 }
 
-                double minPricePerStock;
+                int minPricePerStock;
                 System.out.printf("Enter %s price per stock \n(Enter \"0\" for current market price) :", minOrMax);
                 String errorMsg2 = String.format("You can't %s more than you own!", trade.toLowerCase());
-                minPricePerStock = validateResponse(0.0, 10.0, scanner.nextDouble(), errorMsg2);
+                minPricePerStock = validateResponse(0, 10, scanner.nextInt(), errorMsg2);
 
-                String priceStr = minPricePerStock == 0.0 ? "market price" : Double.toString(minPricePerStock);
+                String priceStr = minPricePerStock == 0.0 ? "market price" : Integer.toString(minPricePerStock);
                 System.out.printf("Are you sure you want to %s %s for %s each? \n", amount, stockName, priceStr);
                 System.out.println("1 - Yes\n0 - No");
                 if (checkInputForExitToAbort().equalsIgnoreCase("1")) {
@@ -231,7 +231,7 @@ public class ClientClass {
         } else {
             String stockName = argList.remove(0);
             int amount = Integer.parseInt(argList.remove(0));
-            double pricePerStock = Double.parseDouble(argList.remove(0));
+            int pricePerStock = Integer.parseInt(argList.remove(0));
             int minAmountReq = Integer.parseInt(argList.remove(0));
 
             userServer.put(trade);

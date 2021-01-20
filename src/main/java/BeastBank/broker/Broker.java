@@ -9,6 +9,7 @@ import java.util.concurrent.*;
 
 import static BeastBank.shared.Channels.*;
 import static BeastBank.shared.Requests.*;
+import static BeastBank.shared.StockNames.*;
 
 public class Broker {
 
@@ -27,6 +28,7 @@ public class Broker {
     RemoteSpace brokerServer;
 
     SpaceRepository tradeRepo = new SpaceRepository();
+    private String brokerStr = Broker.class.getName() + ": ";
 
     public static final String sellOrderFlag = SELL;
     public static final String buyOrderFlag = BUY;
@@ -74,8 +76,8 @@ public class Broker {
 
     public void startService() throws InterruptedException {
         serviceRunning = true;
-        cachedStocks.put("AAPL", 100); //Just for testing
-        cachedStocks.put("TESLA", 100);
+        cachedStocks.put(APPLE, 100); //Just for testing
+        cachedStocks.put(TESLA, 100);
         cachedStocks.put("VESTAS", 100);
         cachedStocks.put("DTU", 100);
         orders.put(lock);
@@ -93,18 +95,16 @@ public class Broker {
                     if (orderPkg.getPackageID() == null) {
                         addNewPackage(orderPkg);
                     }
-
                     if (Calendar.getInstance().after(orderPkg.getTimeOfExpiration()))
                         continue;
-
                     orders.get(new ActualField(lock));
                     if (findMatchesForPackage(orderPkg)) {
                         for (Order order : orderPkg.getOrders())
                             getOrdersFromSpace(order, orders);
                         List<Transaction> finalTransactions = generateTransactions(orderPkg.getOrders());
                         transactions.put(finalTransactions); //TODO: Kun for testing
-                        /*for (Transaction transaction : finalTransactions)
-                            startTransaction(transaction);*/
+                        for (Transaction transaction : finalTransactions)
+                            startTransaction(transaction);
                     } else {
                         signalWaiting(orderPkg);
                     }
@@ -117,8 +117,11 @@ public class Broker {
         }
     }
 
-
     private void addNewPackage(OrderPackage orderPkg) throws InterruptedException {
+        for (Order order : orderPkg.getOrders()) {
+            System.out.println(brokerStr + "received order: " + order);
+        }
+
         orderPkg.setPackageID(UUID.randomUUID());
         Calendar expirationTime = Calendar.getInstance();
         expirationTime.add(Calendar.DATE, 1);
@@ -145,7 +148,6 @@ public class Broker {
             updateRates();
         }
     }
-
 
     private void signalWaiting(OrderPackage orderPkg) throws InterruptedException {
         waitingPackages.put(orderPkg.getPackageID(), orderPkg);
@@ -285,6 +287,7 @@ public class Broker {
      * Removes the order and all the final matching orders from the space.
      * Then it calls generateTransactions() to generate a list of transactions, which
      * it then returns.
+     *
      * @param space the space to remove tuples from.
      * @return A list of transactions.
      * @throws InterruptedException
@@ -323,6 +326,7 @@ public class Broker {
 
     /**
      * Generates a list of transactions from this orders matching orders.
+     *
      * @param orders
      * @return list of transactions.
      */
@@ -397,7 +401,7 @@ public class Broker {
     }
 
     public void startTransaction(Transaction transaction) {
-        System.out.println("Broker: Starting transaction...");
+        System.out.println(brokerStr + "Starting transaction...");
         try {
             brokerServer.put(
                     transaction.getSeller(),

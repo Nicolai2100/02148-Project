@@ -135,13 +135,13 @@ public class UserServerCommunicationTask implements Callable<String> {
         var responseObj = userServer.get(
                 new FormalField(String.class),
                 new FormalField(Integer.class),
-                new FormalField(Double.class),
+                new FormalField(Integer.class),
                 new FormalField(Integer.class));
 
         String stockName = responseObj[0].toString();
         int amount = Integer.parseInt(responseObj[1].toString());
-        double minPricePerStock = Double.parseDouble(responseObj[2].toString());
-        minPricePerStock = minPricePerStock == 0.0 ? -1.0 : minPricePerStock;
+        int minPricePerStock = Integer.parseInt(responseObj[2].toString());
+        minPricePerStock = minPricePerStock == 0 ? -1 : minPricePerStock;
         int minAmountReq = Integer.parseInt(responseObj[3].toString());
 
         try {
@@ -166,13 +166,13 @@ public class UserServerCommunicationTask implements Callable<String> {
         var responseObj = userServer.get(
                 new FormalField(String.class),
                 new FormalField(Integer.class),
-                new FormalField(Double.class),
+                new FormalField(Integer.class),
                 new FormalField(Integer.class));
 
         String stockName = responseObj[0].toString();
         int amount = Integer.parseInt(responseObj[1].toString());
-        double minPricePerStock = Double.parseDouble(responseObj[2].toString());
-        minPricePerStock = minPricePerStock == 0.0 ? -1.0 : minPricePerStock;
+        int minPricePerStock = Integer.parseInt(responseObj[2].toString());
+        minPricePerStock = minPricePerStock == 0 ? -1 : minPricePerStock;
         int minAmountReq = Integer.parseInt(responseObj[3].toString());
 
         try {
@@ -188,7 +188,6 @@ public class UserServerCommunicationTask implements Callable<String> {
                     .build());
 
             orderPackages.put(op);
-
             System.out.println(serverStr + "Order placed...");
             serverUser.put("Order placed");
         } catch (Exception e) {
