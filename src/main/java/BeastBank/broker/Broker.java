@@ -129,7 +129,7 @@ public class Broker {
                     }
                     //p7.put(orderPkg);
 
-                    Set<OrderPackage> packagesToNotify = new HashSet<>();
+                    Stack<OrderPackage> packagesToNotify = new Stack<>();
                     for (Order order : orderPkg.getOrders()) {
                         List<Object[]> signals = p4.getAll(
                                 new FormalField(UUID.class),
@@ -173,17 +173,27 @@ public class Broker {
         public void run() {
             while (true) {
                 try {
-                    Object[] res = p1.get(new FormalField(OrderPackage.class), new FormalField(Set.class));
+                    Object[] res = p1.get(new FormalField(OrderPackage.class), new FormalField(Stack.class));
                     OrderPackage pkg = (OrderPackage) res[0];
-                    Set packagesToNotify = (HashSet) res[1];
+                    //Set packagesToNotify = (HashSet) res[1];
+                    Stack packagesToNotify = (Stack) res[1];
 
-                    for (Object o : packagesToNotify) {
+                    if (packagesToNotify.isEmpty()) {
+                        p1.put("go", pkg);
+                    } else {
+                        OrderPackage pkgToNotify = (OrderPackage) packagesToNotify.pop();
+                        Object[] pkgres = p4.getp(new ActualField(pkgToNotify));
+                        if (pkgres != null) p2.put(pkgres);
+                        p1.put(pkg, packagesToNotify);
+                    }
+
+                    /*for (Object o : packagesToNotify) {
                         Object[] pkgres = p4.getp(new ActualField(o));
                         if (pkgres == null) continue;
                         p2.put(pkgres[0]);
-                    }
+                    }*/
 
-                    p1.put("go", pkg);
+                    //p1.put("go", pkg);
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
