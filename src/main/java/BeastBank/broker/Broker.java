@@ -29,7 +29,6 @@ public class Broker {
     SequentialSpace p4 = new SequentialSpace();
     SequentialSpace p5 = new SequentialSpace();
     SequentialSpace p6 = new SequentialSpace();
-    SequentialSpace p7 = new SequentialSpace();
     SequentialSpace p8 = new SequentialSpace();
 
     RemoteSpace serverBroker;
@@ -88,8 +87,8 @@ public class Broker {
         cachedStocks.put("VESTAS", 100);
         cachedStocks.put("DTU", 100);
         orders.put(lock);
-        p6.put(lock);
-        p7.put("ticket");
+        p5.put(lock);
+        p6.put("ticket");
         //executor.submit(new NewOrderPkgHandler());
 
         executor.submit(new GetTicketToBeProcessed());
@@ -108,7 +107,7 @@ public class Broker {
         public void run() {
             while (true) {
                 try {
-                    p7.get(new ActualField("ticket"));
+                    p6.get(new ActualField("ticket"));
                     OrderPackage orderPkg = (OrderPackage) p0.get(new FormalField(OrderPackage.class))[0];
                     orderPkg.setPackageID(UUID.randomUUID());
                     Calendar expirationTime = Calendar.getInstance();
@@ -133,7 +132,7 @@ public class Broker {
 
                     Set<OrderPackage> packagesToNotify = new HashSet<>();
                     for (Order order : orderPkg.getOrders()) {
-                        List<Object[]> signals = p5.getAll(
+                        List<Object[]> signals = p4.getAll(
                                 new FormalField(UUID.class),
                                 new ActualField(order.orderType),
                                 new ActualField(order.getStock()),
@@ -180,7 +179,7 @@ public class Broker {
                     Set packagesToNotify = (HashSet) res[1];
 
                     for (Object o : packagesToNotify) {
-                        OrderPackage waitingPkg = (OrderPackage) p5.get(new ActualField(o))[0];
+                        OrderPackage waitingPkg = (OrderPackage) p4.get(new ActualField(o))[0];
                         p2.put(waitingPkg);
                     }
 
@@ -212,12 +211,12 @@ public class Broker {
         public void run() {
             while (true) {
                 try {
-                    p6.get(new ActualField(lock));
+                    p5.get(new ActualField(lock));
                     OrderPackage orderPkg = (OrderPackage) p2.get(new FormalField(OrderPackage.class))[0];
                     if (findMatchesForPackage(orderPkg)) {
-                        p4.put(SUCCESS, orderPkg);
+                        p3.put(SUCCESS, orderPkg);
                     } else {
-                        p4.put(FAILURE, orderPkg);
+                        p3.put(FAILURE, orderPkg);
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -231,7 +230,7 @@ public class Broker {
         public void run() {
             while (true) {
                 try {
-                    OrderPackage orderPkg = (OrderPackage) p4.get(new ActualField(SUCCESS), new FormalField(OrderPackage.class))[1];
+                    OrderPackage orderPkg = (OrderPackage) p3.get(new ActualField(SUCCESS), new FormalField(OrderPackage.class))[1];
                     for (Order order : orderPkg.getOrders())
                         getOrdersFromSpace(order, orders);
 
@@ -240,8 +239,8 @@ public class Broker {
                     /*for (Transaction transaction : finalTransactions)
                         startTransaction(transaction);*/
 
-                    p6.put(lock);
-                    p7.put("ticket");
+                    p5.put(lock);
+                    p6.put("ticket");
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -255,10 +254,10 @@ public class Broker {
         public void run() {
             while (true) {
                 try {
-                    OrderPackage orderPkg = (OrderPackage) p4.get(new ActualField(FAILURE), new FormalField(OrderPackage.class))[1];
+                    OrderPackage orderPkg = (OrderPackage) p3.get(new ActualField(FAILURE), new FormalField(OrderPackage.class))[1];
                     signalWaiting(orderPkg);
-                    p6.put(lock);
-                    p7.put("ticket");
+                    p5.put(lock);
+                    p6.put("ticket");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -275,22 +274,9 @@ public class Broker {
 
 
     private void signalWaiting(OrderPackage orderPkg) throws InterruptedException {
-        p5.put(orderPkg);
+        p4.put(orderPkg);
         for (Order order : orderPkg.getOrders()) {
-            p5.put(orderPkg.getPackageID(), order.getMatchingOrderType(), order.getStock(), order.getLimit(), orderPkg);
-        }
-    }
-
-    private void wakeUpWaitingPackages(Order order) throws InterruptedException {
-        List<Object[]> signals = p5.queryAll(
-                new FormalField(UUID.class),
-                new ActualField(order.orderType),
-                new ActualField(order.getStock()),
-                new FormalField(Integer.class),
-                new FormalField(OrderPackage.class)
-        );
-        for (Object[] signal : signals) {
-            p8.put(signal[0]);
+            p4.put(orderPkg.getPackageID(), order.getMatchingOrderType(), order.getStock(), order.getLimit(), orderPkg);
         }
     }
 
