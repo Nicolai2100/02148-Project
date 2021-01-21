@@ -171,7 +171,7 @@ public class ClientClass {
             responseStr = response[0].toString();
 
             if (responseStr.equals(NO_MORE_DATA)) {
-                System.out.println("No orders at the moment...");
+                System.out.println("No more orders...");
             } else if (responseStr.equals(MORE_DATA)) {
 
                 response = serverUser.get(
@@ -222,12 +222,28 @@ public class ClientClass {
                 String errorMsg2 = String.format("You can't %s more than you own!", trade.toLowerCase());
                 minPricePerStock = validateResponse(0, 10, scanner.nextInt(), errorMsg2);
 
+                String targetCustomer = "";
+                System.out.println("If you only want to trade with one certain user");
+                System.out.println("Enter that users name or press \"0\" for any user");
+
+                String errorMsg3 = "Invalid username";
+                targetCustomer = validateResponse("0", "10", scanner.next(), errorMsg3);
+
+
                 String priceStr = minPricePerStock == 0.0 ? "market price" : Integer.toString(minPricePerStock);
-                System.out.printf("Are you sure you want to %s %s for %s each? \n", amount, stockName, priceStr);
+
+
+                if (targetCustomer.length() > 1) {
+                    String fromToStr = trade.equals(SELL) ? "to" : "from";
+                    System.out.printf("Are you sure you want to %s %s for %s each, %s %s? \n", amount, stockName, priceStr, fromToStr, targetCustomer);
+                } else {
+                    System.out.printf("Are you sure you want to %s %s for %s each? \n", amount, stockName, priceStr);
+                }
+
                 System.out.println("1 - Yes\n0 - No");
                 if (checkInputForExitToAbort().equalsIgnoreCase("1")) {
                     userServer.put(trade);
-                    userServer.put(stockName, amount, minPricePerStock, minAmountReq);
+                    userServer.put(stockName, amount, minPricePerStock, minAmountReq, targetCustomer);
                 } else return;
 
             } catch (ClientInputException e) {
@@ -240,9 +256,10 @@ public class ClientClass {
             int amount = Integer.parseInt(argList.remove(0));
             int pricePerStock = Integer.parseInt(argList.remove(0));
             int minAmountReq = Integer.parseInt(argList.remove(0));
+            String targetCustomer = (argList.remove(0));
 
             userServer.put(trade);
-            userServer.put(stockName, amount, pricePerStock, minAmountReq);
+            userServer.put(stockName, amount, pricePerStock, minAmountReq, targetCustomer);
         }
         var response = serverUser.get(new FormalField(String.class));
         System.out.println(response[0] + "...");
@@ -254,7 +271,7 @@ public class ClientClass {
 
         userServer.put(QUERY_STOCKS);
 
-        String responseStr = "";
+        String responseStr;
         Object[] response;
 
         response = serverUser.get(new FormalField(Double.class));
@@ -273,7 +290,6 @@ public class ClientClass {
 
     private void getCredentials() {
         System.out.println("Enter credentials to continue");
-
         System.out.println("Enter username: ");
         username = checkExitToLogOut(scanner.next().trim());
         System.out.println("Enter password: ");
@@ -310,6 +326,11 @@ public class ClientClass {
                 if ((Double) userInput >= (Double) lowerLimit && (Double) userInput <= (Double) upperLimit) {
                     return userInput;
                 }
+            }
+        }
+        if (typen.equals("string")) {
+            if (((String) userInput).length() > 2) {
+                return userInput;
             }
         }
         throw new ClientInputException(errorMsg);

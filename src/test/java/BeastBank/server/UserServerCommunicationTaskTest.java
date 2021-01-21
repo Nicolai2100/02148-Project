@@ -50,7 +50,7 @@ public class UserServerCommunicationTaskTest {
                 new SequentialSpace(),
                 "Alice");
         Thread.sleep(2000);
-        uscom.requestResolver(TRANSACTION);
+        uscom.resolveRequest(TRANSACTION);
 
 
     }

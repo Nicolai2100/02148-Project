@@ -51,7 +51,7 @@ public class UserServerCommunicationTask implements Callable<String> {
             while (true) {
                 Object[] requestT = userServer.get(new FormalField(String.class));
                 String request = requestT[0].toString();
-                requestResolver(request);
+                resolveRequest(request);
             }
 
         } catch (InterruptedException e) {
@@ -60,7 +60,7 @@ public class UserServerCommunicationTask implements Callable<String> {
         return UserServerCommunicationTask.class.getName() + ": Handler for User Server comm stopped!";
     }
 
-    public void requestResolver(String request) {
+    public void resolveRequest(String request) {
         System.out.println(UserServerCommunicationTask.class.getName() + ": User requested: " + request);
         try {
             switch (request) {
@@ -129,9 +129,47 @@ public class UserServerCommunicationTask implements Callable<String> {
     }
 
 
-    private void sellStock() throws InterruptedException {
-        System.out.println(UserServerCommunicationTask.class.getName() + ": Processing order...");
+    private OrderPackage getOrderFromClient() throws Exception {
+        var responseObj = userServer.get(
+                new FormalField(String.class),
+                new FormalField(Integer.class),
+                new FormalField(Integer.class),
+                new FormalField(Integer.class),
+                new FormalField(String.class));
 
+        String stockName = responseObj[0].toString();
+        int amount = Integer.parseInt(responseObj[1].toString());
+        int minPricePerStock = Integer.parseInt(responseObj[2].toString());
+        minPricePerStock = minPricePerStock == 0 ? -1 : minPricePerStock;
+        int minAmountReq = Integer.parseInt(responseObj[3].toString());
+        String targetUser = responseObj[4].toString();
+
+        var op = new OrderPackage();
+
+        if (targetUser.length() > 1) {
+            op.addOrder(new Order.OrderBuilder()
+                    .sell().orderedBy(username)
+                    .stock(stockName)
+                    .quantity(amount)
+                    .minQuantity(minAmountReq)
+                    .limit(minPricePerStock)
+                    .clientMatch(targetUser)
+                    .build());
+        } else {
+            op.addOrder(new Order.OrderBuilder()
+                    .sell().orderedBy(username)
+                    .stock(stockName)
+                    .quantity(amount)
+                    .minQuantity(minAmountReq)
+                    .limit(minPricePerStock)
+                    .build());
+        }
+        return op;
+    }
+
+    private void sellStock() {
+        System.out.println(UserServerCommunicationTask.class.getName() + ": Processing order...");
+/*
         var responseObj = userServer.get(
                 new FormalField(String.class),
                 new FormalField(Integer.class),
@@ -144,8 +182,7 @@ public class UserServerCommunicationTask implements Callable<String> {
         minPricePerStock = minPricePerStock == 0 ? -1 : minPricePerStock;
         int minAmountReq = Integer.parseInt(responseObj[3].toString());
 
-        try {
-            var op = new OrderPackage();
+        var op = new OrderPackage();
             op.addOrder(new Order.OrderBuilder()
                     .sell().orderedBy(username)
                     .stock(stockName)
@@ -153,16 +190,21 @@ public class UserServerCommunicationTask implements Callable<String> {
                     .minQuantity(minAmountReq)
                     .limit((int) minPricePerStock)
                     .build());
-            orderPackages.put(op);
-            System.out.println(UserServerCommunicationTask.class.getName() + ": Order placed...");
-            serverUser.put("Order placed");
+        */
 
+        try {
+            OrderPackage op = getOrderFromClient();
+            orderPackages.put(op);
+            System.out.println(serverStr + "Order placed...");
+            serverUser.put("Order placed");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     private void buyStock() throws InterruptedException {
+        System.out.println(UserServerCommunicationTask.class.getName() + ": Processing order...");
+/*
         var responseObj = userServer.get(
                 new FormalField(String.class),
                 new FormalField(Integer.class),
@@ -175,7 +217,6 @@ public class UserServerCommunicationTask implements Callable<String> {
         minPricePerStock = minPricePerStock == 0 ? -1 : minPricePerStock;
         int minAmountReq = Integer.parseInt(responseObj[3].toString());
 
-        try {
             var op = new OrderPackage();
             op.addOrder(new Order
                     .OrderBuilder()
@@ -186,10 +227,13 @@ public class UserServerCommunicationTask implements Callable<String> {
                     .minQuantity(minAmountReq)
                     .limit((int) minPricePerStock)
                     .build());
-
+*/
+        try {
+            OrderPackage op = getOrderFromClient();
             orderPackages.put(op);
             System.out.println(serverStr + "Order placed...");
             serverUser.put("Order placed");
+
         } catch (Exception e) {
             e.printStackTrace();
         }

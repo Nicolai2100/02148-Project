@@ -31,7 +31,6 @@ public class TransactionTask implements Callable<String> {
     }
 
     private void makeTransaction(String buyer, String seller, String stockName, int amount, double pricePerStock) throws InterruptedException {
-
         Server.serverAccountService.put(seller, TRANSACTION);
         Server.serverAccountService.put(seller, buyer, stockName, pricePerStock, amount);
 
@@ -46,8 +45,5 @@ public class TransactionTask implements Callable<String> {
 
         Server.serverClientMessages.put(seller, msgToSeller);
         Server.serverClientMessages.put(buyer, msgToBuyer);
-
-/*        Server.serverClient.put(seller, msgToSeller);
-        Server.serverClient.put(buyer, msgToBuyer);*/
     }
 }

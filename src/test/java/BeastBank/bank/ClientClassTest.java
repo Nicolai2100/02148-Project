@@ -72,14 +72,14 @@ public class ClientClassTest {
 
     @Test
     public void sellStock() {
-        String[] args = {"Alice", "password", "4", TESLA, "1", "0", "1"};
+        String[] args = {"Alice", "password", "4", TESLA, "1", "0", "1", "" };
         //new ClientClass().startClient(args);
         Client.main(args);
     }
 
     @Test
     public void buyStock() {
-        String[] args = {"Bob", "password", "3", TESLA, "1", "0", "1"};
+        String[] args = {"Bob", "password", "3", TESLA, "1", "0", "1", ""};
         //new ClientClass().startClient(args);
         Client.main(args);
     }
