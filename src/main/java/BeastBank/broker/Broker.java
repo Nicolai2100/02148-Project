@@ -3,6 +3,7 @@ package BeastBank.broker;
 import BeastBank.yahooAPI.StockStream;
 import org.jspace.*;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -17,8 +18,6 @@ public class Broker {
 
     SequentialSpace cachedStocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
     SequentialSpace remoteStocks = new SequentialSpace();
-    SequentialSpace orderPackageQueue = new SequentialSpace();
-    SequentialSpace waitingPackages = new SequentialSpace();
     SequentialSpace orders = new SequentialSpace();
     SequentialSpace transactions = new SequentialSpace();
 
@@ -27,8 +26,6 @@ public class Broker {
     SequentialSpace p2 = new SequentialSpace();
     SequentialSpace p3 = new SequentialSpace();
     SequentialSpace p4 = new SequentialSpace();
-    SequentialSpace p5 = new SequentialSpace();
-    SequentialSpace p6 = new SequentialSpace();
 
     RemoteSpace serverBroker;
     RemoteSpace brokerServer;
@@ -57,7 +54,7 @@ public class Broker {
         this.stockStream = new StockStream();
         boolean connectedToBankServer = false;
 
-        /*while (!connectedToBankServer) {
+        while (!connectedToBankServer) {
             // connect to BeastProject.bank BeastBank.server
             try {
                 String serverService = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, SERVER_BROKER, CONNECTION_TYPE);
@@ -70,7 +67,7 @@ public class Broker {
             } catch (IOException e) {
                 System.out.println(e.getMessage());
             }
-        }*/
+        }
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -85,12 +82,9 @@ public class Broker {
         cachedStocks.put("TESLA", 100);
         cachedStocks.put("VESTAS", 100);
         cachedStocks.put("DTU", 100);
-        //orders.put(lock);
         p4.put(lock);
-        //executor.submit(new NewOrderPkgHandler());
 
         executor.submit(new GetLockAndStartProcessing());
-        //executor.submit(new GoInQueueToBeProcessed());
         executor.submit(new NotifyPackageToGoBackInQueue());
         executor.submit(new DiscardDueToExpiration());
         executor.submit(new TryToFindMatches());
@@ -154,20 +148,6 @@ public class Broker {
             }
         }
     }
-/*
-    class GoInQueueToBeProcessed implements Runnable {
-        @Override
-        public void run() {
-            while(true) {
-                try {
-                    OrderPackage orderPkg = (OrderPackage) p1.get(new ActualField("go"), new FormalField(OrderPackage.class))[1];
-                    p2.put(orderPkg);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }*/
 
     class NotifyPackageToGoBackInQueue implements Runnable {
         @Override
