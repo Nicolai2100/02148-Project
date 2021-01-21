@@ -29,7 +29,6 @@ public class Broker {
     SequentialSpace p4 = new SequentialSpace();
     SequentialSpace p5 = new SequentialSpace();
     SequentialSpace p6 = new SequentialSpace();
-    SequentialSpace p8 = new SequentialSpace();
 
     RemoteSpace serverBroker;
     RemoteSpace brokerServer;
@@ -99,7 +98,7 @@ public class Broker {
         executor.submit(new RemoveOrdersAndSignalBank());
         executor.submit(new SignalWaitingForChanges());
 
-        //scheduledExecutorService.scheduleAtFixedRate(new StockRateListener(), 0, 500, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(new StockRateListener(), 0, 500, TimeUnit.MILLISECONDS);
     }
 
     class GetTicketToBeProcessed implements Runnable {
@@ -179,8 +178,9 @@ public class Broker {
                     Set packagesToNotify = (HashSet) res[1];
 
                     for (Object o : packagesToNotify) {
-                        OrderPackage waitingPkg = (OrderPackage) p4.get(new ActualField(o))[0];
-                        p2.put(waitingPkg);
+                        Object[] pkgres = p4.getp(new ActualField(o));
+                        if (pkgres == null) continue;
+                        p2.put(pkgres[0]);
                     }
 
                     p1.put("go", pkg);
@@ -255,7 +255,10 @@ public class Broker {
             while (true) {
                 try {
                     OrderPackage orderPkg = (OrderPackage) p3.get(new ActualField(FAILURE), new FormalField(OrderPackage.class))[1];
-                    signalWaiting(orderPkg);
+                    p4.put(orderPkg);
+                    for (Order order : orderPkg.getOrders()) {
+                        p4.put(orderPkg.getPackageID(), order.getMatchingOrderType(), order.getStock(), order.getLimit(), orderPkg);
+                    }
                     p5.put(lock);
                     p6.put("ticket");
                 } catch (InterruptedException e) {
@@ -272,31 +275,19 @@ public class Broker {
         }
     }
 
-
-    private void signalWaiting(OrderPackage orderPkg) throws InterruptedException {
-        p4.put(orderPkg);
-        for (Order order : orderPkg.getOrders()) {
-            p4.put(orderPkg.getPackageID(), order.getMatchingOrderType(), order.getStock(), order.getLimit(), orderPkg);
-        }
-    }
-
-
     private void wakeUpLimitOrders(String stock) throws InterruptedException {
-        List<Object[]> signals = waitingPackages.getAll(
+        List<Object[]> signals = p4.getAll(
                 new FormalField(UUID.class),
                 new FormalField(String.class),
                 new ActualField(stock),
                 new FormalField(Integer.class),
-                new ActualField(waiting)
+                new FormalField(OrderPackage.class)
         );
 
         for (Object[] signal : signals) {
-            Object[] pkgTuple = waitingPackages.getp(
-                    new ActualField(signal[0]),
-                    new FormalField(OrderPackage.class)
-            );
-            if (pkgTuple == null) continue;
-            orderPackageQueue.put(pkgTuple[1]);
+            Object[] res = p4.getp(new ActualField(signal[4]));
+            if (res == null) continue;
+            p2.put(res[0]);
         }
     }
 
