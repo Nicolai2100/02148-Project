@@ -1,0 +1,95 @@
+GetTicketToBeProcessed:
+    while (true) {
+        p6.get(new ActualField("ticket"));
+        OrderPackage orderPkg = (OrderPackage) p0.get(new FormalField(OrderPackage.class))[0];
+        //Here comes business logic that assigns a unique ID to the new package and
+        //to each order that it contains. Then it adds each order to a space of orders.
+
+        Stack<OrderPackage> packagesToNotify = new Stack<>();
+        //Here we query p5 for signals of packages waiting for notifications,
+        //Then we add each package to 'packagesToNotify' that satisfies the condition that it
+        //contains at least one order that matches an order from the newly arrived package.
+
+        if (packagesToNotify.isEmpty()) { //if there are no packages to notify.
+            p1.put("proceed", orderPkg);
+        } else {
+            p1.put(orderPkg, packagesToNotify); //If there are packages to notify.
+        }
+    }
+
+NotifyPackageToGoBackInQueue:
+    while (true) {
+        Object[] res = p1.get(new FormalField(OrderPackage.class), new FormalField(Stack.class));
+        OrderPackage pkg = (OrderPackage) res[0];
+        Stack packagesToNotify = (Stack) res[1];
+
+        if (packagesToNotify.isEmpty()) { //If there are no packages to notify
+            p1.put("proceed", pkg);
+        } else {
+            //We take one token (package) from p4 and pass it to p2.
+            //Then we put a new tuple back in p2.
+
+            OrderPackage pkgToNotify = (OrderPackage) packagesToNotify.pop();
+            Object[] pkgres = p4.getp(new ActualField(pkgToNotify));
+            if (pkgres != null) p2.put(pkgres);
+            p1.put(pkg, packagesToNotify);
+        }
+    }
+
+GoInQueueToBeProcessed:
+    while(true) {
+        OrderPackage orderPkg = (OrderPackage) p1.get(new ActualField("go"), new FormalField(OrderPackage.class))[1];
+        p2.put(orderPkg);
+    }
+
+DiscardDueToExpiration:
+    while (true) {
+        p2.get(new ActualField("expired"), new FormalField(OrderPackage.class));
+    }
+
+TryToFindMatches:
+    while (true) {
+        p5.get(new ActualField("lock"));
+        OrderPackage orderPkg = (OrderPackage) p2.get(new FormalField(OrderPackage.class))[0];
+
+        //the method call 'findMatchesForPackage()' executes business logic
+        //that tries to find matches for all orders of the package.
+        //Returns TRUE if it succeeds, FALSE if not.
+        //It also adds all the found matches to a list contained in the package.
+        if (findMatchesForPackage(orderPkg)) {
+            p3.put(SUCCESS, orderPkg);
+        } else {
+            p3.put(FAILURE, orderPkg);
+        }
+    }
+
+RemoveOrdersAndSignalBank:
+    while (true) {
+        OrderPackage orderPkg = (OrderPackage) p3.get(new ActualField(SUCCESS), new FormalField(OrderPackage.class))[1];
+
+        //At this point a package has "completed", and we are ready to make transactions.
+        //Here we have method calls to business logic that removes all the orders and matching orders
+        //from the space. Afterwards we generate a list of transactions and send them
+        //to the bank server.
+
+        p5.put("lock");
+        p6.put("ticket");
+    }
+
+SignalWaitingForNotification:
+    while (true) {
+        OrderPackage orderPkg = (OrderPackage) p3.get(new ActualField(FAILURE), new FormalField(OrderPackage.class))[1];
+
+        //Here we put the package in p4, where it waits to be notified.
+        p4.put(orderPkg);
+
+        //Actually, we also put a number of other signals, that tell what kind of
+        //orders, the package wants to be notified about.
+        for (Order order : orderPkg.getOrders()) {
+            p4.put(orderPkg.getPackageID(), order.getMatchingOrderType(), order.getStock(), order.getLimit(), orderPkg);
+        }
+        p5.put(lock);
+        p6.put("ticket");
+    }
+
+
