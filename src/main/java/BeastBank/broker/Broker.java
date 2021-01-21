@@ -23,6 +23,15 @@ public class Broker {
     SequentialSpace orders = new SequentialSpace();
     SequentialSpace transactions = new SequentialSpace();
 
+    SequentialSpace p0 = new SequentialSpace();
+    SequentialSpace p1 = new SequentialSpace();
+    SequentialSpace p2 = new SequentialSpace();
+    SequentialSpace p3 = new SequentialSpace();
+    SequentialSpace p4 = new SequentialSpace();
+    SequentialSpace p5 = new SequentialSpace();
+    SequentialSpace p6 = new SequentialSpace();
+    SequentialSpace p7 = new SequentialSpace();
+
     RemoteSpace serverBroker;
     RemoteSpace brokerServer;
 
@@ -42,7 +51,7 @@ public class Broker {
 
     public Broker() {
         tradeRepo.add(ORDERS, orders);
-        tradeRepo.add(ORDER_PACKAGES, orderPackageQueue);
+        tradeRepo.add(ORDER_PACKAGES, p0); //orderPackageQueue
         tradeRepo.add(TRANSACTIONS, transactions);
         tradeRepo.add(STOCKS, cachedStocks); //TODO: Skal nok fjernes igen, pt. kun for testing.
         tradeRepo.add("remoteStocks", remoteStocks); //TODO: Skal nok fjernes igen, pt. kun for testing.
@@ -50,7 +59,7 @@ public class Broker {
         this.stockStream = new StockStream();
         boolean connectedToBankServer = false;
 
-        while (!connectedToBankServer) {
+        /*while (!connectedToBankServer) {
             // connect to BeastProject.bank BeastBank.server
             try {
                 String serverService = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, SERVER_BROKER, CONNECTION_TYPE);
@@ -63,7 +72,7 @@ public class Broker {
             } catch (IOException e) {
                 System.out.println(e.getMessage());
             }
-        }
+        }*/
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -79,36 +88,101 @@ public class Broker {
         cachedStocks.put("VESTAS", 100);
         cachedStocks.put("DTU", 100);
         orders.put(lock);
-        executor.submit(new NewOrderPkgHandler());
-        scheduledExecutorService.scheduleAtFixedRate(new StockRateListener(), 0, 500, TimeUnit.MILLISECONDS);
+        p2.put(lock);
+        //executor.submit(new NewOrderPkgHandler());
+
+        executor.submit(new ReceiveNewPackage());
+        executor.submit(new DiscardDueToExpiration());
+        executor.submit(new GetLockAndTryToFindEnoughMatches());
+        executor.submit(new RemoveOrdersAndSignalBank());
+        executor.submit(new SignalWaitingForChanges());
+        executor.submit(new PutPackageBackInQueue());
+        executor.submit(new NotifyWaitingPackage());
+
+        //scheduledExecutorService.scheduleAtFixedRate(new StockRateListener(), 0, 500, TimeUnit.MILLISECONDS);
     }
 
-
-    class NewOrderPkgHandler implements Runnable {
+    class ReceiveNewPackage implements Runnable {
         @Override
         public void run() {
-            while (serviceRunning) {
+            while (true) {
                 try {
-                    OrderPackage orderPkg = (OrderPackage) orderPackageQueue.get(new FormalField(OrderPackage.class))[0];
-                    if (orderPkg.getPackageID() == null) {
-                        addNewPackage(orderPkg);
+                    p2.get(new ActualField(lock));
+                    OrderPackage orderPkg = (OrderPackage) p0.get(new FormalField(OrderPackage.class))[0];
+                    orderPkg.setPackageID(UUID.randomUUID());
+                    Calendar expirationTime = Calendar.getInstance();
+                    expirationTime.add(Calendar.DATE, 1);
+                    orderPkg.setTimeOfExpiration(expirationTime);
+                    for (Order order : orderPkg.getOrders()) {
+                        order.setId(UUID.randomUUID());
+                        orders.put(
+                                order.getId(),
+                                order.getOrderedBy(),
+                                order.getOrderType(),
+                                order.getStock(),
+                                order.getQuantity(),
+                                order.getMinQuantity(),
+                                order.getLimit(),
+                                order.getClientMatch()
+                        );
+                        wakeUpWaitingPackages(order);
                     }
+                    p1.put(orderPkg);
+                    //p5.put("notify", orderPkg);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
-                    if (Calendar.getInstance().after(orderPkg.getTimeOfExpiration()))
-                        continue;
+    class DiscardDueToExpiration implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    p1.get(new ActualField(EXPIRED), new FormalField(OrderPackage.class));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
-                    orders.get(new ActualField(lock));
+    class GetLockAndTryToFindEnoughMatches implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    //p2.get(new ActualField(lock));
+                    OrderPackage orderPkg = (OrderPackage) p1.get(new FormalField(OrderPackage.class))[0];
                     if (findMatchesForPackage(orderPkg)) {
-                        for (Order order : orderPkg.getOrders())
-                            getOrdersFromSpace(order, orders);
-                        List<Transaction> finalTransactions = generateTransactions(orderPkg.getOrders());
-                        transactions.put(finalTransactions); //TODO: Kun for testing
-                        for (Transaction transaction : finalTransactions)
-                            startTransaction(transaction);
+                        p3.put(SUCCESS, orderPkg);
                     } else {
-                        signalWaiting(orderPkg);
+                        p3.put(FAILURE, orderPkg);
                     }
-                    orders.put(lock);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    class RemoveOrdersAndSignalBank implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    OrderPackage orderPkg = (OrderPackage) p3.get(new ActualField(SUCCESS), new FormalField(OrderPackage.class))[1];
+                    for (Order order : orderPkg.getOrders())
+                        getOrdersFromSpace(order, orders);
+
+                    List<Transaction> finalTransactions = generateTransactions(orderPkg.getOrders());
+                    transactions.put(finalTransactions); //TODO: Kun for testing
+                    /*for (Transaction transaction : finalTransactions)
+                        startTransaction(transaction);*/
+
+                    p2.put(lock);
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -117,26 +191,96 @@ public class Broker {
         }
     }
 
+    class SignalWaitingForChanges implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    OrderPackage orderPkg = (OrderPackage) p3.get(new ActualField(FAILURE), new FormalField(OrderPackage.class))[1];
+                    signalWaiting(orderPkg);
+                    p2.put(lock);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    class NotifyWaitingPackage implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    //OrderPackage orderPkg = (OrderPackage) p3.get(new ActualField("notify"), new FormalField(OrderPackage.class))[1];
+
+                    List list = (ArrayList) p5.get(new ActualField("notify"), new FormalField(List.class))[0];
+                    UUID id = (UUID) list.remove(0);
+                    p6.put(id);
+                    if (list.isEmpty()) {
+                        p5.put("done");
+                    } else {
+                        p5.put(list);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    class PutPackageBackInQueue implements Runnable {
+        @Override
+        public void run() {
+            while(true) {
+                try {
+                    UUID id = (UUID) p6.get(new FormalField(UUID.class))[0];
+                    OrderPackage orderPkg = (OrderPackage) p4.get(new ActualField(id), new FormalField(OrderPackage.class))[1];
+                    if (Calendar.getInstance().after(orderPkg.getTimeOfExpiration())) {
+                        p1.put(EXPIRED, orderPkg);
+                    } else {
+                        p1.put(orderPkg);
+                    }
+
+
+                    for (Order order : orderPkg.getOrders()) {
+                        List<Object[]> signals = p4.getAll(
+                                new FormalField(UUID.class),
+                                new ActualField(order.orderType),
+                                new ActualField(order.getStock()),
+                                new FormalField(Integer.class)
+                        );
+                        for (Object[] signal : signals) {
+                            Object[] pkgTuple = p4.getp(
+                                    new ActualField(signal[0]),
+                                    new FormalField(OrderPackage.class)
+                            );
+                            if (pkgTuple == null) continue;
+                            p1.put(pkgTuple[1]);
+                        }
+                    }
+
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+/*
+
+    class Notify implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                p2.get(new ActualField("go"), new FormalField())
+            }
+        }
+    }
+*/
+
 
     private void addNewPackage(OrderPackage orderPkg) throws InterruptedException {
-        orderPkg.setPackageID(UUID.randomUUID());
-        Calendar expirationTime = Calendar.getInstance();
-        expirationTime.add(Calendar.DATE, 1);
-        orderPkg.setTimeOfExpiration(expirationTime);
-        for (Order order : orderPkg.getOrders()) {
-            order.setId(UUID.randomUUID());
-            orders.put(
-                    order.getId(),
-                    order.getOrderedBy(),
-                    order.getOrderType(),
-                    order.getStock(),
-                    order.getQuantity(),
-                    order.getMinQuantity(),
-                    order.getLimit(),
-                    order.getClientMatch()
-            );
-            wakeUpWaitingPackages(order);
-        }
+
     }
 
     class StockRateListener implements Runnable {
@@ -148,27 +292,26 @@ public class Broker {
 
 
     private void signalWaiting(OrderPackage orderPkg) throws InterruptedException {
-        waitingPackages.put(orderPkg.getPackageID(), orderPkg);
+        p5.put(orderPkg.getPackageID(), orderPkg);
         for (Order order : orderPkg.getOrders()) {
-            waitingPackages.put(orderPkg.getPackageID(), order.getMatchingOrderType(), order.getStock(), order.getLimit(), waiting);
+            p5.put(orderPkg.getPackageID(), order.getMatchingOrderType(), order.getStock(), order.getLimit());
         }
     }
 
     private void wakeUpWaitingPackages(Order order) throws InterruptedException {
-        List<Object[]> signals = waitingPackages.getAll(
+        List<Object[]> signals = p5.getAll(
                 new FormalField(UUID.class),
                 new ActualField(order.orderType),
                 new ActualField(order.getStock()),
-                new FormalField(Integer.class),
-                new ActualField(waiting)
+                new FormalField(Integer.class)
         );
         for (Object[] signal : signals) {
-            Object[] pkgTuple = waitingPackages.getp(
+            Object[] pkgTuple = p5.getp(
                     new ActualField(signal[0]),
                     new FormalField(OrderPackage.class)
             );
             if (pkgTuple == null) continue;
-            orderPackageQueue.put(pkgTuple[1]);
+            p1.put(pkgTuple[1]);
         }
     }
 

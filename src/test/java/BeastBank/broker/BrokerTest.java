@@ -42,8 +42,8 @@ class BrokerTest {
     @BeforeEach
     void setup() throws InterruptedException, IOException {
         //Broker.main(new String[]{});
-        //broker = new Broker();
-        //broker.startService();
+        broker = new Broker();
+        broker.startService();
         orders = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/ORDERS?keep");
         orderPkgs = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/ORDER_PACKAGES?keep");
         transactions = new RemoteSpace("tcp://" + brokerHostname + ":" + brokerPort + "/TRANSACTIONS?keep");
@@ -217,6 +217,7 @@ class BrokerTest {
             //ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get(4, TimeUnit.SECONDS)[0];
         });
     }
+
     @Test
     void test8() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
