@@ -140,7 +140,7 @@ public class Broker {
                         }
                     }
                     if (packagesToNotify.isEmpty()) {
-                        p1.put("go", orderPkg);
+                        p1.put(PROCEED, orderPkg);
                     } else {
                         p1.put(orderPkg, packagesToNotify);
                     }
@@ -162,7 +162,7 @@ public class Broker {
                     Stack packagesToNotify = (Stack) res[1];
 
                     if (packagesToNotify.isEmpty()) {
-                        p1.put("go", pkg);
+                        p1.put(PROCEED, pkg);
                     } else {
                         OrderPackage pkgToNotify = (OrderPackage) packagesToNotify.pop();
                         Object[] pkgres = p3.getp(new ActualField(pkgToNotify));
@@ -196,7 +196,7 @@ public class Broker {
         public void run() {
             while (true) {
                 try {
-                    OrderPackage orderPkg = (OrderPackage) p1.get(new ActualField("go"), new FormalField(OrderPackage.class))[1];
+                    OrderPackage orderPkg = (OrderPackage) p1.get(new ActualField(PROCEED), new FormalField(OrderPackage.class))[1];
                     if (findMatchesForPackage(orderPkg)) {
                         p2.put(SUCCESS, orderPkg);
                     } else {
@@ -220,8 +220,8 @@ public class Broker {
 
                     List<Transaction> finalTransactions = generateTransactions(orderPkg.getOrders());
                     transactions.put(finalTransactions); //TODO: Kun for testing
-                    /*for (Transaction transaction : finalTransactions)
-                        startTransaction(transaction);*/
+                    for (Transaction transaction : finalTransactions)
+                        startTransaction(transaction);
 
                     p4.put(lock);
 

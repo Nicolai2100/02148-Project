@@ -9,6 +9,7 @@ public class Requests {
     public static final String EXPIRED = "expired";
     public static final String SUCCESS = "success";
     public static final String FAILURE = "failure";
+    public static final String PROCEED = "proceed";
 
     public static final String QUERY_STOCKS = "query";
     public static final String QUERY_MARKET_ORDERS = "QUERY_MARKETORDERS";
