@@ -6,6 +6,7 @@ import BeastBank.shared.Channels;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import static BeastBank.shared.StockNames.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,9 +31,6 @@ class BrokerTest {
     static final String alice = "ALICE";
     static final String bob = "BOB";
     static final String charlie = "CHARLIE";
-    static final String apple = "AAPL";
-    static final String tesla = "TESLA";
-    static final String vestas = "VESTAS";
 
     Callable<Object[]> getDoneTask = () -> {
         Object[] res = transactions.get(new FormalField(List.class));
@@ -76,14 +74,14 @@ class BrokerTest {
     @Test
     void test1() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
-        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
-        alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(APPLE).quantity(10).build());
+        alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(TESLA).quantity(5).build());
 
         OrderPackage bobpkg = new OrderPackage();
-        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(apple).quantity(10).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(APPLE).quantity(10).build());
 
         OrderPackage charliepkg = new OrderPackage();
-        charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(tesla).quantity(5).build());
+        charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(TESLA).quantity(5).build());
 
         orderPkgs.put(alicepkg);
         orderPkgs.put(charliepkg);
@@ -101,16 +99,16 @@ class BrokerTest {
     @Test
     void test2() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
-        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
-        alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(APPLE).quantity(10).build());
+        alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(TESLA).quantity(5).build());
 
         OrderPackage bobpkg = new OrderPackage();
-        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(apple).quantity(10).build());
-        bobpkg.addOrder(new Order.OrderBuilder().sell().orderedBy(bob).stock(vestas).quantity(8).minQuantity(5).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(APPLE).quantity(10).build());
+        bobpkg.addOrder(new Order.OrderBuilder().sell().orderedBy(bob).stock(VESTAS).quantity(8).minQuantity(5).build());
 
         OrderPackage charliepkg = new OrderPackage();
-        charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(tesla).quantity(5).build());
-        charliepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(charlie).stock(vestas).quantity(5).build());
+        charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(TESLA).quantity(5).build());
+        charliepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(charlie).stock(VESTAS).quantity(5).build());
 
         orderPkgs.put(alicepkg);
         orderPkgs.put(charliepkg);
@@ -128,17 +126,17 @@ class BrokerTest {
     @Test
     void test3() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
-        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(apple).quantity(10).build());
-        alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(tesla).quantity(5).build());
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).stock(APPLE).quantity(10).build());
+        alicepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(alice).stock(TESLA).quantity(5).build());
 
         OrderPackage bobpkg = new OrderPackage();
-        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(apple).quantity(10).build());
-        bobpkg.addOrder(new Order.OrderBuilder().sell().orderedBy(bob).stock(vestas).quantity(8).minQuantity(5).build());
-        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock("DTU").quantity(10).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(APPLE).quantity(10).build());
+        bobpkg.addOrder(new Order.OrderBuilder().sell().orderedBy(bob).stock(VESTAS).quantity(8).minQuantity(5).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).stock(DTU).quantity(10).build());
 
         OrderPackage charliepkg = new OrderPackage();
-        charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(tesla).quantity(5).build());
-        charliepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(charlie).stock(vestas).quantity(5).build());
+        charliepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(charlie).stock(TESLA).quantity(5).build());
+        charliepkg.addOrder(new Order.OrderBuilder().buy().orderedBy(charlie).stock(VESTAS).quantity(5).build());
 
         orderPkgs.put(alicepkg);
         orderPkgs.put(charliepkg);
@@ -158,10 +156,10 @@ class BrokerTest {
     @Test
     void test4() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
-        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(APPLE).clientMatch(bob).build());
 
         OrderPackage bobpkg = new OrderPackage();
-        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).clientMatch(alice).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(APPLE).clientMatch(alice).build());
 
         orderPkgs.put(alicepkg);
         orderPkgs.put(bobpkg);
@@ -173,10 +171,10 @@ class BrokerTest {
     @Test
     void test5() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
-        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(APPLE).clientMatch(bob).build());
 
         OrderPackage bobpkg = new OrderPackage();
-        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).clientMatch(charlie).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(APPLE).clientMatch(charlie).build());
 
         orderPkgs.put(alicepkg);
         orderPkgs.put(bobpkg);
@@ -189,10 +187,10 @@ class BrokerTest {
     @Test
     void test6() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
-        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).clientMatch(bob).build());
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(APPLE).clientMatch(bob).build());
 
         OrderPackage bobpkg = new OrderPackage();
-        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(APPLE).build());
 
         orderPkgs.put(alicepkg);
         orderPkgs.put(bobpkg);
@@ -204,10 +202,10 @@ class BrokerTest {
     @Test
     void test7() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
-        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(apple).limit(150).build());
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(APPLE).limit(150).build());
 
         OrderPackage bobpkg = new OrderPackage();
-        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(apple).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(APPLE).build());
 
         orderPkgs.put(alicepkg);
         orderPkgs.put(bobpkg);
@@ -221,17 +219,17 @@ class BrokerTest {
     @Test
     void test8() throws Exception {
         OrderPackage alicepkg = new OrderPackage();
-        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(tesla).limit(150).build());
+        alicepkg.addOrder(new Order.OrderBuilder().sell().orderedBy(alice).quantity(10).stock(TESLA).limit(150).build());
 
         OrderPackage bobpkg = new OrderPackage();
-        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(tesla).build());
+        bobpkg.addOrder(new Order.OrderBuilder().buy().orderedBy(bob).quantity(10).stock(TESLA).build());
 
         orderPkgs.put(alicepkg);
         orderPkgs.put(bobpkg);
 
         Thread.sleep(2000);
-        //stocks.get(new ActualField(tesla), new FormalField(Integer.class));
-        stocks.put(tesla, 160);
+        //stocks.get(new ActualField(TESLA), new FormalField(Integer.class));
+        stocks.put(TESLA, 160);
 
         ArrayList res1 = (ArrayList) executor.submit(getDoneTask).get()[0];
         ArrayList res2 = (ArrayList) executor.submit(getDoneTask).get()[0];

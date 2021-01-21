@@ -82,8 +82,8 @@ public class Broker {
         serviceRunning = true;
         cachedStocks.put(APPLE, 100); //Just for testing
         cachedStocks.put(TESLA, 100);
-        cachedStocks.put("VESTAS", 100);
-        cachedStocks.put("DTU", 100);
+        cachedStocks.put(VESTAS, 100);
+        cachedStocks.put(DTU, 100);
         p4.put(lock);
 
         executor.submit(new GetLockAndStartProcessing());
