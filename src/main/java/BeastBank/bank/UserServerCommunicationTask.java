@@ -128,8 +128,7 @@ public class UserServerCommunicationTask implements Callable<String> {
         }
     }
 
-
-    private OrderPackage getOrderFromClient() throws Exception {
+    private OrderPackage getOrderFromClient(String orderType) throws Exception {
         var responseObj = userServer.get(
                 new FormalField(String.class),
                 new FormalField(Integer.class),
@@ -145,55 +144,59 @@ public class UserServerCommunicationTask implements Callable<String> {
         String targetUser = responseObj[4].toString();
 
         var op = new OrderPackage();
+        if (orderType.equalsIgnoreCase(SELL)) {
 
-        if (targetUser.length() > 1) {
-            op.addOrder(new Order.OrderBuilder()
-                    .sell().orderedBy(username)
-                    .stock(stockName)
-                    .quantity(amount)
-                    .minQuantity(minAmountReq)
-                    .limit(minPricePerStock)
-                    .clientMatch(targetUser)
-                    .build());
+            if (targetUser.length() > 1) {
+                op.addOrder(new Order.OrderBuilder()
+                        .sell()
+                        .orderedBy(username)
+                        .stock(stockName)
+                        .quantity(amount)
+                        .minQuantity(minAmountReq)
+                        .limit(minPricePerStock)
+                        .clientMatch(targetUser)
+                        .build());
+            } else {
+                op.addOrder(new Order.OrderBuilder()
+                        .sell()
+                        .orderedBy(username)
+                        .stock(stockName)
+                        .quantity(amount)
+                        .minQuantity(minAmountReq)
+                        .limit(minPricePerStock)
+                        .build());
+            }
+
         } else {
-            op.addOrder(new Order.OrderBuilder()
-                    .sell().orderedBy(username)
-                    .stock(stockName)
-                    .quantity(amount)
-                    .minQuantity(minAmountReq)
-                    .limit(minPricePerStock)
-                    .build());
+            if (targetUser.length() > 1) {
+                op.addOrder(new Order.OrderBuilder()
+                        .buy()
+                        .orderedBy(username)
+                        .stock(stockName)
+                        .quantity(amount)
+                        .minQuantity(minAmountReq)
+                        .limit(minPricePerStock)
+                        .clientMatch(targetUser)
+                        .build());
+            } else {
+                op.addOrder(new Order.OrderBuilder()
+                        .buy()
+                        .orderedBy(username)
+                        .stock(stockName)
+                        .quantity(amount)
+                        .minQuantity(minAmountReq)
+                        .limit(minPricePerStock)
+                        .build());
+            }
         }
         return op;
     }
 
     private void sellStock() {
         System.out.println(UserServerCommunicationTask.class.getName() + ": Processing order...");
-/*
-        var responseObj = userServer.get(
-                new FormalField(String.class),
-                new FormalField(Integer.class),
-                new FormalField(Integer.class),
-                new FormalField(Integer.class));
-
-        String stockName = responseObj[0].toString();
-        int amount = Integer.parseInt(responseObj[1].toString());
-        int minPricePerStock = Integer.parseInt(responseObj[2].toString());
-        minPricePerStock = minPricePerStock == 0 ? -1 : minPricePerStock;
-        int minAmountReq = Integer.parseInt(responseObj[3].toString());
-
-        var op = new OrderPackage();
-            op.addOrder(new Order.OrderBuilder()
-                    .sell().orderedBy(username)
-                    .stock(stockName)
-                    .quantity(amount)
-                    .minQuantity(minAmountReq)
-                    .limit((int) minPricePerStock)
-                    .build());
-        */
 
         try {
-            OrderPackage op = getOrderFromClient();
+            OrderPackage op = getOrderFromClient(SELL);
             orderPackages.put(op);
             System.out.println(serverStr + "Order placed...");
             serverUser.put("Order placed");
@@ -202,34 +205,11 @@ public class UserServerCommunicationTask implements Callable<String> {
         }
     }
 
-    private void buyStock() throws InterruptedException {
+    private void buyStock() {
         System.out.println(UserServerCommunicationTask.class.getName() + ": Processing order...");
-/*
-        var responseObj = userServer.get(
-                new FormalField(String.class),
-                new FormalField(Integer.class),
-                new FormalField(Integer.class),
-                new FormalField(Integer.class));
 
-        String stockName = responseObj[0].toString();
-        int amount = Integer.parseInt(responseObj[1].toString());
-        int minPricePerStock = Integer.parseInt(responseObj[2].toString());
-        minPricePerStock = minPricePerStock == 0 ? -1 : minPricePerStock;
-        int minAmountReq = Integer.parseInt(responseObj[3].toString());
-
-            var op = new OrderPackage();
-            op.addOrder(new Order
-                    .OrderBuilder()
-                    .buy()
-                    .orderedBy(username)
-                    .stock(stockName)
-                    .quantity(amount)
-                    .minQuantity(minAmountReq)
-                    .limit((int) minPricePerStock)
-                    .build());
-*/
         try {
-            OrderPackage op = getOrderFromClient();
+            OrderPackage op = getOrderFromClient(BUY);
             orderPackages.put(op);
             System.out.println(serverStr + "Order placed...");
             serverUser.put("Order placed");

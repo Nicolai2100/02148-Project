@@ -64,17 +64,7 @@ public class AccountService {
 
                         System.out.println(AccountService.class.getName() + ": " + requestStr + " for " + username + " received...");
 
-                        //Does the system contain the user?
-                        Optional<User> optionalUser = FakeUserDataAccessService.getInstance().selectUserByUsername(username);
-                        if (optionalUser.isPresent()) {
-                            System.out.println(AccountService.class.getName() + ": Account BeastProject.service: Credentials verified");
-                            accountServiceServer.put(username, OK);
-                            requestDecider(requestStr, optionalUser.get());
-
-                        } else {
-                            System.out.println(AccountService.class.getName() + ": No such user exists");
-                            accountServiceServer.put(username, KO);
-                        }
+                        requestDecider(requestStr, username);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         connectedToServer = false;
@@ -84,13 +74,13 @@ public class AccountService {
         }
     }
 
-    public void requestDecider(String request, User user) throws Exception {
+    public void requestDecider(String request, String username) throws Exception {
         switch (request) {
             case QUERY_STOCKS:
-                queryAccountRequest(user);
+                queryAccountRequest(username);
                 break;
             case TRANSACTION:
-                transactionRequest(user);
+                transactionRequest(username);
                 break;
             default: {
                 System.out.println(AccountService.class.getName() + ": ERROR IN SWITCH STMT");
@@ -99,7 +89,7 @@ public class AccountService {
         }
     }
 
-    public void makeTransaction(String stockName, int amount, User seller, User buyer, double pricePerStock) {
+    public boolean makeTransaction(String stockName, int amount, User seller, User buyer, double pricePerStock) {
         Stock stock = null;
         try {
             stock = seller.getAccount().withDrawStock(stockName, amount);
@@ -116,53 +106,73 @@ public class AccountService {
                 seller.getAccount().receivePayment(payment);
                 FakeUserDataAccessService.getInstance().update(seller.getId(), seller);
 
+                System.out.println(AccountService.class.getName() + ": Transaction finished...");
+                return true;
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+        return false;
     }
 
-    public void transactionRequest(User user) throws InterruptedException {
-        //sender name, receiver name, stock name, price per stock, amount
-        Transaction transaction = new Transaction(serverAccountService.get(
-                new ActualField(user.getName()),
+    public void transactionRequest(String username) throws InterruptedException {
+        Optional<User> optionalUser = selectOptionalUser(username);
+
+        var t = serverAccountService.get(
+                new ActualField(username), //seller
+                new FormalField(String.class), //buyer
                 new FormalField(String.class),
-                new FormalField(String.class),
-                //new FormalField(Double.class),
                 new FormalField(Integer.class),
-                new FormalField(Integer.class)
-        ));
+                new FormalField(Integer.class));
+
+        String sellerName = t[0].toString();
+        String buyerName = t[1].toString();
+        String stockName = t[2].toString();
+        int price = Integer.parseInt(t[3].toString());
+        int amount = Integer.parseInt(t[4].toString());
 
         User seller = null, buyer = null;
         try {
-            seller = FakeUserDataAccessService.getInstance().selectUserByUsername(transaction.getSeller()).get();
-            buyer = FakeUserDataAccessService.getInstance().selectUserByUsername(transaction.getBuyer()).get();
+            seller = FakeUserDataAccessService.getInstance().selectUserByUsername(sellerName).get();
+            buyer = FakeUserDataAccessService.getInstance().selectUserByUsername(buyerName).get();
         } catch (NoSuchElementException e) {
             e.printStackTrace();
         }
 
-        makeTransaction(transaction.getStockName(),
-                transaction.getQuantity(),
+        boolean transactionOk = makeTransaction(
+                stockName,
+                amount,
                 seller,
                 buyer,
-                transaction.getPrice());
+                price);
+
+        if (transactionOk) accountServiceServer.put(sellerName, buyerName, OK);
+        else accountServiceServer.put(sellerName, buyerName, KO);
     }
 
-    public void queryAccountRequest(User user) throws Exception {
-        System.out.println(AccountService.class.getName() + ": Retrieving stocks for user: " + user.getName() + "...");
-        ArrayList<Stock> stocks = returnListOfUserStocks(user);
-        System.out.println(AccountService.class.getName() + ": Sending stocks to BeastBank.server...");
+    public void queryAccountRequest(String username) throws Exception {
+        Optional<User> optionalUser = selectOptionalUser(username);
+        if (optionalUser.isEmpty()) {
+            accountServiceServer.put(username, KO);
+        } else {
+            accountServiceServer.put(username, OK);
+            User user = optionalUser.get();
 
-        accountServiceServer.put(user.getName(), user.getAccount().getBalance());
+            System.out.println(AccountService.class.getName() + ": Retrieving stocks for user: " + user.getName() + "...");
+            ArrayList<Stock> stocks = returnListOfUserStocks(user);
+            System.out.println(AccountService.class.getName() + ": Sending stocks to BeastBank.server...");
 
-        for (Stock stock : stocks) {
-            accountServiceServer.put(user.getName(), MORE_DATA);
-            accountServiceServer.put(user.getName(), stock);
+            accountServiceServer.put(user.getName(), user.getAccount().getBalance());
+
+            for (Stock stock : stocks) {
+                accountServiceServer.put(user.getName(), MORE_DATA);
+                accountServiceServer.put(user.getName(), stock);
+            }
+            accountServiceServer.put(user.getName(), NO_MORE_DATA);
         }
-        accountServiceServer.put(user.getName(), NO_MORE_DATA);
     }
 
-    public ArrayList<Stock> returnListOfUserStocks(User user) throws InterruptedException {
+    public ArrayList<Stock> returnListOfUserStocks(User user) {
         ArrayList<Stock> stocks = new ArrayList<>();
         Map<String, Stock> map = user.getAccount().getStocks();
 
@@ -170,5 +180,16 @@ public class AccountService {
             stocks.add(entry.getValue());
         }
         return stocks;
+    }
+
+    private Optional<User> selectOptionalUser(String username) {
+        //Does the system contain the user?
+        Optional<User> optionalUser = FakeUserDataAccessService.getInstance().selectUserByUsername(username);
+        if (optionalUser.isPresent()) {
+            System.out.println(AccountService.class.getName() + ": User exist, continuing to process request...");
+        } else {
+            System.out.println(AccountService.class.getName() + ": No such user exists...");
+        }
+        return optionalUser;
     }
 }

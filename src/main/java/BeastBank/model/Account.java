@@ -29,7 +29,7 @@ public class Account {
             Stock stockToWithdraw = this.stockMap.remove(stockName);
 
             if (stockToWithdraw.getAmount() < amount) {
-                String throwStr = String.format("Requested amount %d is greater than sender", amount);
+                String throwStr = String.format("Requested amount %d is greater than what is owned", amount);
                 throw new StockException(throwStr);
             } else if (stockToWithdraw.getAmount() == amount) {
                 return stockToWithdraw;
