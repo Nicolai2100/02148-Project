@@ -13,11 +13,11 @@ import static BeastBank.shared.StockNames.*;
 
 public class Broker {
 
-    //Brokerens hostname og port
+    //Hostname and port of the broker
     String hostName = BROKER_HOSTNAME;
     int port = BROKER_PORT;
 
-    SequentialSpace cachedStocks = new SequentialSpace(); //Skal indeholde info og kurser på de forskellige aktier på markedet.
+    SequentialSpace cachedStocks = new SequentialSpace();
     SequentialSpace remoteStocks = new SequentialSpace();
     SequentialSpace orders = new SequentialSpace();
     SequentialSpace transactions = new SequentialSpace();
@@ -37,7 +37,6 @@ public class Broker {
     public static final String sellOrderFlag = SELL;
     public static final String buyOrderFlag = BUY;
     static final String lock = "lock";
-    static final String waiting = "WAITING";
 
     ExecutorService executor = Executors.newCachedThreadPool();
     ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
@@ -80,12 +79,14 @@ public class Broker {
 
     public void startService() throws InterruptedException {
         serviceRunning = true;
-        cachedStocks.put(APPLE, 100); //Just for testing
+        //TODO: These stock prices are currently just for having something to test.
+        cachedStocks.put(APPLE, 100);
         cachedStocks.put(TESLA, 100);
         cachedStocks.put(VESTAS, 100);
         cachedStocks.put(DTU, 100);
         p4.put(lock);
 
+        //We start each thread that constitute the transitions of our petri-net
         executor.submit(new GetLockAndStartProcessing());
         executor.submit(new NotifyPackageToGoBackInQueue());
         executor.submit(new DiscardDueToExpiration());
@@ -93,6 +94,8 @@ public class Broker {
         executor.submit(new RemoveOrdersAndSignalBank());
         executor.submit(new SignalWaitingForNotification());
 
+        //TODO: This could be done better. Ideally we should listen for notificartions when certain stock prices change.
+        //Instead, for now, we just check the prices very half second.
         scheduledExecutorService.scheduleAtFixedRate(new StockRateListener(), 0, 500, TimeUnit.MILLISECONDS);
     }
 
