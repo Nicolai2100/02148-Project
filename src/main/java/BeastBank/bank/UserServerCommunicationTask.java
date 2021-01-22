@@ -66,25 +66,21 @@ public class UserServerCommunicationTask implements Callable<String> {
             switch (request) {
                 case QUERY_STOCKS:
                     queryStocks();
-
+                    break;
                 case QUERY_MARKET_ORDERS:
                     queryMarket();
-
                     break;
                 case BUY:
                     buyStock();
                     break;
-
                 case SELL:
                     sellStock();
                     break;
-
                 case LOG_OUT:
                     logOut();
                     break;
-
                 default:
-                    System.out.println(serverStr +  "USCom: ERROR IN SWITCH STMT");
+                    System.out.println(serverStr + "USCom: ERROR IN SWITCH STMT");
             }
 
         } catch (Exception e) {
@@ -230,9 +226,11 @@ public class UserServerCommunicationTask implements Callable<String> {
                     new ActualField(username),
                     new FormalField(Double.class));
 
+            //Send balance
             serverUser.put(accountServiceResponse[1]);
 
             do {
+                //Send stocks
                 accountServiceResponse = Server.accountServiceServer.get(
                         new ActualField(username),
                         new FormalField(String.class));
@@ -245,13 +243,11 @@ public class UserServerCommunicationTask implements Callable<String> {
                             new ActualField(username),
                             new FormalField(Stock.class));
 
-                    ArrayList<Stock> stocks = new ArrayList<>();
-                    stocks.add((Stock) dataResponse[1]);
-
-                    //Sending data to BeastBank.client
+                    //Send data to client
                     System.out.println(serverStr + "Sending data");
                     serverUser.put(MORE_DATA);
                     serverUser.put((Stock) dataResponse[1]);
+
                 } else if (responseStr.equals(NO_MORE_DATA)) {
                     serverUser.put(NO_MORE_DATA);
                     break;

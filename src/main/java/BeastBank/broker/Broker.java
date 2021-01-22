@@ -108,12 +108,10 @@ public class Broker {
                 try {
                     p4.get(new ActualField(lock));
                     OrderPackage orderPkg = (OrderPackage) p0.get(new FormalField(OrderPackage.class))[0];
-
                     Stack<OrderPackage> packagesToNotify = new Stack<>();
 
                     if (orderPkg.getPackageID() == null) {
                         System.out.printf("%s Received new order: %s \n ", brokerStr,orderPkg.getOrders().get(0).toString());
-
                         orderPkg.setPackageID(UUID.randomUUID());
                         Calendar expirationTime = Calendar.getInstance();
                         expirationTime.add(Calendar.DATE, 1);

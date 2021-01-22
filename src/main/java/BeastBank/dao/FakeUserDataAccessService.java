@@ -21,7 +21,7 @@ public class FakeUserDataAccessService implements UserDao {
         String password = "password";
         Account aliceAccount = new Account(1000.0);
         HashMap<String, Stock> aliceStockMap = new HashMap<>();
-        aliceStockMap.put(TESLA, new Stock(TESLA, 20, 2));
+        aliceStockMap.put(TESLA, new Stock(TESLA, 20, 4));
         aliceStockMap.put(APPLE, new Stock(APPLE, 31, 1));
         aliceAccount.setStocks(aliceStockMap);
         User alice = new User("Alice", UUID.randomUUID(), SharedEncryption.encryptPassword(password), aliceAccount);
@@ -29,7 +29,6 @@ public class FakeUserDataAccessService implements UserDao {
 
         Account bobAccount = new Account(2000.0);
         HashMap<String, Stock> bobStockMap = new HashMap<>();
-        bobStockMap.put(TESLA, new Stock(TESLA, 20, 1));
         bobStockMap.put(APPLE, new Stock(APPLE, 31, 2));
         bobAccount.setStocks(bobStockMap);
         User bob = new User("Bob", UUID.randomUUID(), SharedEncryption.encryptPassword(password), bobAccount);

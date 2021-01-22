@@ -1,6 +1,5 @@
 package BeastBank.service;
 
-import BeastBank.bank.UserServerCommunicationTask;
 import BeastBank.dao.FakeUserDataAccessService;
 import BeastBank.model.Stock;
 import BeastBank.model.User;
