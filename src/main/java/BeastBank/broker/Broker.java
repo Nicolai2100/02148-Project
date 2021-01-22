@@ -77,6 +77,10 @@ public class Broker {
         broker.startService();
     }
 
+    /**
+     * Starts the broker service by submitting each runnable to the executor.
+     * @throws InterruptedException
+     */
     public void startService() throws InterruptedException {
         serviceRunning = true;
         //TODO: These stock prices are currently just for having something to test.
@@ -94,11 +98,19 @@ public class Broker {
         executor.submit(new RemoveOrdersAndSignalBank());
         executor.submit(new SignalWaitingForNotification());
 
-        //TODO: This could be done better. Ideally we should listen for notificartions when certain stock prices change.
+        //TODO: This could be done better. Ideally we should listen for notifications when certain stock prices change.
         //Instead, for now, we just check the prices very half second.
         scheduledExecutorService.scheduleAtFixedRate(new StockRateListener(), 0, 500, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * This runnable is responsible for getting the lock from p4 and an order package from p0
+     * Then proceeds to check if the order package is brand new (doesn't have an ID yet), and if so,
+     * it assigns it an ID and adds all its orders to the order space.
+     * Furthermore, if the package is new, it gets all signals from waiting packages in P3 and
+     * constructs a stack of packages that needs to be notified.
+     * This stack may then be passed on to P1, if it is not empty.
+     */
     class GetLockAndStartProcessing implements Runnable {
         @Override
         public void run() {
@@ -109,12 +121,17 @@ public class Broker {
 
                     Stack<OrderPackage> packagesToNotify = new Stack<>();
 
+                    //Here we check, if the order package is brand new and hasn't been processed before.
                     if (orderPkg.getPackageID() == null) {
+                        //We give it a unique ID
                         orderPkg.setPackageID(UUID.randomUUID());
+
+                        //We set the expiration time
                         Calendar expirationTime = Calendar.getInstance();
                         expirationTime.add(Calendar.DATE, 1);
                         orderPkg.setTimeOfExpiration(expirationTime);
 
+                        //We add all its orders to the order space.
                         for (Order order : orderPkg.getOrders()) {
                             order.setId(UUID.randomUUID());
                             orders.put(
@@ -129,6 +146,7 @@ public class Broker {
                             );
                         }
 
+                        //We get all signals from P3 and construct the stack of packages that needs to be notified.
                         for (Order order : orderPkg.getOrders()) {
                             List<Object[]> signals = p3.getAll(
                                     new FormalField(UUID.class),
@@ -142,6 +160,9 @@ public class Broker {
                             }
                         }
                     }
+
+                    //Here we put a tuple in P1. If no packages need to be notified,
+                    //we add the signal "PROCEED".
                     if (packagesToNotify.isEmpty()) {
                         p1.put(PROCEED, orderPkg);
                     } else {
@@ -154,6 +175,14 @@ public class Broker {
         }
     }
 
+    /**
+     *This runnable is responsible for notifying waiting packages and putting them back in P0,
+     * so that they may be processed again.
+     * It does so by getting a tuple with an order package and a stack containing packages to notify from P1.
+     * It then "pops" the first element from the stack and gets the matching order from P3 and puts it in P0.
+     * Afterwards it puts a new tuple back in P1. If the stack is empty, it puts a tuple with a signal that
+     * makes it go through another transition.
+     */
     class NotifyPackageToGoBackInQueue implements Runnable {
         @Override
         public void run() {
@@ -161,9 +190,13 @@ public class Broker {
                 try {
                     Object[] res = p1.get(new FormalField(OrderPackage.class), new FormalField(Stack.class));
                     OrderPackage pkg = (OrderPackage) res[0];
-                    //Set packagesToNotify = (HashSet) res[1];
                     Stack packagesToNotify = (Stack) res[1];
 
+                    //If the stack is empty, put a tuple in p1 that signals that it may
+                    //proceed through another transition.
+                    //If it is not empty, pop an element (a package) from the stack,
+                    //and then get the stack from P3 and put it in P0. Also put a tuple back in P1
+                    //with that contains the stack.
                     if (packagesToNotify.isEmpty()) {
                         p1.put(PROCEED, pkg);
                     } else {
@@ -181,6 +214,12 @@ public class Broker {
     }
 
 
+    /**
+     * This runnable gets order packages from P0 that are expired.
+     * TODO: This should perhaps also get expired packages from other places, cause what
+     * if a package is waiting in P3 and expires? Then it should just be removed.
+     * But for now, we only remove them from P0 to conform to our petri-net.
+     */
     class DiscardDueToExpiration implements Runnable {
         @Override
         public void run() {
