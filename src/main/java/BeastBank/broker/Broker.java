@@ -233,6 +233,13 @@ public class Broker {
         }
     }
 
+    /**
+     * This runnable is responsible for getting an order package from P1 and then
+     * call the methods that tries to determine if the package can find matches for
+     * all its orders and "complete".
+     * Afterwards, it puts a tuple in P2 that contains either the signal SUCCESS or FAILURE
+     * to indicate the result.
+     */
     class TryToFindMatches implements Runnable {
         @Override
         public void run() {
@@ -251,6 +258,13 @@ public class Broker {
         }
     }
 
+    /**
+     * This runnable gets order packages from P2 that succeeded in finding matches
+     * for all its orders. Then it proceeds to remove all the involved orders from
+     * the order space, and then generates a list of transactions that needs to be made.
+     * It then sends these transactions to the bank server, which will perform the transactions.
+     * Finally it releases the lock by putting it back in P4.
+     */
     class RemoveOrdersAndSignalBank implements Runnable {
         @Override
         public void run() {
