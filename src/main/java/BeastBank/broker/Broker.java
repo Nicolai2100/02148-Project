@@ -207,7 +207,14 @@ public class Broker {
                     } else {
                         OrderPackage pkgToNotify = (OrderPackage) packagesToNotify.pop();
                         Object[] pkgres = p3.getp(new ActualField(pkgToNotify));
-                        if (pkgres != null) p0.put(pkgres);
+                        if (pkgres != null) {
+                            OrderPackage waitingPkg = (OrderPackage) pkgres[0];
+                            if (Calendar.getInstance().after(waitingPkg.getTimeOfExpiration())) {
+                                 p0.put(EXPIRED, waitingPkg);
+                            } else {
+                                p0.put(waitingPkg);
+                            }
+                        }
                         p1.put(pkg, packagesToNotify);
                     }
 
