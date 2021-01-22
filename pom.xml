@@ -31,6 +31,12 @@
         -->
 
         <dependency>
+            <groupId>io.github.pspaces.jspace</groupId>
+            <artifactId>common</artifactId>
+            <version>[0.0,)</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>0.3m</version>
@@ -78,7 +84,7 @@
                     <archive>
                         <manifest>
                             <mainClass>
-                                BeastBank.TestClass
+                                BeastBank.ProgramMain
                             </mainClass>
                         </manifest>
                     </archive>

@@ -11,7 +11,7 @@ import java.net.UnknownHostException;
 import BeastBank.shared.Channels;
 
 
-public class TestClass {
+public class ProgramMain {
 
     public static void main(String[] args) {
 
@@ -28,13 +28,7 @@ public class TestClass {
             e.printStackTrace();
         }
 
-        Runnable r4 = () -> {
-            try {
-                Broker.main(null);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        };
+        Runnable r4 = () -> Broker.main(null);
         Thread thread4 = new Thread(r4);
         thread4.start();
 

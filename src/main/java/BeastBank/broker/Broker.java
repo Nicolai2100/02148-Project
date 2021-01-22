@@ -68,10 +68,15 @@ public class Broker {
         }
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         Broker broker = new Broker();
         stockStream.startStream();
-        broker.startService();
+
+        try {
+            broker.startService();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void startService() throws InterruptedException {
