@@ -27,7 +27,7 @@ public class UserServerCommunicationTask implements Callable<String> {
         this.userServer = userServer;
         this.serverUser = serverUser;
         this.username = username;
-        System.out.println(UserServerCommunicationTask.class.getName() + ": Starting private channel for: " + username);
+        System.out.println(serverStr + "Starting private channel for: " + username);
 
         try {
             String brokerSpaceStr = String.format("tcp://%s:%d/%s?%s", BROKER_HOSTNAME, BROKER_PORT, ORDER_PACKAGES, CONNECTION_TYPE);
@@ -57,34 +57,30 @@ public class UserServerCommunicationTask implements Callable<String> {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return UserServerCommunicationTask.class.getName() + ": Handler for User Server comm stopped!";
+        return serverStr + "Handler for User Server comm stopped!";
     }
 
     public void resolveRequest(String request) {
-        System.out.println(UserServerCommunicationTask.class.getName() + ": User requested: " + request);
+        System.out.println(serverStr + "User requested: " + request);
         try {
             switch (request) {
                 case QUERY_STOCKS:
                     queryStocks();
-
+                    break;
                 case QUERY_MARKET_ORDERS:
                     queryMarket();
-
                     break;
                 case BUY:
                     buyStock();
                     break;
-
                 case SELL:
                     sellStock();
                     break;
-
                 case LOG_OUT:
                     logOut();
                     break;
-
                 default:
-                    System.out.println(UserServerCommunicationTask.class.getName() + ": USCom: ERROR IN SWITCH STMT");
+                    System.out.println(serverStr + "USCom: ERROR IN SWITCH STMT");
             }
 
         } catch (Exception e) {
@@ -110,17 +106,7 @@ public class UserServerCommunicationTask implements Callable<String> {
         } else {
             for (var order : response) {
                 int numOfOrder = response.indexOf(order) + 1;
-                System.out.println(order[1]);
-                System.out.println(order[2]);
-                System.out.println(order[3]);
-                System.out.println(order[4]);
-                System.out.println(order[5]);
-                System.out.println(order[6]);
-                System.out.println(order[7]);
-
-                //Sending data to BeastBank.client
                 System.out.println(UserServerCommunicationTask.class.getName() + ": USCom: Sending data");
-
                 serverUser.put(MORE_DATA);
                 serverUser.put(numOfOrder, numOfOrders, order[2], order[3], order[4], order[5], order[1]);
             }
@@ -193,7 +179,7 @@ public class UserServerCommunicationTask implements Callable<String> {
     }
 
     private void sellStock() {
-        System.out.println(UserServerCommunicationTask.class.getName() + ": Processing order...");
+        System.out.println(serverStr + "Processing order...");
 
         try {
             OrderPackage op = getOrderFromClient(SELL);
@@ -206,7 +192,7 @@ public class UserServerCommunicationTask implements Callable<String> {
     }
 
     private void buyStock() {
-        System.out.println(UserServerCommunicationTask.class.getName() + ": Processing order...");
+        System.out.println(serverStr + "Processing order...");
 
         try {
             OrderPackage op = getOrderFromClient(BUY);
@@ -220,7 +206,7 @@ public class UserServerCommunicationTask implements Callable<String> {
     }
 
     private void logOut() {
-        System.out.printf(UserServerCommunicationTask.class.getName() + ": Logging %s out...\n", username);
+        System.out.printf(serverStr + "Logging %s out...\n", username);
         Server.logout(username);
     }
 
@@ -240,9 +226,11 @@ public class UserServerCommunicationTask implements Callable<String> {
                     new ActualField(username),
                     new FormalField(Double.class));
 
+            //Send balance
             serverUser.put(accountServiceResponse[1]);
 
             do {
+                //Send stocks
                 accountServiceResponse = Server.accountServiceServer.get(
                         new ActualField(username),
                         new FormalField(String.class));
@@ -255,13 +243,11 @@ public class UserServerCommunicationTask implements Callable<String> {
                             new ActualField(username),
                             new FormalField(Stock.class));
 
-                    ArrayList<Stock> stocks = new ArrayList<>();
-                    stocks.add((Stock) dataResponse[1]);
-
-                    //Sending data to BeastBank.client
+                    //Send data to client
                     System.out.println(serverStr + "Sending data");
                     serverUser.put(MORE_DATA);
                     serverUser.put((Stock) dataResponse[1]);
+
                 } else if (responseStr.equals(NO_MORE_DATA)) {
                     serverUser.put(NO_MORE_DATA);
                     break;

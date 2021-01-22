@@ -10,6 +10,7 @@ import static BeastBank.shared.Requests.OK;
 import static BeastBank.shared.Requests.TRANSACTION;
 
 public class TransactionTask implements Callable<String> {
+    private final String serverStr = TransactionTask.class.getName() + ": ";
 
     @Override
     public String call() {
@@ -22,7 +23,7 @@ public class TransactionTask implements Callable<String> {
                         new FormalField(Integer.class),
                         new FormalField(Integer.class)));
 
-                System.out.println("TransactionTask: " + t.getBuyer() + " buys from " + t.getSeller());
+                System.out.println(serverStr + t.getBuyer() + " buying from " + t.getSeller());
 
                 makeTransaction(t.getBuyer(), t.getSeller(), t.getStockName(), t.getQuantity(), t.getPrice());
 
@@ -36,11 +37,11 @@ public class TransactionTask implements Callable<String> {
         Server.serverAccountService.put(seller, TRANSACTION);
         Server.serverAccountService.put(seller, buyer, stockName, pricePerStock, amount);
 
-       var response = Server.accountServiceServer.get(new ActualField(seller), new ActualField(buyer), new FormalField(String.class));
+        var response = Server.accountServiceServer.get(new ActualField(seller), new ActualField(buyer), new FormalField(String.class));
 
         if (response[2].toString().equals(OK)) {
 
-            System.out.println("TransactionTask: Transaction status - " + response[2]);
+            System.out.println(serverStr + "Transaction status - " + response[2]);
 
             String msgToSeller = String.format("Hello %s. We are happy to inform you that %s stocks was sold successfully in the amount of %d.",
                     seller, stockName, amount);
@@ -51,7 +52,7 @@ public class TransactionTask implements Callable<String> {
             Server.serverClientMessages.put(seller, msgToSeller);
             Server.serverClientMessages.put(buyer, msgToBuyer);
         } else {
-            System.out.println("TransactionTask: Transaction status - failed...");
+            System.out.println(serverStr + "Transaction status - failed...");
         }
     }
 }

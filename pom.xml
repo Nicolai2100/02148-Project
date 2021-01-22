@@ -78,7 +78,7 @@
                     <archive>
                         <manifest>
                             <mainClass>
-                                BeastBank.TestClass
+                                BeastBank.ProgramMain
                             </mainClass>
                         </manifest>
                     </archive>

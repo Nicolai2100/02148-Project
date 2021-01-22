@@ -13,13 +13,7 @@ public class ClientClassTest {
 
     //@Before
     public void setUp() {
-        Runnable r4 = () -> {
-            try {
-                Broker.main(null);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        };
+        Runnable r4 = () -> Broker.main(null);
         Thread thread4 = new Thread(r4);
         thread4.start();
 
@@ -39,69 +33,60 @@ public class ClientClassTest {
     @Test
     public void someMethodTest() {
         ClientClass c = new ClientClass();
-        c.validateResponse(-2.0, 1.0, -1.0, "error");
+        c.validateResponse(-2, 1, -1, "error");
     }
 
     @Test
     public void loginRealUser() {
         String[] args = {"Alice", "password"};
-        //new ClientClass().startClient(args);
         Client.main(args);
     }
 
     @Test
     public void queryStocks() {
         String[] args = {"Alice", "password", "1"};
-        //new ClientClass().startClient(args);
         Client.main(args);
     }
 
     @Test
     public void sellAndQueryStock() {
-        String[] args = {"Alice", "password", "4", TESLA, "1", "0.0", "1", "4", APPLE, "1", "0.0", "1", "2"};
-        //new ClientClass().startClient(args);
+        String[] args = {"Alice", "password", "4", TESLA, "1", "0", "1", "4", APPLE, "1", "0.0", "1", "2"};
         Client.main(args);
     }
 
     @Test
     public void queryMarket() {
         String[] args = {"Alice", "password", "2"};
-        //new ClientClass().startClient(args);
         Client.main(args);
     }
 
     @Test
     public void sellStock() {
-        String[] args = {"Alice", "password", "4", TESLA, "1", "0", "1", "" };
-        //new ClientClass().startClient(args);
+        String[] args = {"Alice", "password", "4", TESLA, "1", "0", "1", ""};
         Client.main(args);
     }
 
     @Test
     public void buyStock() {
         String[] args = {"Bob", "password", "3", TESLA, "1", "0", "1", "Alice"};
-        //new ClientClass().startClient(args);
         Client.main(args);
     }
 
     @Test
     public void buyAPPLEStock() {
         String[] args = {"Bob", "password", "3", APPLE, "1", "0", "1"};
-        //new ClientClass().startClient(args);
         Client.main(args);
     }
 
     @Test
     public void buyStockAndQuery() {
-        String[] args = {"Bob", "password", "1", "3", TESLA, "1", "0.0", "1", "1"};
-        //new ClientClass().startClient(args);
+        String[] args = {"Bob", "password", "1", "3", TESLA, "1", "0", "1", "1"};
         Client.main(args);
     }
 
     @Test
     public void sellAndBuyStock() throws InterruptedException {
-        String[] args = {"Alice", "password", "4", TESLA, "1", "22.2", "1", "3", TESLA, "1", "22.2", "1"};
-        //new ClientClass().startClient(args);
+        String[] args = {"Alice", "password", "4", TESLA, "1", "22", "1", "3", TESLA, "1", "22.2", "1"};
         Client.main(args);
     }
 
@@ -109,14 +94,12 @@ public class ClientClassTest {
     @Test
     public void loginRealUserWrongPassword() {
         String[] args = {"Alice", "passwor"};
-        //new ClientClass().startClient(args);
         Client.main(args);
     }
 
     @Test
     public void loginWrongUsernameAndPassword() {
         String[] args = {"Ali", "passwor"};
-        //new ClientClass().startClient(args);
         Client.main(args);
     }
 }

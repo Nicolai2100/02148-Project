@@ -71,10 +71,15 @@ public class Broker {
         }
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         Broker broker = new Broker();
         stockStream.startStream();
-        broker.startService();
+
+        try {
+            broker.startService();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -118,11 +123,11 @@ public class Broker {
                 try {
                     p4.get(new ActualField(lock));
                     OrderPackage orderPkg = (OrderPackage) p0.get(new FormalField(OrderPackage.class))[0];
-
                     Stack<OrderPackage> packagesToNotify = new Stack<>();
 
                     //Here we check, if the order package is brand new and hasn't been processed before.
                     if (orderPkg.getPackageID() == null) {
+                        System.out.printf("%s Received new order: %s \n ", brokerStr,orderPkg.getOrders().get(0).toString());
                         //We give it a unique ID
                         orderPkg.setPackageID(UUID.randomUUID());
 

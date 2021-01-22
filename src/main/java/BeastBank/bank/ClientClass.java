@@ -208,36 +208,31 @@ public class ClientClass {
                 String stockName = checkInputForExitToAbort();
 
                 System.out.printf("Enter number of stocks to %s:\n", trade.toLowerCase());
-                String errorMsg = String.format("You can't %s more than you own!", trade.toLowerCase());
-                int amount = validateResponse(1, 10, scanner.nextInt(), errorMsg);
+                int amount = scanner.nextInt();
 
                 int minAmountReq = 1;
                 if (amount > 1) {
                     System.out.printf("Enter minimum number of stocks to %s:\n", trade.toLowerCase());
-                    minAmountReq = validateResponse(1, 10, scanner.nextInt(), errorMsg);
+                    minAmountReq = scanner.nextInt();
                 }
 
                 int minPricePerStock;
-                System.out.printf("Enter %s price per stock \n(Enter \"0\" for current market price) :", minOrMax);
-                String errorMsg2 = String.format("You can't %s more than you own!", trade.toLowerCase());
-                minPricePerStock = validateResponse(0, 10, scanner.nextInt(), errorMsg2);
+                System.out.printf("Enter %s price per stock \n(Enter \"0\" for current market price) :\n", minOrMax);
+                minPricePerStock = scanner.nextInt();
 
                 String targetCustomer = "";
                 System.out.println("If you only want to trade with one certain user");
-                System.out.println("Enter that users name or press \"0\" for any user");
+                System.out.println("(Enter that users name or press \"0\" for any user)");
+                targetCustomer = scanner.next();
 
-                String errorMsg3 = "Invalid username";
-                targetCustomer = validateResponse("0", "10", scanner.next(), errorMsg3);
+                String priceStr = minPricePerStock == 0 ? "market price" : Integer.toString(minPricePerStock);
 
-
-                String priceStr = minPricePerStock == 0.0 ? "market price" : Integer.toString(minPricePerStock);
-
-
+                String sellOrBuy = trade.equals(SELL) ? "sell" : "buy";
                 if (targetCustomer.length() > 1) {
                     String fromToStr = trade.equals(SELL) ? "to" : "from";
-                    System.out.printf("Are you sure you want to %s %s for %s each, %s %s? \n", amount, stockName, priceStr, fromToStr, targetCustomer);
+                    System.out.printf("Are you sure you want to %s %s %s for %s each, %s %s? \n", sellOrBuy, amount, stockName, priceStr, fromToStr, targetCustomer);
                 } else {
-                    System.out.printf("Are you sure you want to %s %s for %s each? \n", amount, stockName, priceStr);
+                    System.out.printf("Are you sure you want to %s %s %s for %s each? \n", sellOrBuy, amount, stockName, priceStr);
                 }
 
                 System.out.println("1 - Yes\n0 - No");

@@ -16,14 +16,8 @@ public class UserServerCommunicationTaskTest {
 
 
     @Before
-    public  void setUp() throws InterruptedException {
-        Runnable r4 = () -> {
-            try {
-                Broker.main(null);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        };
+    public void setUp() throws InterruptedException {
+        Runnable r4 = () -> Broker.main(null);
         Thread thread4 = new Thread(r4);
         thread4.start();
 
