@@ -34,6 +34,8 @@ public class Server {
     static int numOfClientsConnected = 0;
     static ExecutorService executor;
 
+    private static String serverStr = Server.class.getName() + ": ";
+
     public void startServer() throws InterruptedException {
         repository = new SpaceRepository();
 
@@ -66,23 +68,23 @@ public class Server {
         repository.addGate(uri);
 
         // Keep reading chat messages and printing them
-        System.out.println("Server: Started BeastBank.server on: " + uri);
+        System.out.println(serverStr + "Started BeastBank.server on: " + uri);
 
         boolean connectedToIdProvider = false;
         while (!connectedToIdProvider) {
             // connect to tuple space
             try {
-                System.out.println("Server: Trying to establish connection to Identity Provider ...");
+                System.out.println(serverStr + "Trying to establish connection to Identity Provider ...");
                 String serverService = String.format("tcp://%s:%d/%s?%s", ID_PROVIDER_HOSTNAME, ID_PROVIDER_PORT, SERVER_ID_PROVIDER, CONNECTION_TYPE);
                 String serviceServer = String.format("tcp://%s:%d/%s?%s", ID_PROVIDER_HOSTNAME, ID_PROVIDER_PORT, ID_PROVIDER_SERVER, CONNECTION_TYPE);
                 serverIdProvider = new RemoteSpace(serverService);
                 idProviderServer = new RemoteSpace(serviceServer);
                 connectedToIdProvider = true;
 
-                System.out.println(AccountService.class.getName() + ": Waiting for requests...");
+                System.out.println(serverStr + "Waiting for requests...");
 
             } catch (IOException e) {
-                System.out.println(e.getMessage());
+                System.out.println(serverStr + e.getMessage());
                 connectedToIdProvider = false;
             }
         }
@@ -106,17 +108,17 @@ public class Server {
     }
 
     public void requestResolver(String request, String username, String password) {
-        System.out.println("Server: Client requested: " + request);
+        System.out.println(serverStr + "Client requested: " + request);
 
         try {
             if (LOGIN.equals(request)) {
                 login(username, password);
             } else {
-                System.out.println("Server: ERROR IN SWITCH STMT");
+                System.out.println(serverStr + "ERROR IN SWITCH STMT");
             }
 
         } catch (InterruptedException e) {
-            System.out.println(e.getMessage());
+            System.out.println(serverStr + e.getMessage());
         }
     }
 
@@ -131,6 +133,6 @@ public class Server {
         repository.remove(username + "server");
         repository.remove("server" + username);
         numOfClientsConnected--;
-        System.out.println("Server: Number of clients connected: " + numOfClientsConnected);
+        System.out.println(serverStr + "Number of clients connected: " + numOfClientsConnected);
     }
 }

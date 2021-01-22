@@ -60,7 +60,7 @@ public class LoginTask implements Callable<String> {
             repository.add(serverToUserName, serverUser);
             repository.add(userToServerName, userServer);
 
-            System.out.printf(loginStr + "Created private channels for %s...", username);
+            System.out.printf(loginStr + "Created private channels for %s...\n", username);
 
             if (!userAlreadyLoggedIn) Server.numOfClientsConnected++;
             System.out.println(loginStr + "Number of clients connected: " + Server.numOfClientsConnected);

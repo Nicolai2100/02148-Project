@@ -1,6 +1,6 @@
 package BeastBank.service;
 
-import BeastBank.broker.Transaction;
+import BeastBank.bank.UserServerCommunicationTask;
 import BeastBank.dao.FakeUserDataAccessService;
 import BeastBank.model.Stock;
 import BeastBank.model.User;
@@ -14,11 +14,11 @@ import java.util.*;
 import static BeastBank.shared.Requests.*;
 import static BeastBank.shared.Channels.*;
 
-
 public class AccountService {
-    boolean connectedToServer = false;
-    RemoteSpace serverAccountService = null;
-    RemoteSpace accountServiceServer = null;
+    private boolean connectedToServer = false;
+    private RemoteSpace serverAccountService = null;
+    private RemoteSpace accountServiceServer = null;
+    private String serviceStr = AccountService.class.getName() + ": ";
 
     public AccountService() {
     }
@@ -37,17 +37,17 @@ public class AccountService {
             if (!connectedToServer) {
                 // connect to tuple space
                 try {
-                    System.out.println(AccountService.class.getName() + ": Trying to establish connection to remote spaces...");
+                    System.out.println(serviceStr + "Trying to establish connection to remote spaces...");
                     String serverService = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, SERVER_ACCOUNT_SERVICE, CONNECTION_TYPE);
                     String serviceServer = String.format("tcp://%s:%d/%s?%s", SERVER_HOSTNAME, SERVER_PORT, ACCOUNT_SERVICE_SERVER, CONNECTION_TYPE);
                     serverAccountService = new RemoteSpace(serverService);
                     accountServiceServer = new RemoteSpace(serviceServer);
                     connectedToServer = true;
 
-                    System.out.println(AccountService.class.getName() + ": Waiting for requests...");
+                    System.out.println(serviceStr + "Waiting for requests...");
 
                 } catch (IOException e) {
-                    System.out.println(e.getMessage());
+                    System.out.println(serviceStr + e.getMessage());
                     connectedToServer = false;
                 }
 
@@ -62,7 +62,7 @@ public class AccountService {
                         String username = request[0].toString();
                         String requestStr = request[1].toString();
 
-                        System.out.println(AccountService.class.getName() + ": " + requestStr + " for " + username + " received...");
+                        System.out.println(serviceStr + requestStr + " for " + username + " received...");
 
                         requestDecider(requestStr, username);
                     } catch (InterruptedException e) {
@@ -83,8 +83,8 @@ public class AccountService {
                 transactionRequest(username);
                 break;
             default: {
-                System.out.println(AccountService.class.getName() + ": ERROR IN SWITCH STMT");
-                throw new Exception(AccountService.class.getName() + ": NOT IMPLEMENTED!");
+                System.out.println(serviceStr + "ERROR IN SWITCH STMT");
+                throw new Exception(serviceStr + "NOT IMPLEMENTED!");
             }
         }
     }
@@ -106,7 +106,7 @@ public class AccountService {
                 seller.getAccount().receivePayment(payment);
                 FakeUserDataAccessService.getInstance().update(seller.getId(), seller);
 
-                System.out.println(AccountService.class.getName() + ": Transaction finished...");
+                System.out.println(serviceStr + "Transaction finished...");
                 return true;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -158,9 +158,9 @@ public class AccountService {
             accountServiceServer.put(username, OK);
             User user = optionalUser.get();
 
-            System.out.println(AccountService.class.getName() + ": Retrieving stocks for user: " + user.getName() + "...");
+            System.out.println(serviceStr + "Retrieving stocks for user: " + user.getName() + "...");
             ArrayList<Stock> stocks = returnListOfUserStocks(user);
-            System.out.println(AccountService.class.getName() + ": Sending stocks to BeastBank.server...");
+            System.out.println(serviceStr + "Sending stocks to BeastBank.server...");
 
             accountServiceServer.put(user.getName(), user.getAccount().getBalance());
 
@@ -186,9 +186,9 @@ public class AccountService {
         //Does the system contain the user?
         Optional<User> optionalUser = FakeUserDataAccessService.getInstance().selectUserByUsername(username);
         if (optionalUser.isPresent()) {
-            System.out.println(AccountService.class.getName() + ": User exist, continuing to process request...");
+            System.out.println(serviceStr + "User exist, continuing to process request...");
         } else {
-            System.out.println(AccountService.class.getName() + ": No such user exists...");
+            System.out.println(serviceStr + "No such user exists...");
         }
         return optionalUser;
     }

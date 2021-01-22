@@ -13,6 +13,8 @@ import static BeastBank.shared.Requests.*;
 
 public class IdentityProvider {
 
+    private final static String serviceStr = IdentityProvider.class.getName() + ": ";
+
     public static void main(String[] args) {
         //Create remote tuple spaces
         SpaceRepository repository = new SpaceRepository();
@@ -27,7 +29,7 @@ public class IdentityProvider {
         String uri = String.format("tcp://%s:%d/?%s", ID_PROVIDER_HOSTNAME, ID_PROVIDER_PORT, CONNECTION_TYPE);
         repository.addGate(uri);
 
-        System.out.println(IdentityProvider.class.getName() + ": Started listening on: " + uri);
+        System.out.println(serviceStr + "Started listening on: " + uri);
 
         while (true) {
             Object[] credentials;
@@ -37,7 +39,7 @@ public class IdentityProvider {
                 String username = credentials[0].toString();
                 String password = credentials[1].toString();
 
-                System.out.println(IdentityProvider.class.getName() + ": Credentials received: " + username + " " + password);
+                System.out.println(serviceStr + "Credentials received: " + username + " " + password);
 
                 boolean userValid = validateCredentials(username, password);
 
@@ -58,13 +60,13 @@ public class IdentityProvider {
 
         if (optionalUser.isPresent()) {
             if (SharedEncryption.validatePassword(optionalUser.get().getPassword(), password)) {
-                System.out.println(IdentityProvider.class.getName() + ": Credentials verified at: " + LocalDateTime.now());
+                System.out.println(serviceStr + "Credentials verified at: " + LocalDateTime.now());
                 return true;
             } else {
-                System.out.println(IdentityProvider.class.getName() + ": User submitted wrong password!");
+                System.out.println(serviceStr + "User submitted wrong password!");
             }
         } else {
-            System.out.println(IdentityProvider.class.getName() + ": No such user exists");
+            System.out.println(serviceStr + "No such user exists");
         }
         return false;
     }
