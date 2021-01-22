@@ -288,6 +288,12 @@ public class Broker {
         }
     }
 
+    /**
+     * This runnable takes order packages from P2 that failed to ind enough matches.
+     * It then puts them in P3 and also puts a number of signals in P3, that signal
+     * what kind of new orders it wants to be notified about.
+     * Finally, it releases the lock by putting it back in P4.
+     */
     class SignalWaitingForNotification implements Runnable {
         @Override
         public void run() {
@@ -313,6 +319,12 @@ public class Broker {
         }
     }
 
+    /**
+     * Signals each waiting order in P3 that a change in a certain stock's price has
+     * changed, and the ones that were notifed back in P0.
+     * @param stock
+     * @throws InterruptedException
+     */
     private void wakeUpLimitOrders(String stock) throws InterruptedException {
         List<Object[]> signals = p3.getAll(
                 new FormalField(UUID.class),
@@ -329,6 +341,14 @@ public class Broker {
         }
     }
 
+    /**
+     * This method takes an order package and for each order calls a method to search
+     * for matches for that order. Each of these method calls need to return true ind order
+     * for this method to return true.
+     * @param orderPkg
+     * @return
+     * @throws InterruptedException
+     */
     private boolean findMatchesForPackage(OrderPackage orderPkg) throws InterruptedException {
         orderPkg.getMatchOrders().clear();
         boolean foundMatchesForAll = true;
@@ -341,6 +361,16 @@ public class Broker {
         return foundMatchesForAll;
     }
 
+    /**
+     * This method performs the most important business logic.
+     * It takes a single order and the order package it belongs to, and then tries to find
+     * enough matches to complete that particular order.
+     * @param space
+     * @param orderPkg
+     * @param order
+     * @return true if it suceeds in finding enough matches. False if not.
+     * @throws InterruptedException
+     */
     private boolean findMatchesForOrder(Space space, OrderPackage orderPkg, Order order) throws InterruptedException {
 
         //Means that it has been processed by another order.
